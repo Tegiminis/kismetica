@@ -106,6 +106,7 @@ def damage_target(damage, target):
     if target.db.shield['max'] > 0:
         target.db.shield['lasthit'] = now
         _sc = target.scripts.get('shield_regen')
+        _sc[0].pause()
         _sc[0].unpause()
         _sc[0].db.msged = False
 
@@ -128,8 +129,15 @@ def revive(origin):
     # Revives the object called for the function
     if utils.inherits_from(origin, 'typeclasses.npc.NPC'):
         origin.db.health['current'] = origin.db.health['max']
+        origin.db.shield['current'] = origin.db.shield['max']
         origin.db.npc_active = True
-    origin.location.msg_contents("The %s revives in a glimmering beam of light." % origin.name)
+
+    # Messages the room that the revive occurred.
+    _name = origin.named()
+    origin.location.msg_contents( ("%s revives in a glimmering beam of light." % _name).capitalize() )
+
+    # If the character has shields, unpause the regen. 
+    # Should immediately repause, but hey, better safe than sorry.
     _sc = origin.scripts.get('shield_regen')
     _sc[0].unpause()
     _sc[0].db.msged = False

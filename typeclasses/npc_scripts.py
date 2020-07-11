@@ -14,18 +14,35 @@ class AIStateBasic(Script):
     def at_script_creation(self):
         self.key = "ai_state_basic"
         self.desc = "Performs basic AI actions, such as ranged and melee attacks, patrolling, and respawning"
-        self.interval = 3  # Shield regen ticks every second
+        self.interval = 1
         self.persistent = True  # Will survive reload
+
+        self.db.lt = 0      # When this script last fired
+        self.db.delay = 3
 
         # If this script is on a PlayerCharacter, it will be removed on start
         if utils.inherits_from(self.obj, 'typeclasses.characters.PlayerCharacter'):
             self.obj.scripts.delete(self)
 
     def at_start(self):
-        self.msged = False
+        now = time.time()
+        self.db.lt = now
 
     def at_repeat(self):
         
-        if self.obj.ndb.target
+        now = time.time()
+        ai = self.obj
+
+        if now - self.db.lt > delay:
+
+            if ai.db.state['dead'] is True:
+                ai.move_to(ai.home, True)
+                delay = ai.db.timer['active']
+                self.db.lt = now
+
+        
+        
+
+
 
         

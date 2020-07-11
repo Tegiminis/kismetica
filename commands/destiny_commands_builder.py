@@ -12,7 +12,7 @@ class CmdAlter(BaseCommand):
     Usage:
       alter <target> <message type> <message>
 
-    Many objects contain "message" dicts which determine
+    Many objects contain lists of messages which determine
     what is told to the player and to the room at large
     when actions happen.
 
@@ -20,7 +20,7 @@ class CmdAlter(BaseCommand):
 
     You can also use "set target\msg['type'] = '<message>'"
     as that is functionally similar. The difference is this
-    command wwon't allow you to add new messages, only
+    command won't allow you to add new messages, only
     change existing ones.    
     """
     key = "alter"

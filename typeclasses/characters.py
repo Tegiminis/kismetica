@@ -48,6 +48,12 @@ class Character(DefaultCharacter):
         # Used if you use attack someone or use 'target'
         self.ndb.target = 0
 
+    def named(self):
+        _name = self.key
+        if self.db.named is False:
+            _name = "the " + _name
+        return _name
+
 
     """
     The Character defaults to reimplementing some of base Object's hook methods with the

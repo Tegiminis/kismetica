@@ -25,18 +25,12 @@ class ShieldRegen(Script):
         if self.obj.db.shield['max'] is None:
             self.obj.scripts.delete(self)
 
-        self.db._name = self.obj.key
-        if self.obj.db.named is False:
-            self.db._name = "The " + self.db._name
-
     def at_start(self):
         self.db.msged = False
-        self.interval = self.obj.db.shield['delay']
 
     def at_repeat(self):
         "called every self.interval seconds."            
         now = time.time()
-        self.interval = 1
 
         # Caching basically every shield variable for easy comparison
         lh = self.obj.db.shield['lasthit']
@@ -57,7 +51,10 @@ class ShieldRegen(Script):
 
             if self.db.msged is False:
                 self.obj.msg("Your shield glimmers and grows more opaque")
-                self.obj.location.msg_contents("%s's shield glimmers and grows more opaque." % self.db._name, exclude=self.obj)
+                self.obj.location.msg_contents(
+                    ("%s's shield glimmers and grows more opaque." % self.db._name).capitalize(), 
+                    exclude=self.obj
+                    )
                 self.db.msged = True
             else:
                 return

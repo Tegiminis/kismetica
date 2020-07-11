@@ -12,6 +12,8 @@ class Weapon(Object):
         self.db.slot = 'kinetic'
         self.db.element = 'neutral'
 
+        self.db.named = False
+
         # All ammo-related stats
         self.db.ammo = {
             'type':'primary', # Ammo type used when fired (primary is infinite, others are not)
@@ -66,9 +68,12 @@ class Weapon(Object):
         # Messages for all the things that your gun does
         self.db.msg = {
             'miss': 'You miss!', 
-            'attack': 'You shoot at %s!', 
-            'equip': 'It feels cold and menacing in your grip.',
-            'cooldown': 'You grip your weapon tighter as you prepare for another attack.'
+            'attack_caller': 'You shoot at %s!',
+            'attack_target': '%s shoots at you!',
+            'attack_room': '%s shoots at %s!',
+            'equip': '',
+            'kill': '%s crumples to the floor, dead.',
+            'cooldown': 'You can fire again.'
             }
 
         # Your weapon's current accuracy. Returns to base accuracy over time.
@@ -77,6 +82,19 @@ class Weapon(Object):
     def at_init(self):
         self.ndb.acc = self.db.damage['accuracy']
 
+    # Used for formatting the "stat bars"
+    def stat_format(self, key):
+
+        _str = ""   # Create return string object
+
+        for x in range(10):
+            if x <= round( self.db.stat[key] / 10 ):
+                _str += "█"
+            else:
+                _str += " "
+
+        return _str
+
     def return_appearance(self, looker):
         """
         Called by the look command.
@@ -84,26 +102,9 @@ class Weapon(Object):
         # first get the base string from the
         # parent's return_appearance.
         string = super().return_appearance(looker)
-        impact = ""
-        acc = ""
+        str_impact = self.stat_format('impact')
+        str_acc = self.stat_format('accuracy')
 
-        stats = "\nImpact: |b%s|n | Accuracy: |r%s|n"
-        _str_dict = []
-
-        for key in self.db.stat:
-            _str_dict[key] = stat_format(key)
-        stats = stats % (_str_dict['impact'], _str_dict['accuracy'])
+        stats = "\nImpact: |b%s|n" % (str_acc) + "               " + "Accuracy: |r%s|n" % (str_impact)
         
         return string + stats
-
-    def stat_format(key):
-
-        _str = ""
-
-        for x in range(10):
-            if x == round(self.db.stat[key]/10):
-                _str += "▌"
-            else:
-                _str += " "
-    
-        return _str

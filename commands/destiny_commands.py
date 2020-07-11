@@ -47,9 +47,8 @@ class CmdAttack(BaseCommand):
             caller.msg("You need to pick a target to attack.")
             return
 
-        msg_target = target.key
-        if target.db.named is False:
-            msg_target = "the " + msg_target
+        msg_target = target.named()
+        msg_caller = caller.named()
 
         slot = caller.db.equipped_held
         _wep = caller.db.equipped_weapons[slot]
@@ -57,49 +56,66 @@ class CmdAttack(BaseCommand):
         shield_broke = False
 
         msg_post = ""
-
-        _name = target.key
-        if target.db.named is False:
-            _name = "The " + _name
+        _name = ""
 
         if target:
             if utils.inherits_from(target, 'typeclasses.npc.NPC') or target.db.crucible == True:
                 # The string of "hits" used for messaging. Looks like this once everything's done: "15! 10! Miss! 10! 10!"
                 str_hits = ""
+
+                #Caching variables.
                 shots = _wep.db.damage['shots'] 
                 total = 0
+
+                # Fires however many shots you tell it to. AKA 5 shots = 5 loops
                 for x in range(shots):
-                    _hit = destiny_rules.roll_hit(caller, target)
-                    _dmg = destiny_rules.combat_damage(caller, target, *_hit)
-                    _prv = target.db.shield['current']
+                    _hit = destiny_rules.roll_hit(caller, target)              # The hit roll
+                    _dmg = destiny_rules.combat_damage(caller, target, *_hit)  # The damage roll
+                    _prv = target.db.shield['current']                         # Used to determine if the target's shield was already broken
 
                     if _dmg <= 0:
-                        str_hits += "|nMiss! "
+                        str_hits += "|nMiss! "                     # If you don't damage something, it's obviously a miss! For now.
                     else:
-                        destiny_rules.damage_target(_dmg, target)
-                        total += _dmg
+                        destiny_rules.damage_target(_dmg, target)  # Damage the target
+                        total += _dmg                              # Add the damage you did to the total (for messaging)
                         if _hit[1] is True:
-                            str_hits += "|y%i! " % _dmg
+                            str_hits += "|y%i! " % _dmg            # Critical hit!
                         else:
-                            str_hits += "|n%i! " % _dmg
+                            str_hits += "|n%i! " % _dmg            # Normal hit!
 
+                        # Shield break messaging. Only happens if the target has shield left to break.
                         if target.db.shield['current'] < _prv and target.db.shield['current'] == 0 and shield_broke == False:
-                            msg_post += "%s's shield cracks and shatters!" % _name
+                            _name = target.named()
+                            msg_post += ("%s's shield cracks and shatters!" % _name).capitalize()
                             shield_broke = True
 
+                        # Killshot detection. Immediately stops the attack and breaks the for loop when target dies.
                         if target.db.health['current'] <= 0:
                             str_hits += "|rKill shot!|n"
-                            msg_post += "\n|n" + target.db.msg_death
+                            msg_post += "\n|n" + (_wep.db.msg['kill'] % msg_target).capitalize()
                             utils.delay(3.0, destiny_rules.revive, target)
                             break
 
                 
-                # Messaging
+                # Messaging to the shooter, target, and room, respectively.
                 caller.msg(
-                    ( "\n|n" + _wep.db.msg['attack'] % msg_target ) +
+                    ( "\n|n" + (_wep.db.msg['attack_caller'] % msg_target).capitalize() ) +      # The base attack string
+                    ( "\n|n" + str_hits ) +                                # The hits (10! 15! Miss!)
+                    ( "\n|n" + " = %s damage!" % str(total) ) +            # Total damage dealt
+                    ( "\n|n" + msg_post)                                   # Any "post" messages, such as status changes (like death)
+                    )
+                
+                target.msg(
+                    ( "\n|n" + (_wep.db.msg['attack_target'] % msg_caller).capitalize() ) +
                     ( "\n|n" + str_hits ) +
-                    ( "\n|n" + " = %s damage!" % str(total) ) +
-                    ( "\n|n" + msg_post)
+                    ( "\n|n" + " = %s damage!" % str(total) )
+                    )
+
+                caller.location.msg_contents(
+                    ( "\n|n" + (_wep.db.msg['attack_room'] % (msg_caller, msg_target)).capitalize() ) +
+                    ( "\n|n" + str_hits ) +
+                    ( "\n|n" + " = %s damage!" % str(total) ), 
+                    exclude=(caller, target)
                     )
 
                 if utils.inherits_from(caller, 'typeclasses.characters.PlayerCharacter'):
@@ -171,21 +187,24 @@ class CmdEquip(BaseCommand):
                 return
 
         target = caller.search(self.args)
-        name = target.name
+        name = ""
+        _name = ""
 
         if target:
             if target.location.id == caller.id:
                 caller.db.equipped_weapons[target.db.slot] = target
-                caller.msg("You hoist the %s in your hands. %s" % (name, target.db.msg['equip']))
+                caller.msg("You equip the %s. %s" % (name, target.db.msg['equip']))
 
-                if caller.db.named:
-                    caller.location.msg_contents("%s hoists the %s in their hands." % (caller.name, name), exclude=caller)
-                else:
-                    caller.location.msg_contents("The %s hoists the %s in their hands." % (caller.name, name), exclude=caller)
+                _name = caller.named(True)
+                name = target.named(False)
+                caller.location.msg_contents("%s hoists %s in their hands." % (_name, name), exclude=caller)
                 return
             else:
                 caller.msg("You must have a weapon in your inventory in order to equip it.")
                 return
+        else:
+            caller.msg("You must pick a valid weapon to equip.")
+            return
         return
     
 class CmdSwitch(BaseCommand):
