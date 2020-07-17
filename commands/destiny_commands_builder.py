@@ -64,3 +64,27 @@ class CmdAlter(BaseCommand):
             return
 
         return
+
+class CmdNPCState(BaseCommand):
+    """
+    Changes the NPC's state
+
+    Usage:
+      state <target> <state> <True/False>
+
+    NPCs have various "states" that they can exist in
+    depending on the type of NPC. This command allows
+    builders to change an NPC state on the fly.  
+    """
+    key = "npcstate"
+    aliases = ["state"]
+    locks = "cmd: perm(Builder)"
+
+    def parse(self):
+        self.args = self.args.split()
+
+    def func(self):
+        caller = self.caller
+        args = self.args
+
+        return

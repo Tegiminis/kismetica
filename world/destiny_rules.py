@@ -88,9 +88,10 @@ def combat_damage(origin, target, hit, crit):
 
     return damage
 
-def damage_target(damage, target):
+def damage_target(damage, weapon, target):
     # Actually does the nitty gritty of damaging your target
-    now = time.time()
+
+    msg_post = ""       # Used for our return, which returns any damage-related perk messages
     t_shield = target.db.shield['current']
 
     # If the shield value is less than the damage dealt, deal it to both health and shields. Otherwise, just shields.
@@ -102,23 +103,26 @@ def damage_target(damage, target):
     else:
         target.db.shield['current'] -= damage
 
-    # If the target has a shield, then trigger shield regeneration
-    if target.db.shield['max'] > 0:
-        target.db.shield['lasthit'] = now
-        _sc = target.scripts.get('shield_regen')
-        _sc[0].pause()
-        _sc[0].unpause()
-        _sc[0].db.msged = False
+    # Trigger any on-hit effects on the target
+    for x in find_scripts_by_tag(target, 'on_hit'):
+        x.restart( repeats=1 )
 
+    # If the target has 0 health, kill it
     if target.db.health['current'] <= 0:
         kill(target)
 
-    return
+        for x in find_scripts_by_tag(weapon, 'kill'):
+            x.restart()
+            msg_post += "\n|n" + x.db.msg['start']
+
+    return msg_post
 
 def kill(origin):
     # Kills whatever object is called for the function
     if utils.inherits_from(origin, 'typeclasses.npc.NPC'):
-        origin.db.npc_active = False
+        origin.db.state = 'dead'
+        for x in find_scripts_by_tag(origin, 'ai'):
+            x.restart( interval=origin.db.timer['dead'], start_delay=True )
 
     _sc = origin.scripts.get('shield_regen')
     _sc[0].pause()
@@ -127,25 +131,23 @@ def kill(origin):
 
 def revive(origin):
     # Revives the object called for the function
-    if utils.inherits_from(origin, 'typeclasses.npc.NPC'):
+    if utils.inherits_from(origin, 'typeclasses.characters.Character'):
         origin.db.health['current'] = origin.db.health['max']
         origin.db.shield['current'] = origin.db.shield['max']
-        origin.db.npc_active = True
 
     # Messages the room that the revive occurred.
     _name = origin.named()
     origin.location.msg_contents( ("%s revives in a glimmering beam of light." % _name).capitalize() )
 
-    # If the character has shields, unpause the regen. 
-    # Should immediately repause, but hey, better safe than sorry.
-    _sc = origin.scripts.get('shield_regen')
-    _sc[0].unpause()
-    _sc[0].db.msged = False
-    return
-
 def distance(origin, target):
     # Finds the distance between the room_depths of two objects
-    start = origin.db.room_depth
-    end = target.db.room_depth
-
     return abs(origin.db.room_depth - target.db.room_depth)
+
+def find_scripts_by_tag(obj, tag):
+    _list = [ 
+        x 
+        for x in obj.scripts.all() 
+        if tag in x.tags.all() 
+    ]
+
+    return _list

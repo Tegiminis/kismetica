@@ -69,15 +69,17 @@ class CmdAttack(BaseCommand):
 
                 # Fires however many shots you tell it to. AKA 5 shots = 5 loops
                 for x in range(shots):
-                    _hit = destiny_rules.roll_hit(caller, target)              # The hit roll
-                    _dmg = destiny_rules.combat_damage(caller, target, *_hit)  # The damage roll
-                    _prv = target.db.shield['current']                         # Used to determine if the target's shield was already broken
+                    _hit = destiny_rules.roll_hit(caller, target)               # The hit roll
+                    _dmg = destiny_rules.combat_damage(caller, target, *_hit)   # The damage roll
+                    _prv = target.db.shield['current']                          # Used to determine if the target's shield was already broken
 
                     if _dmg <= 0:
                         str_hits += "|nMiss! "                     # If you don't damage something, it's obviously a miss! For now.
                     else:
-                        destiny_rules.damage_target(_dmg, target)  # Damage the target
-                        total += _dmg                              # Add the damage you did to the total (for messaging)
+                        msg_post += destiny_rules.damage_target(_dmg, _wep, target)         # Damage the target and return any perk-related messages
+                        total += _dmg                                                       # Add the damage you did to the total (for messaging)
+
+                        # Formatting based on if it's a crit or not
                         if _hit[1] is True:
                             str_hits += "|y%i! " % _dmg            # Critical hit!
                         else:
@@ -93,7 +95,7 @@ class CmdAttack(BaseCommand):
                         if target.db.health['current'] <= 0:
                             str_hits += "|rKill shot!|n"
                             msg_post += "\n|n" + (_wep.db.msg['kill'] % msg_target).capitalize()
-                            utils.delay(3.0, destiny_rules.revive, target)
+
                             break
 
                 

@@ -2,6 +2,7 @@ import random
 import time
 from typeclasses.scripts import Script
 from evennia import utils
+import destiny_rules as rules
 
 class AIStateBasic(Script): 
     """
@@ -15,30 +16,45 @@ class AIStateBasic(Script):
         self.key = "ai_state_basic"
         self.desc = "Performs basic AI actions, such as ranged and melee attacks, patrolling, and respawning"
         self.interval = 1
-        self.persistent = True  # Will survive reload
+        self.persistent = True      # Will survive reload
+        self.start_delay = True
 
-        self.db.lt = 0      # When this script last fired
-        self.db.delay = 3
+        self.tags.add( 'ai' )
 
         # If this script is on a PlayerCharacter, it will be removed on start
         if utils.inherits_from(self.obj, 'typeclasses.characters.PlayerCharacter'):
             self.obj.scripts.delete(self)
 
     def at_start(self):
-        now = time.time()
-        self.db.lt = now
+        pass
 
     def at_repeat(self):
         
-        now = time.time()
         ai = self.obj
+        delay = 1        
 
-        if now - self.db.lt > delay:
+        if ai.db.state is 'patrol':
+            pass
+        
+        # If this AI is "active", do the various checks to put it into different states
+        if ai.db.state is 'active':
+            pass
+        
+        # If this AI is ready to respawn, teleport it home and make it active again
+        if ai.db.state is 'respawn':
+            rules.revive(ai)
+            delay = ai.db.timer['active']
+            ai.db.state = 'active'
+        
+        # If this AI is dead, begin respawn process
+        if ai.db.state is 'dead':
+            ai.location.msg_contents( ai.db.msg['despawn'].capitalize() )
+            ai.move_to(ai.home, True)
+            delay = ai.db.timer['respawn']
+            ai.db.state = 'respawn'
 
-            if ai.db.state['dead'] is True:
-                ai.move_to(ai.home, True)
-                delay = ai.db.timer['active']
-                self.db.lt = now
+        self.restart( interval=delay )
+
 
         
         

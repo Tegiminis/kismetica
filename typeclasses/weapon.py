@@ -36,23 +36,24 @@ class Weapon(Object):
 
         # All basic damage- and hit-related stats
         self.db.damage = {
-            'base':10,      # Base damage. The quite literal number of hit or shield points this weapon deals, absent any modifiers
-            'accuracy':1.0,   # Base accuracy. Your hit roll is multiplied by this. 1.0 means no change to the hit roll.
-            'shots':5,        # How many shots you fire at once. Each shot's accuracy is calculated independently.
-            'falloff':8.0     # Distance where damage falloff starts, out to max (where shots no longer hit)
+            'base':10,          # Base damage. The quite literal number of hit or shield points this weapon deals, absent any modifiers
+            'mult':1.0,         # Base multiplier. 1.0 means no change, and is default multiplier
+            'accuracy':1.0,     # Base accuracy. Your hit roll is multiplied by this. 1.0 means no change to the hit roll.
+            'shots':5,          # How many shots you fire at once. Each shot's accuracy is calculated independently.
+            'falloff':8.0       # Distance where damage falloff starts, out to max (where shots no longer hit)
         }
 
         # Innate stats related to "speed", aka action cooldowns
         self.db.speed = {
-            'equip':3.0,      # In seconds, time it takes to swap to and from this weapon
-            'reload':3.0,     # In seconds, time it takes to reload this weapons
-            'fire':3.0        # In seconds, time it takes for this weapon to "cool down" and be ready for use again
+            'equip':3.0,        # In seconds, time it takes to swap to and from this weapon
+            'reload':3.0,       # In seconds, time it takes to reload this weapons
+            'fire':3.0          # In seconds, time it takes for this weapon to "cool down" and be ready for use again
             }
         
         # Innate stats related to "range", which influences your hit chances and damage falloff
         self.db.range = {
-            'max':10,         # Distance, measured via room_depth, that the weapon will no longer hit the target
-            'min':1.0,        # Distance that the weapon suffers a severe accuracy penalty if the target is too close
+            'max':10,           # Distance, measured via room_depth, that the weapon will no longer hit the target
+            'min':1.0,          # Distance that the weapon suffers a severe accuracy penalty if the target is too close
             }
         
         # Innate stats related to "crits", aka precision shots, which multiply your damage
@@ -61,9 +62,15 @@ class Weapon(Object):
             'mult':2.0        # The multiplier for damage when a precision shot happens
             } 
 
-        # List of a weapon's perks
-        # [Barrel, Magazine, Sight, Style, Style]
-        self.db.perks = {'innate':None, 'barrel':None, 'mag':None, 'sight':None, 'style1':None, 'style2':None}
+        # List of a weapon's perks. References to scripts on the weapon
+        self.db.perks = {
+            'innate':None,      # The "innate" perk. Not used for anything besides exotics
+            'barrel':None,      # The barrel perk. Influences base stats
+            'mag':None,         # The magazine perk. Influences base stats
+            'sight':None,       # The sight perk. Influences base stats
+            'style1':None,      # The first style perk. Usually changes how you play
+            'style2':None       # The second style perk. Usually changes how you play
+            }
 
         # Messages for all the things that your gun does
         self.db.msg = {
