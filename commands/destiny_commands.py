@@ -197,8 +197,8 @@ class CmdEquip(BaseCommand):
                 caller.db.equipped_weapons[target.db.slot] = target
                 caller.msg("You equip the %s. %s" % (name, target.db.msg['equip']))
 
-                _name = caller.named(True)
-                name = target.named(False)
+                _name = caller.named()
+                name = target.named()
                 caller.location.msg_contents("%s hoists %s in their hands." % (_name, name), exclude=caller)
                 return
             else:

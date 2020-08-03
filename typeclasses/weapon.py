@@ -115,3 +115,9 @@ class Weapon(Object):
         stats = "\nImpact: |b%s|n" % (str_acc) + "               " + "Accuracy: |r%s|n" % (str_impact)
         
         return string + stats
+
+    def named(self):
+        _name = self.key
+        if self.db.named is False:
+                _name = "the " + _name
+        return _name

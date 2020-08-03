@@ -111,9 +111,10 @@ def damage_target(damage, weapon, target):
     if target.db.health['current'] <= 0:
         kill(target)
 
-        for x in find_scripts_by_tag(weapon, 'kill'):
-            x.restart()
-            msg_post += "\n|n" + x.db.msg['start']
+        if weapon is not None:
+            for x in find_scripts_by_tag(weapon, 'kill'):
+                x.restart()
+                msg_post += "\n|n" + x.db.msg['start']
 
     return msg_post
 
