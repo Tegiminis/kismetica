@@ -21,26 +21,16 @@ class Weapon(Object):
             'max':30,         # How much ammo the weapon has when fully loaded
             "used":5          # How much ammo the weapon uses when it fires
             }
-        
-        # All player-facing stats, used for doing damage and hit calculations and the like.
-        # These stats "modify" a weapon's archetype, or "base", stats
-        self.db.stat = {
-            'impact':50,      # Damage.
-            'accuracy':50,    # Base accuracy; 50 means no change to base accuracy
-            'stability':100,  # How much accuracy changes each time you fire; 100 means it doesn't.
-            'range':50,       # How "utilized" your weapon's range stats are; 50 means "mostly"
-            'handling':50,    # How fast you swap weapons; 50 means no change
-            'reload':50,      # How quickly you reload; 50 means no change
-            'rpm':50          # The weapon's rate of fire; 50 means no change
-            }
 
         # All basic damage- and hit-related stats
         self.db.damage = {
             'base':10,          # Base damage. The quite literal number of hit or shield points this weapon deals, absent any modifiers
+            'min': 5,           # Minimum damage dealt, not counting damage falloff
+            'max': 15,          # Maximum damage dealt
             'mult':1.0,         # Base multiplier. 1.0 means no change, and is default multiplier
-            'accuracy':1.0,     # Base accuracy. Your hit roll is multiplied by this. 1.0 means no change to the hit roll.
+            'acc':1.5,     # Base accuracy. Your hit roll is multiplied by this. 1.0 means no change to the hit roll.
             'shots':5,          # How many shots you fire at once. Each shot's accuracy is calculated independently.
-            'falloff':8.0       # Distance where damage falloff starts, out to max (where shots no longer hit)
+            'falloff':2         # Distance where damage falloff starts
         }
 
         # Innate stats related to "speed", aka action cooldowns
@@ -50,10 +40,10 @@ class Weapon(Object):
             'fire':3.0          # In seconds, time it takes for this weapon to "cool down" and be ready for use again
             }
         
-        # Innate stats related to "range", which influences your hit chances and damage falloff
+        # Innate stats related to "range", which influences your hit chances. Anything above max or below min will suffer an accuracy penalty
         self.db.range = {
-            'max':10,           # Distance, measured via room_depth, that the weapon will no longer hit the target
-            'min':1.0,          # Distance that the weapon suffers a severe accuracy penalty if the target is too close
+            'min':1,
+            'max':3          
             }
         
         # Innate stats related to "crits", aka precision shots, which multiply your damage
@@ -75,19 +65,11 @@ class Weapon(Object):
         # Messages for all the things that your gun does
         self.db.msg = {
             'miss': 'You miss!', 
-            'attack_caller': 'You shoot at %s!',
-            'attack_target': '%s shoots at you!',
-            'attack_room': '%s shoots at %s!',
+            'attack':'%s shoots at %s.',
             'equip': '',
             'kill': '%s crumples to the floor, dead.',
             'cooldown': 'You can fire again.'
             }
-
-        # Your weapon's current accuracy. Returns to base accuracy over time.
-        self.ndb.acc = 1.0
-        
-    def at_init(self):
-        self.ndb.acc = self.db.damage['accuracy']
 
     # Used for formatting the "stat bars"
     def stat_format(self, key):

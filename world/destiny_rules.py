@@ -22,28 +22,28 @@ def roll_hit(origin, target):
     # Get the weapon used, required for a good portion of the hit calculation
     slot = origin.db.equipped_held
     weapon = origin.db.equipped_weapons[slot]
-    weapon_acc = weapon.ndb.acc
+    weapon_acc = weapon.db.damage['acc']
     chance_crit = weapon.db.crit['chance']
 
-    # Find the distance between the attacker and the target's room_depth
-    dist = distance(origin, target)
-
-    # For accuracy calculations, we use range_max. 
-    # At max range, you are incapable of hitting your target ever.
-    # At half range, you have to be very unlucky to miss 
-    # At point blank range, you cannot miss.
-    range_max = weapon.db.range['max']
-    if range_max - dist > 0.0:
-        range_acc = 2.0 * (range_max - dist) / range_max
-    else:
-        range_acc = 0.0
+    # Range is simple
+    # Check the weapon's range, and the enemy's range
+    # If the weapon's range aligns with the enemy's range, there's no penalty
+    # If the range exceeds min/max, suffer an accuracy penalty (currently, 40% penalty)
+    wep_range = weapon.db.range
+    range_acc = 1.0
+    if target.db.range < wep_range['min'] or target.db.range > wep_range['max']:
+        range_acc -= 0.4
 
     # Random values for hit calculations
     # hit_roll must be > hit_chance for the player to hit
     chance_hit = random.random()
     hit_roll = random.random()
 
-    # Modify the hit roll by the weapon's accuracy and the distance between targets
+    # If you're aiming, get a 20% accuracy buff
+    if origin.db.isAiming:
+        weapon_acc += 0.2
+
+    # Modify the hit roll by the weapon's accuracy and the range penalty
     # 1.0 is unchanged roll
     # 0.0 is guaranteed miss
     # Higher is better
@@ -69,6 +69,13 @@ def combat_damage(origin, target, hit, crit):
     ele_wep = weapon.db.element
     ele_tar = target.db.shield['element']
 
+    # Roll to find damage based on weapon's min/max
+    damage = random.randint(weapon.db.damage['min'], weapon.db.damage['max'])
+
+    # Apply falloff, if relevant. Falloff is a flat 20% damage penalty
+    if weapon.db.damage['falloff'] < target.db.range:
+        damage *= 0.8
+
     # Neutral (aka physical) element damage does extra damage to normal shields and health
     if ele_wep == 'neutral':
         if ele_tar == 'neutral' or target.db.shield['current'] <= 0:
@@ -91,7 +98,7 @@ def combat_damage(origin, target, hit, crit):
 def damage_target(damage, weapon, target):
     # Actually does the nitty gritty of damaging your target
 
-    msg_post = ""       # Used for our return, which returns any damage-related perk messages
+    msg_post = ''       # Used for our return, which returns any damage-related perk messages
     t_shield = target.db.shield['current']
 
     # If the shield value is less than the damage dealt, deal it to both health and shields. Otherwise, just shields.
@@ -114,7 +121,7 @@ def damage_target(damage, weapon, target):
         if weapon is not None:
             for x in find_scripts_by_tag(weapon, 'kill'):
                 x.restart()
-                msg_post += "\n|n" + x.db.msg['start']
+                msg_post += "\n|n" + x.db.msg['send'] 
 
     return msg_post
 
@@ -131,18 +138,12 @@ def kill(origin):
     return
 
 def revive(origin):
+    origin.location.msg_contents( 'Debug: Revival started' )
+    
     # Revives the object called for the function
-    if utils.inherits_from(origin, 'typeclasses.characters.Character'):
+    if hasattr(origin, 'health'):
         origin.db.health['current'] = origin.db.health['max']
         origin.db.shield['current'] = origin.db.shield['max']
-
-    # Messages the room that the revive occurred.
-    _name = origin.named()
-    origin.location.msg_contents( ("%s revives in a glimmering beam of light." % _name).capitalize() )
-
-def distance(origin, target):
-    # Finds the distance between the room_depths of two objects
-    return abs(origin.db.room_depth - target.db.room_depth)
 
 def find_scripts_by_tag(obj, tag):
     _list = [ 

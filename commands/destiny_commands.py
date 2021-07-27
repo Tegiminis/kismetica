@@ -46,6 +46,10 @@ class CmdAttack(BaseCommand):
         else:
             caller.msg("You need to pick a target to attack.")
             return
+        
+        if target.db.state == 'dead':
+            caller.msg("You cannot attack a dead target.")
+            return
 
         msg_target = target.named()
         msg_caller = caller.named()
@@ -55,13 +59,14 @@ class CmdAttack(BaseCommand):
 
         shield_broke = False
 
-        msg_post = ""
-        _name = ""
+        msg_post = ''
+        msg_perk = ''
+        _name = ''
 
         if target:
             if utils.inherits_from(target, 'typeclasses.npc.NPC') or target.db.crucible == True:
                 # The string of "hits" used for messaging. Looks like this once everything's done: "15! 10! Miss! 10! 10!"
-                str_hits = ""
+                str_hits = ''
 
                 #Caching variables.
                 shots = _wep.db.damage['shots'] 
@@ -76,7 +81,7 @@ class CmdAttack(BaseCommand):
                     if _dmg <= 0:
                         str_hits += "|nMiss! "                     # If you don't damage something, it's obviously a miss! For now.
                     else:
-                        msg_post += destiny_rules.damage_target(_dmg, _wep, target)         # Damage the target and return any perk-related messages
+                        msg_perk += destiny_rules.damage_target(_dmg, _wep, target)         # Damage the target and return any perk-related messages
                         total += _dmg                                                       # Add the damage you did to the total (for messaging)
 
                         # Formatting based on if it's a crit or not
@@ -101,20 +106,21 @@ class CmdAttack(BaseCommand):
                 
                 # Messaging to the shooter, target, and room, respectively.
                 caller.msg(
-                    ( "\n|n" + (_wep.db.msg['attack_caller'] % msg_target).capitalize() ) +      # The base attack string
+                    ( "\n|n" + (_wep.db.msg['attack'] % ('you',msg_target)).capitalize() ) +      # The base attack string
                     ( "\n|n" + str_hits ) +                                # The hits (10! 15! Miss!)
                     ( "\n|n" + " = %s damage!" % str(total) ) +            # Total damage dealt
-                    ( "\n|n" + msg_post)                                   # Any "post" messages, such as status changes (like death)
+                    ( "\n|n" + msg_post) +                                 # Any "post" messages, such as status changes (like death)
+                    ( "\n|n" + msg_perk)                                   # Any "perk" messages
                     )
                 
                 target.msg(
-                    ( "\n|n" + (_wep.db.msg['attack_target'] % msg_caller).capitalize() ) +
+                    ( "\n|n" + (_wep.db.msg['attack'] % (msg_caller,'you')).capitalize() ) +
                     ( "\n|n" + str_hits ) +
                     ( "\n|n" + " = %s damage!" % str(total) )
                     )
 
                 caller.location.msg_contents(
-                    ( "\n|n" + (_wep.db.msg['attack_room'] % (msg_caller, msg_target)).capitalize() ) +
+                    ( "\n|n" + (_wep.db.msg['attack'] % (msg_caller, msg_target)).capitalize() ) +
                     ( "\n|n" + str_hits ) +
                     ( "\n|n" + " = %s damage!" % str(total) ), 
                     exclude=(caller, target)

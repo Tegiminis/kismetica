@@ -18,6 +18,7 @@ class NPC(Character):
             ],
             'despawn': "%s crumbles away into a fine dust." % self.named(),
             'advance': "%s lumbers forward, stomping the ground with chitinous feet." % self.named(),
+            'respawn': '%s revives in a glittering beam of light.' % self.named(),
             'retreat': "%s backs up to find a better position." % self.named()
         }
 
@@ -38,12 +39,14 @@ class NPC(Character):
             'name':'Hive Boomer',
             'element':'arc',
             'damage':20,
+            'acc': 1.5,
             'msg': '%s shoots %s with a %s.',
             'cooldown': 6
 
         }
 
-        self.db.ideal_range = 30    # Range, in room_depth, that the AI will try to reach before shooting
+        # The range the NPC always sits at. You suffer an accuracy penalty shooting at enemies outside your range
+        self.db.range = 2
 
         # States for the state machine
         self.db.state = 'active'
@@ -73,22 +76,25 @@ class NPC(Character):
         """
         Search nearby rooms for the specified target. If no
         target is specified, search nearby rooms for any target.
+
+        Returns: Destination of existing or new target
         """
+        self.location.msg_contents('Debug: Hunting target to nearby rooms')
+        
         exits = self.find_exits()
+        self.location.msg_contents('Debug: Hunting exits found %s' % exits)
+        dest = None
         if exits:
-            # scan the exits destination for targets
+            # scan the exit destinations for targets
             for exi in exits:
                 targets = self.find_targets(exi.destination)
-                if target != None and target in targets:
-                    # Target found. Move there.
-                    self.move_to(exi.destination)
-                    return True
-                elif targets:
-                    self.db.target = targets[0]
-                    self.move_to(exi.destination)
-                    return True           
-        self.obj.location.msg_contents('Debug: No new targets found, going back on patrol')
-        return False
+                if targets != None:             # If targets were found
+                    if target in targets:           # If existing target is found in the room, set it as your next destination
+                        dest = exi
+                elif targets == None:           # If no targets were found, return None (typically, return to patrol)
+                    dest = None
+                    self.location.msg_contents('Debug: No hunting target found')
+        return dest
     
     def patrol_move(self):
         """
@@ -97,13 +103,11 @@ class NPC(Character):
         # target found, look for an exit.
         exits = self.find_exits()
         if exits:
-            self.location.msg_contents('Debug: Found an exit! %s' % str(exits))
             if len(exits) == 1:
                 self.move_to(exits[0].destination)
             else:
                 self.move_to(random.choice(exits).destination)
         else:
-            self.location.msg_contents('Debug: No exit found!')
             # no exits! teleport to home to get away.
             self.move_to(self.home)
     
@@ -118,8 +122,6 @@ class NPC(Character):
 
         chance_hit = random.random()
         hit_roll = random.random()
-
-        self.location.msg_contents("Debug: Hit Chance %f | Roll: %f" % (chance_hit,hit_roll))
 
         if chance_hit >= hit_roll:
             damage = weapon['damage']

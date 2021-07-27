@@ -70,11 +70,13 @@ class CmdNPCState(BaseCommand):
     Changes the NPC's state
 
     Usage:
-      state <target> <state> <True/False>
+      state <target> <state>
 
     NPCs have various "states" that they can exist in
     depending on the type of NPC. This command allows
-    builders to change an NPC state on the fly.  
+    builders to change an NPC state on the fly.
+
+    Functionally identical to set npc/state = <value>  
     """
     key = "npcstate"
     aliases = ["state"]
