@@ -9,6 +9,8 @@ class Weapon(Object):
     def at_object_creation(self):
         "Called when object is first created"
 
+        self.db.buffhandler = {}
+        
         self.db.slot = 'kinetic'
         self.db.element = 'neutral'
 
@@ -28,7 +30,7 @@ class Weapon(Object):
             'min': 5,           # Minimum damage dealt, not counting damage falloff
             'max': 15,          # Maximum damage dealt
             'mult':1.0,         # Base multiplier. 1.0 means no change, and is default multiplier
-            'acc':1.5,     # Base accuracy. Your hit roll is multiplied by this. 1.0 means no change to the hit roll.
+            'acc':1.5,          # Base accuracy. Your hit roll is multiplied by this. 1.0 means no change to the hit roll.
             'shots':5,          # How many shots you fire at once. Each shot's accuracy is calculated independently.
             'falloff':2         # Distance where damage falloff starts
         }

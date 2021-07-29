@@ -3,6 +3,7 @@ from random import randint
 from typeclasses import characters as Character
 from evennia import utils
 import time
+import typeclasses.buffhandler as bh
 
 slot = {'kinetic':0 , 'energy':1 , 'power':2}
 element = {'neutral':0 , 'void':1 , 'solar':2, 'arc':3}
@@ -20,8 +21,8 @@ def roll_hit(origin, target):
     Returns a tuple: was it a
     """
     # Get the weapon used, required for a good portion of the hit calculation
-    slot = origin.db.equipped_held
-    weapon = origin.db.equipped_weapons[slot]
+    slot = origin.db.held
+    weapon = origin.db.weapons[slot]
     weapon_acc = weapon.db.damage['acc']
     chance_crit = weapon.db.crit['chance']
 
@@ -63,11 +64,9 @@ def combat_damage(origin, target, hit, crit):
     if hit is False:
         return 0
 
-    slot = origin.db.equipped_held
-    weapon = origin.db.equipped_weapons[slot]
+    slot = origin.db.held
+    weapon = origin.db.weapons[slot]
     damage = weapon.db.damage['base']
-    ele_wep = weapon.db.element
-    ele_tar = target.db.shield['element']
 
     # Roll to find damage based on weapon's min/max
     damage = random.randint(weapon.db.damage['min'], weapon.db.damage['max'])
@@ -76,22 +75,13 @@ def combat_damage(origin, target, hit, crit):
     if weapon.db.damage['falloff'] < target.db.range:
         damage *= 0.8
 
-    # Neutral (aka physical) element damage does extra damage to normal shields and health
-    if ele_wep == 'neutral':
-        if ele_tar == 'neutral' or target.db.shield['current'] <= 0:
-            damage = round(damage * 1.05)
-
-    # All elemental damage deals increased damage to enemies with any elemental shields
-    # More damage if the elements match
-    else:
-        if ele_wep == ele_tar:
-            damage = round(damage * 1.2)
-        elif ele_tar != 'neutral':
-            damage = round(damage * 1.05)
-
     # All damage is multiplied by crit
     if crit is True:
         damage = round(damage * weapon.db.crit['mult'])
+
+    # Finally, do two stat checks: first against the weapon's bonuses, then against the player's
+    damage = bh.stat_check(weapon, damage, 'damage')
+    damage = bh.stat_check(origin, damage, 'damage')
 
     return damage
 

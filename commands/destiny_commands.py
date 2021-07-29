@@ -28,11 +28,11 @@ class CmdAttack(BaseCommand):
         caller = self.caller    
         target = None
         now = time.time()
-        slot = caller.db.equipped_held
+        slot = caller.db.held
 
         if caller.db.cooldowns['basic'] is not None:
             cd = caller.db.cooldowns['basic']
-            rpm = caller.db.equipped_weapons[slot].db.speed['fire']
+            rpm = caller.db.weapons[slot].db.speed['fire']
 
         if cd and now - cd < rpm:
             caller.msg("You cannot fire again so quickly!")
@@ -54,8 +54,8 @@ class CmdAttack(BaseCommand):
         msg_target = target.named()
         msg_caller = caller.named()
 
-        slot = caller.db.equipped_held
-        _wep = caller.db.equipped_weapons[slot]
+        slot = caller.db.held
+        _wep = caller.db.weapons[slot]
 
         shield_broke = False
 
@@ -200,7 +200,7 @@ class CmdEquip(BaseCommand):
 
         if target:
             if target.location.id == caller.id:
-                caller.db.equipped_weapons[target.db.slot] = target
+                caller.db.weapons[target.db.slot] = target
                 caller.msg("You equip the %s. %s" % (name, target.db.msg['equip']))
 
                 _name = caller.named()
@@ -239,7 +239,7 @@ class CmdSwitch(BaseCommand):
             caller.msg("You must pick a slot to equip!")
             return
 
-        caller.db.equipped_held = self.args
+        caller.db.held = self.args
 
 class CmdPTest(BaseCommand):
     """

@@ -22,6 +22,9 @@ class Character(DefaultCharacter):
         
         self.scripts.stop()
 
+        # The dictionary we use to handle all buff stuff
+        self.db.buffhandler = {}
+
         # Health values
         # [Current, Max]
         self.db.health = {"current":100, "max":100}
@@ -30,19 +33,11 @@ class Character(DefaultCharacter):
         # Must be manually enabled for named NPCs
         self.db.named = False
 
-        # Shield values
-        # [Current, Max, Base Regen, Delay Until Regen, Last Time Hit, Element]
-        self.db.shield = {"current":100, "max":100, "regen":10, "delay":5, "lasthit":0, "element":"neutral"}
+        # Shield mechanics. Commented out for the time being while I figure out what to do with it.
+        # self.db.shield = {"current":100, "max":100, "regen":10, "delay":5, "lasthit":0, "element":"neutral"}
 
-        # The character's "room depth", or how far they are into the room
-        # At the moment, your room_depth is 0 when you enter a room, and can increase as you take movement actions
-        # Good compromise between simplicity and allowing for range mechanics
-        # Distance between objects is calculated using room_depth
-        # room_depth's unit value is "meters", not that it matters
-        self.db.room_depth = 0.0
-
-        if not self.scripts.get('shield_regen'):
-            self.scripts.add(dscript.ShieldRegen)
+        # if not self.scripts.get('shield_regen'):
+        #     self.scripts.add(dscript.ShieldRegen)
 
     def at_init(self):
         # Used if you use attack someone or use 'target'
@@ -93,22 +88,22 @@ class PlayerCharacter(Character):
         self.db.named = True
 
         # Your held weapon. What you shoot with when you use 'attack'
-        self.db.equipped_held = 'kinetic'
+        self.db.held = 'kinetic'
 
         # List of character's equipped weapons
         # [Kinetic, Energy, Power]
-        self.db.equipped_weapons = {"kinetic":None, "energy":None, "power":None}
+        self.db.weapons = {"kinetic":None, "energy":None, "power":None}
 
         # List of character's equipped armor
         # [Head, Arms, Body, Legs, Class]
         self.db.equipped_armor = {"head":None, "arms":None, "body":None, "legs":None, "class":None}
 
         # Are you capable of being attacked, aka in PvP?
-        self.db.crucible = False
+        self.db.pvp = False
 
         # Proficiencies. They determine what access to skills you have. 
         # Each proficiency is a linear level progression
-        self.db.proficiency = {
+        self.db.skills = {
             'rifle': {'level':0, 'xp':0}
         }
         

@@ -1,3 +1,5 @@
+from evennia.utils.evmenu import EvMenu
+
 def _set_name(caller, raw_string, **kwargs):
     caller.db.chargen["name"] = raw_string
 
