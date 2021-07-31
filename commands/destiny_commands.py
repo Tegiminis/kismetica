@@ -75,7 +75,7 @@ class CmdAttack(BaseCommand):
                 # Fires however many shots you tell it to. AKA 5 shots = 5 loops
                 for x in range(shots):
                     _hit = destiny_rules.roll_hit(caller, target)               # The hit roll
-                    _dmg = destiny_rules.combat_damage(caller, target, *_hit)   # The damage roll
+                    _dmg = destiny_rules.calculate_damage(caller, target, *_hit)   # The damage roll
                     _prv = target.db.shield['current']                          # Used to determine if the target's shield was already broken
 
                     if _dmg <= 0:
@@ -262,3 +262,4 @@ class CmdPTest(BaseCommand):
         caller = self.caller
         _str = lockfuncs.attr(self.caller, self.caller, "locktest", "8", compare="gt")
         caller.msg("Attr() returned: %s" % _str)
+

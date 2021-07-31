@@ -1,7 +1,7 @@
 from evennia import lockfuncs
 from evennia import Command as BaseCommand
 from world import destiny_rules
-from typeclasses import characters as Character
+from typeclasses import characters as Character, buffhandler as buff, perk as perk
 from evennia import utils
 import time
 
@@ -90,3 +90,71 @@ class CmdNPCState(BaseCommand):
         args = self.args
 
         return
+
+class CmdBuff(BaseCommand):
+    """
+    Buff a target.
+
+    Usage:
+      buff <target> <buff reference>
+
+    Applies the specified buff to the target. All buffs are defined in bufflist.py   
+    """
+    key = "buff"
+    aliases = ["buff"]
+
+    def parse(self):
+        self.args = self.args.split()
+
+    def func(self):
+        caller = self.caller    
+        target = None
+        now = time.time()
+
+        if self.args:
+            target = caller.search(self.args[0])
+            caller.ndb.target = target
+        elif caller.ndb.target:
+            target = caller.ndb.target
+        else:
+            caller.msg("You need to pick a target to buff.")
+            return
+
+        if target:
+            buff.add_buff(target.db.buffhandler, self.args[1])
+            pass
+
+class CmdPerk(BaseCommand):
+    """
+    Add perk to a target.
+
+    Usage:
+      perk <target> <perk reference>
+
+    Applies the specified buff to the target. All perks are defined in perkinit.py   
+    """
+    key = "perk"
+    aliases = ["perk"]
+
+    def parse(self):
+        self.args = self.args.split()
+
+    def func(self):
+        caller = self.caller    
+        target = None
+        now = time.time()
+
+        length = len(self.args)
+
+        if length == 2:
+            target = caller.search(self.args[0])
+            caller.ndb.target = target
+        elif length == 1:
+            caller.msg("You need to pick a perk to apply.")
+            return
+        else:
+            caller.msg("You need to pick a target.")
+            return
+
+        if target:
+            perk.add_perk(target.db.perkhandler, self.args[1])

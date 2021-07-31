@@ -88,10 +88,10 @@ class NPC(Character):
             # scan the exit destinations for targets
             for exi in exits:
                 targets = self.find_targets(exi.destination)
-                if targets != None:             # If targets were found
+                if targets != None:                 # If targets were found
                     if target in targets:           # If existing target is found in the room, set it as your next destination
                         dest = exi
-                elif targets == None:           # If no targets were found, return None (typically, return to patrol)
+                elif targets == None:               # If no targets were found, return None (typically, return to patrol)
                     dest = None
                     self.location.msg_contents('Debug: No hunting target found')
         return dest

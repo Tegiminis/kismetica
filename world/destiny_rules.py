@@ -11,20 +11,20 @@ ammo = {'primary':0 , 'special':1 , 'power':2}
 armor = {'head':0 , 'arms':1 , 'chest':2, 'legs':3, 'class':4}
 
 def roll_hit(origin, target):
-    """
+    '''
     Rolls to hit a target. This function requires the target to have a ranged weapon.
     
     Args:
         origin: The attacker.
         target: The defender
 
-    Returns a tuple: was it a
-    """
+    Returns a tuple of bools: was hit, and was crit
+    '''
     # Get the weapon used, required for a good portion of the hit calculation
     slot = origin.db.held
     weapon = origin.db.weapons[slot]
-    weapon_acc = weapon.db.damage['acc']
-    chance_crit = weapon.db.crit['chance']
+    accuracy = weapon.db.damage['acc']
+    crit = weapon.db.crit['chance']
 
     # Range is simple
     # Check the weapon's range, and the enemy's range
@@ -42,24 +42,22 @@ def roll_hit(origin, target):
 
     # If you're aiming, get a 20% accuracy buff
     if origin.db.isAiming:
-        weapon_acc += 0.2
+        accuracy += 0.2
+
+    # Apply any buffs from your weapon and player
+    bh.check_buffs(weapon, accuracy, 'accuracy')
+    bh.check_buffs(origin, accuracy, 'accuracy')
 
     # Modify the hit roll by the weapon's accuracy and the range penalty
     # 1.0 is unchanged roll
     # 0.0 is guaranteed miss
     # Higher is better
-    hit_roll = hit_roll * weapon_acc * range_acc
+    hit_roll = hit_roll * accuracy
 
-    return (hit_roll > chance_hit, hit_roll > chance_hit * chance_crit)
+    return (hit_roll > chance_hit, hit_roll > chance_hit * crit)
 
-def combat_damage(origin, target, hit, crit):
-    ###
-    # Damages the target based on the caller's weapon and a bunch of damage calculations.
-    # Damage is modified by:
-    # - Precision damage multiplier
-    # - Element type
-    # - Damage falloff
-    ###
+def calculate_damage(origin, target, hit, crit):
+    '''Calculates damage against a target.'''
 
     if hit is False:
         return 0
@@ -80,8 +78,8 @@ def combat_damage(origin, target, hit, crit):
         damage = round(damage * weapon.db.crit['mult'])
 
     # Finally, do two stat checks: first against the weapon's bonuses, then against the player's
-    damage = bh.stat_check(weapon, damage, 'damage')
-    damage = bh.stat_check(origin, damage, 'damage')
+    damage = bh.check_buffs(weapon, damage, 'damage')
+    damage = bh.check_buffs(origin, damage, 'damage')
 
     return damage
 
@@ -122,9 +120,6 @@ def kill(origin):
         for x in find_scripts_by_tag(origin, 'ai'):
             x.restart( interval=origin.db.timer['dead'], start_delay=True )
 
-    _sc = origin.scripts.get('shield_regen')
-    _sc[0].pause()
-
     return
 
 def revive(origin):
@@ -143,3 +138,13 @@ def find_scripts_by_tag(obj, tag):
     ]
 
     return _list
+
+def check_time(start, end, duration):
+    '''Check to see if duration time has passed between the start and end time.
+    Used for checking cooldowns or buff timing.
+    
+    Always returns false if duration is -1 (for things that last forever).'''
+
+    if duration == -1 or duration == None or start == None or end == None: return False
+    if duration < end - start: return True
+    else: return False

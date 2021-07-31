@@ -19,3 +19,5 @@ class DestinyBuilderCmdSet(CmdSet):
 
     def at_cmdset_creation(self):     
         self.add(builder.CmdAlter())
+        self.add(builder.CmdBuff())
+        self.add(builder.CmdPerk())

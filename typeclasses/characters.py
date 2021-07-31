@@ -9,7 +9,6 @@ creation commands.
 """
 import commands
 from evennia import DefaultCharacter
-import typeclasses.destiny_scripts as dscript
 
 # destiny_rules is the rules module that contains all combat calculations, dicts, and other important doodads
 from world import destiny_rules
@@ -22,8 +21,9 @@ class Character(DefaultCharacter):
         
         self.scripts.stop()
 
-        # The dictionary we use to handle all buff stuff
+        # The dictionaries we use for buffs and perks
         self.db.buffhandler = {}
+        self.db.perkhandler = {}
 
         # Health values
         # [Current, Max]
