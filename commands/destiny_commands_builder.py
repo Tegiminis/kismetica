@@ -1,7 +1,9 @@
 from evennia import lockfuncs
 from evennia import Command as BaseCommand
 from world import destiny_rules
-from typeclasses import characters as Character, buffhandler as buff, perk as perk
+from typeclasses import characters as Character
+from typeclasses import buffhandler as buff
+from typeclasses import perk as perk
 from evennia import utils
 import time
 
