@@ -7,7 +7,8 @@ is setup to be the "default" character type created by the default
 creation commands.
 
 """
-import commands
+import commands.default_cmdsets as default
+import commands.destiny_cmdsets as destiny
 from evennia import DefaultCharacter
 
 # destiny_rules is the rules module that contains all combat calculations, dicts, and other important doodads
@@ -22,8 +23,8 @@ class Character(DefaultCharacter):
         self.scripts.stop()
 
         # The dictionaries we use for buffs and perks
-        self.db.buffhandler = {}
-        self.db.perkhandler = {}
+        self.db.buffs = {}
+        self.db.perks = {}
 
         # Health values
         # [Current, Max]
@@ -80,9 +81,9 @@ class PlayerCharacter(Character):
         
         super().at_object_creation()
 
-        self.cmdset.add(commands.default_cmdsets.CharacterCmdSet, permanent=True)
-        self.cmdset.add(commands.destiny_cmdsets.DestinyBasicCmdSet, permanent=True)
-        self.cmdset.add(commands.destiny_cmdsets.DestinyBuilderCmdSet, permanent=True)
+        self.cmdset.add(default.CharacterCmdSet, permanent=True)
+        self.cmdset.add(destiny.DestinyBasicCmdSet, permanent=True)
+        self.cmdset.add(destiny.DestinyBuilderCmdSet, permanent=True)
 
         # Are you a "Named" character? Players start out as true.
         self.db.named = True

@@ -4,6 +4,7 @@ from typeclasses import characters as Character
 from evennia import utils
 import time
 import typeclasses.buffhandler as bh
+import typeclasses.perkhandler as ph
 
 slot = {'kinetic':0 , 'energy':1 , 'power':2}
 element = {'neutral':0 , 'void':1 , 'solar':2, 'arc':3}
@@ -45,19 +46,20 @@ def roll_hit(origin, target):
         accuracy += 0.2
 
     # Apply any buffs from your weapon and player
-    bh.check_buffs(weapon, accuracy, 'accuracy')
-    bh.check_buffs(origin, accuracy, 'accuracy')
+    # bh.check_buffs(weapon, accuracy, 'accuracy')
+    # bh.check_buffs(origin, accuracy, 'accuracy')
 
     # Modify the hit roll by the weapon's accuracy and the range penalty
     # 1.0 is unchanged roll
     # 0.0 is guaranteed miss
     # Higher is better
     hit_roll = hit_roll * accuracy
-
     return (hit_roll > chance_hit, hit_roll > chance_hit * crit)
 
 def calculate_damage(origin, target, hit, crit):
     '''Calculates damage against a target.'''
+
+    origin.msg('Hit: ' + str(hit))
 
     if hit is False:
         return 0
@@ -69,6 +71,8 @@ def calculate_damage(origin, target, hit, crit):
     # Roll to find damage based on weapon's min/max
     damage = random.randint(weapon.db.damage['min'], weapon.db.damage['max'])
 
+    origin.msg('Base Damage: ' + str(damage))
+
     # Apply falloff, if relevant. Falloff is a flat 20% damage penalty
     if weapon.db.damage['falloff'] < target.db.range:
         damage *= 0.8
@@ -77,39 +81,30 @@ def calculate_damage(origin, target, hit, crit):
     if crit is True:
         damage = round(damage * weapon.db.crit['mult'])
 
+    origin.msg('Crit Damage: ' + str(damage))
+
     # Finally, do two stat checks: first against the weapon's bonuses, then against the player's
     damage = bh.check_buffs(weapon, damage, 'damage')
     damage = bh.check_buffs(origin, damage, 'damage')
 
+    origin.msg('Buffed Damage: ' + str(damage))
+
+    # Trigger any perks that function on hit
+    ph.trigger_perk(origin, 'hit')
+
     return damage
 
-def damage_target(damage, weapon, target):
-    # Actually does the nitty gritty of damaging your target
+def damage_target(damage, target):
+    # Actually does the nitty gritty of damaging a target
 
     msg_post = ''       # Used for our return, which returns any damage-related perk messages
-    t_shield = target.db.shield['current']
 
-    # If the shield value is less than the damage dealt, deal it to both health and shields. Otherwise, just shields.
-    if damage > target.db.shield['current']:
-        t_shield = target.db.shield['current']
-        target.db.shield['current'] = 0
-        damage -= t_shield
-        target.db.health['current'] -= damage
-    else:
-        target.db.shield['current'] -= damage
-
-    # Trigger any on-hit effects on the target
-    for x in find_scripts_by_tag(target, 'on_hit'):
-        x.restart( repeats=1 )
+    # Damage the target's health
+    target.db.health['current'] -= damage
 
     # If the target has 0 health, kill it
     if target.db.health['current'] <= 0:
         kill(target)
-
-        if weapon is not None:
-            for x in find_scripts_by_tag(weapon, 'kill'):
-                x.restart()
-                msg_post += "\n|n" + x.db.msg['send'] 
 
     return msg_post
 

@@ -3,6 +3,7 @@ from evennia import Command as BaseCommand
 from world import destiny_rules
 from typeclasses import characters as Character
 from evennia import utils
+from typeclasses.buffhandler import view_buffs
 import time
 
 class CmdAttack(BaseCommand):
@@ -81,7 +82,7 @@ class CmdAttack(BaseCommand):
                     if _dmg <= 0:
                         str_hits += "|nMiss! "                     # If you don't damage something, it's obviously a miss! For now.
                     else:
-                        msg_perk += destiny_rules.damage_target(_dmg, _wep, target)         # Damage the target and return any perk-related messages
+                        msg_perk += destiny_rules.damage_target(_dmg, target)         # Damage the target and return any perk-related messages
                         total += _dmg                                                       # Add the damage you did to the total (for messaging)
 
                         # Formatting based on if it's a crit or not
@@ -240,6 +241,43 @@ class CmdSwitch(BaseCommand):
             return
 
         caller.db.held = self.args
+
+class CmdCheck(BaseCommand):
+    """
+    Checks a target's buffs.
+
+    Usage:
+        check <target>
+    """
+    key = "check"
+    aliases = []
+
+    def parse(self):
+        self.args = self.args.strip()
+
+    def func(self):
+
+        caller = self.caller
+ 
+        if not self.args:
+            buffs = view_buffs(caller)
+            if buffs:
+                msg = 'You are currently buffed by: \n|n\n|n'
+                for x in buffs:
+                    msg += x + "\n|n"
+                caller.msg(msg)
+        
+        target = caller.search(self.args)
+        buffs = view_buffs(target)
+        if buffs:
+            msg = 'You are currently buffed by: \n|n\n|n'
+            for x in buffs:
+                msg += x + "\n|n"
+            caller.msg(msg)
+        else:
+            caller.msg('There are no buffs on the target.')
+        
+        
 
 class CmdPTest(BaseCommand):
     """

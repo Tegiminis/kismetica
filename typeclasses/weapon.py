@@ -28,11 +28,10 @@ class Weapon(Object):
         # All basic damage- and hit-related stats
         self.db.damage = {
             'base':10,          # Base damage. The quite literal number of hit or shield points this weapon deals, absent any modifiers
-            'min':5,            # Minimum damage dealt, not counting damage falloff
-            'max':15,           # Maximum damage dealt
-            'mult':1.0,         # Base multiplier. 1.0 means no change, and is default multiplier
+            'min':10,            # Minimum damage dealt, not counting damage falloff
+            'max':10,           # Maximum damage dealt
             'acc':1.5,          # Base accuracy. Your hit roll is multiplied by this. 1.0 means no change to the hit roll.
-            'shots':5,          # How many shots you fire at once. Each shot's accuracy is calculated independently.
+            'shots':1,          # How many shots you fire at once. Each shot's accuracy is calculated independently.
             'falloff':2         # Distance where damage falloff starts
         }
 

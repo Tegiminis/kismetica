@@ -1,6 +1,6 @@
 from evennia import CmdSet
-from commands import destiny_commands as basic
-from commands import destiny_commands_builder as builder
+import commands.destiny_commands as basic
+import commands.destiny_commands_builder as builder
 
 class DestinyBasicCmdSet(CmdSet):
         
@@ -12,6 +12,7 @@ class DestinyBasicCmdSet(CmdSet):
         self.add(basic.CmdEquip())
         self.add(basic.CmdSwitch())
         self.add(basic.CmdPTest())
+        self.add(basic.CmdCheck())
 
 class DestinyBuilderCmdSet(CmdSet):
         
