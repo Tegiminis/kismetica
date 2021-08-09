@@ -1,4 +1,6 @@
-import typeclasses.handlers.effecthandler as eh
+from typeclasses.context import BuffContext, generate_context
+import typeclasses.handlers.buffhandler as bh
+import typeclasses.handlers.perkhandler as ph
 from typeclasses.perk import Effect
 import random
     
@@ -16,13 +18,15 @@ class Exploit(Effect):
     unique = False
     maxstacks = 20
 
-    def on_trigger(self, context):
-        handler: dict = context.db.effects
-        chance = handler['exploit']['stacks'] / 20
+    def on_trigger(self, context: BuffContext) -> BuffContext:
+        chance = context.stacks / 20
         roll = random.random()
 
-        if roll > chance:
-            eh.add_effect(context, 'exploited')
+        if chance > roll:
+            bh.add_buff(context.actor, context.actee, 'exploited')
+            bh.remove_buff(context.actor, context.actee, 'exploit')
+        
+        return context
 
-    def on_remove(self, context):
-        context.msg('The bloodlust fades.')
+    def on_expire(self, context: BuffContext) -> str:
+        context.actor.msg("The opportunity passes.")

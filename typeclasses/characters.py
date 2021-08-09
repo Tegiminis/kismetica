@@ -11,8 +11,8 @@ import commands.default_cmdsets as default
 import commands.destiny_cmdsets as destiny
 from evennia import DefaultCharacter
 
-# destiny_rules is the rules module that contains all combat calculations, dicts, and other important doodads
-from world import destiny_rules
+# The rules module that contains all combat calculations, dicts, and other important doodads
+from world import rules
 
 class Character(DefaultCharacter):
 
@@ -91,11 +91,7 @@ class PlayerCharacter(Character):
         self.db.named = True
 
         # Your held weapon. What you shoot with when you use 'attack'
-        self.db.held = 'kinetic'
-
-        # List of character's equipped weapons
-        # [Kinetic, Energy, Power]
-        self.db.weapons = {"kinetic":None, "energy":None, "power":None}
+        self.db.held = None
 
         # List of character's equipped armor
         # [Head, Arms, Body, Legs, Class]

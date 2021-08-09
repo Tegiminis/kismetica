@@ -1,3 +1,5 @@
+import copy
+
 class Context():
     '''A container for "context" information. Base class is a relation between two objects: actor and acted upon.'''
     actor = None
@@ -7,9 +9,49 @@ class Context():
         self.actor = actor
         self.actee = actee
 
-class HitContext(Context):
-    '''A container for an individual "hit context", which includes information about the weapon, target, etc.'''
-    pass
+class DamageContext(Context):
+    '''A container for an individual "damage context", which includes a reference to a weapon and the amount of damage done.'''
+    damage = 0
+    weapon = None
 
-def generate_context() -> Context:
-    pass
+    def __init__(self, actor, actee, weapon, damage) -> None:
+        self.actor = actor
+        self.actee = actee
+        self.weapon = weapon
+        self.damage = damage
+
+class BuffContext(Context):
+    '''A container for an individual "buff context", which includes the dictionary key of the buff that was created, stacked, or otherwise accessed.'''
+    handler = None
+    id = None
+    ref = None
+    duration = None
+    stacks = None
+    start = None
+
+    def __init__(self, actor, actee, handler, id) -> None:
+        self.actor = actor
+        self.actee = actee
+        self.handler = handler
+        self.id = id
+        if id in handler.keys():
+            self.ref = handler[id]['ref']
+            self.duration = handler[id]['duration']
+            self.stacks = handler[id]['stacks']
+            self.start = handler[id]['start']
+
+def generate_context(actee=None, actor=None, damage=None, weapon=None, buff=None, handler=None) -> Context:
+    '''Wrapper function for generating contexts. Takes a type and named arguments to create the context.'''
+
+    if not actor: actor = actee
+
+    context = None
+
+    if damage or weapon:
+        context = DamageContext(actor, actee, weapon, damage)
+    elif buff or handler:
+        context = BuffContext(actor, actee, handler, buff)
+    else:
+        context = Context(actor, actee)
+
+    return context

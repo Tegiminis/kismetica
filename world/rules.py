@@ -1,3 +1,4 @@
+from typeclasses.context import generate_context
 from typeclasses.buff import Buff
 import random
 from random import randint
@@ -7,27 +8,29 @@ from typeclasses.objects import Object
 import time
 import typeclasses.handlers.buffhandler as bh
 import typeclasses.handlers.perkhandler as ph
-import typeclasses.handlers.effecthandler as eh
-import typeclasses.handlers.traithandler as th
 
 slot = {'kinetic':0 , 'energy':1 , 'power':2}
 element = {'neutral':0 , 'void':1 , 'solar':2, 'arc':3}
 ammo = {'primary':0 , 'special':1 , 'power':2}
 armor = {'head':0 , 'arms':1 , 'chest':2, 'legs':3, 'class':4}
 
-def roll_hit(origin, target):
+def attack(attacker, defender):
+    '''Attacks the defender. Used by the "attack" command and NPC attacks. Attacker must have a weapon in db.held, otherwise this command will return an error.'''
+
+    pass
+
+def roll_hit(attacker, defender):
     '''
-    Rolls to hit a target. This function requires the target to have a ranged weapon.
+    Rolls to hit a defender. This function requires the attacker to have a ranged weapon.
     
     Args:
-        origin: The attacker.
-        target: The defender
+        attacker: The attacker.
+        defender: The defender.
 
     Returns a tuple of bools: was hit, and was crit
     '''
     # Get the weapon used, required for a good portion of the hit calculation
-    slot = origin.db.held
-    weapon = origin.db.weapons[slot]
+    weapon = attacker.db.held
     accuracy = weapon.db.damage['acc']
     crit = weapon.db.crit['chance']
 
@@ -37,7 +40,7 @@ def roll_hit(origin, target):
     # If the range exceeds min/max, suffer an accuracy penalty (currently, 40% penalty)
     wep_range = weapon.db.range
     range_acc = 1.0
-    if target.db.range < wep_range['min'] or target.db.range > wep_range['max']:
+    if defender.db.range < wep_range['min'] or defender.db.range > wep_range['max']:
         range_acc -= 0.4
 
     # Random values for hit calculations
@@ -46,12 +49,12 @@ def roll_hit(origin, target):
     hit_roll = random.random()
 
     # If you're aiming, get a 20% accuracy buff
-    if origin.db.isAiming:
+    if attacker.db.isAiming:
         accuracy += 0.2
 
     # Apply any buffs from your weapon and player
-    accuracy = bh.check_buffs(weapon, accuracy, 'accuracy')
-    accuracy = bh.check_buffs(origin, accuracy, 'accuracy')
+    # accuracy = check_stat_mods(weapon, accuracy, 'accuracy')
+    # accuracy = check_stat_mods(attacker, accuracy, 'accuracy')
 
     # Modify the hit roll by the weapon's accuracy and the range penalty
     # 1.0 is unchanged roll
@@ -60,48 +63,45 @@ def roll_hit(origin, target):
     hit_roll = hit_roll * accuracy
     return (hit_roll > chance_hit, hit_roll > chance_hit * crit)
 
-def calculate_damage(origin, target, hit, crit):
-    '''Calculates damage against a target.'''
-
-    origin.msg('Hit: ' + str(hit))
+def calculate_damage(attacker, defender, hit, crit) -> float:
+    '''Calculates damage against a defender.'''
 
     if hit is False:
-        return 0
+        return 0.0
 
-    slot = origin.db.held
-    weapon = origin.db.weapons[slot]
+    weapon = attacker.db.held
     damage = weapon.db.damage['base']
 
     # Roll to find damage based on weapon's min/max
     damage = random.randint(weapon.db.damage['min'], weapon.db.damage['max'])
 
-    origin.msg('Base Damage: ' + str(damage))
+    # attacker.msg('Base Damage: ' + str(damage))
 
     # Apply falloff, if relevant. Falloff is a flat 20% damage penalty
-    if weapon.db.damage['falloff'] < target.db.range:
+    if weapon.db.damage['falloff'] < defender.db.range:
         damage *= 0.8
 
     # All damage is multiplied by crit
     if crit is True:
         damage = round(damage * weapon.db.crit['mult'])
 
-    origin.msg('Crit Damage: ' + str(damage))
+    # attacker.msg('Crit Damage: ' + str(damage))
 
     # Finally, do two stat checks: first against the weapon's bonuses, then against the player's
-    damage = bh.check_buffs(weapon, damage, 'damage')
-    damage = bh.check_buffs(origin, damage, 'damage')
+    weapon_buffed = check_stat_mods(weapon, damage, 'damage')
+    damage = weapon_buffed
 
-    origin.msg('Buffed Damage: ' + str(damage))
-
-    # Trigger any perks that function on hit
+    attacker_buffed = check_stat_mods(attacker, damage, 'damage')
+    damage = attacker_buffed
     
-    
+    # Trigger any perks that function on hit. Returns a list of the perk's messages.
+    # msg = ph.trigger_effects(weapon, 'hit')
+    # msg += ph.trigger_effects(attacker, 'hit')
 
+    # attacker.msg(msg)
+
+    bh.cleanup_buffs(attacker)
     return damage
-
-def trigger_effects(obj, trigger: str):
-    ph.trigger_perk(obj, 'hit')
-    eh.trigger_effect(obj, 'hit')
 
 def damage_target(damage, target):
     # Actually does the nitty gritty of damaging a target
@@ -132,7 +132,6 @@ def revive(origin):
     # Revives the object called for the function
     if hasattr(origin, 'health'):
         origin.db.health['current'] = origin.db.health['max']
-        origin.db.shield['current'] = origin.db.shield['max']
 
 def find_scripts_by_tag(obj, tag):
     _list = [ 
@@ -153,37 +152,41 @@ def check_time(start, end, duration):
     if duration < end - start: return True
     else: return False
 
-def check_stat_mods(obj: Object, base: float, stat: str) -> float:    
-    '''Finds all buffs related to a stat and applies their effects.
+def check_stat_mods(obj: Object, base: float, stat: str):    
+    '''Finds all buffs and traits related to a stat and applies their effects.
     
     Args:
         obj: The object with a buffhandler
         base: The base value you intend to modify
         stat: The string that designates which stat buffs you want
         
-    Returns the base value modified by the relevant buffs.'''
+    Returns the base value modified by the relevant buffs, and any messaging.'''
 
     # Buff cleanup to make sure all buffs are valid before processing
     bh.cleanup_buffs(obj)
 
     # Buff handler assignment, so we can find the relevant buffs
-    handler = []
-    if obj.db.buffs: handler = obj.db.buffs.values()
-    else: return base
+    buffs = []
+    traits = []
+    if not obj.db.buffs and not obj.db.traits: return base
+    else: 
+        buffs = obj.db.buffs.values()
+        traits = obj.db.traits.values()
 
-    # Find all buffs related to the specified stat.
-    stat_list: list = bh.find_buffs_by_value(handler, 'stat', stat)
+    # Find all buffs and traits related to the specified stat.
+    buff_list: list = bh.find_mods_by_value(buffs, 'stat', stat)
+    trait_list: list = bh.find_mods_by_value(traits, 'stat', stat)
+    stat_list = buff_list + trait_list
+
     if not stat_list: return base
 
     # Add all arithmetic buffs together
-    add_list = bh.find_buffs_by_value(stat_list, 'modifier', 'add')
+    add_list = bh.find_mods_by_value(stat_list, 'modifier', 'add')
     add = bh.calculate_mods(add_list, "add")
-    obj.msg("Additional damage: " + str(add))
 
     # Add all multiplication buffs together
-    mult_list = bh.find_buffs_by_value(stat_list, 'modifier', 'mult')
+    mult_list = bh.find_mods_by_value(stat_list, 'modifier', 'mult')
     mult = bh.calculate_mods(mult_list, "mult")
-    obj.msg("Damage multiplier: " + str(1 + mult))
 
     # The final result
     final = (base + add) * (1 + mult)
@@ -191,6 +194,7 @@ def check_stat_mods(obj: Object, base: float, stat: str) -> float:
     # Run the "after check" functions on all relevant buffs
     for x in stat_list:
         buff: Buff = x.get('ref')()
-        buff.after_check(obj)
+        context = generate_context(obj, obj, buff=buff.id, handler=obj.db.buffs)
+        buff.after_check(context)
 
     return final

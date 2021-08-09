@@ -1,3 +1,4 @@
+from typeclasses.context import BuffContext
 from typeclasses.objects import DefaultObject as Object
 
 class BaseBuff():
@@ -19,15 +20,11 @@ class BaseBuff():
     name = 'Template'           # The buff's name. Used for user messaging
     flavor = 'Template'         # The buff's flavor text. Used for user messaging
 
-    def on_apply(self, context):
+    def on_apply(self, context: BuffContext):
         '''Hook function to run when this buff is applied to an object.'''
         pass 
-
-    def after_check(self, context):
-        '''Hook function to run after this buff's mods are checked.'''
-        pass
     
-    def on_remove(self, context):
+    def on_remove(self, context: BuffContext):
         '''Hook function to run when this buff is removed from an object.'''
         pass
 
@@ -54,7 +51,17 @@ class Buff(BaseBuff):
 
     mods = []
     
-    pass
+    def after_check(self, context: BuffContext):
+        '''Hook function to run after this buff's mods are checked.'''
+        pass
+
+    def on_dispel(self, context: BuffContext):
+        '''Hook function to run when this buff is dispelled from an object (removed by someone other than the buff holder).'''
+        pass
+
+    def on_expire(self, context: BuffContext):
+        '''Hook function to run when this buff expires from an object.'''
+        pass
 
 class Trait(Buff):
     '''A trait is comprised of one or more permanent stat modifications.

@@ -1,5 +1,6 @@
 from typeclasses.buff import Buff
 from typeclasses.buff import Mod
+from typeclasses.context import BuffContext, generate_context
 import typeclasses.handlers.buffhandler as bh
 import typeclasses.content.effectlist as el
     
@@ -17,8 +18,8 @@ class RampageBuff(Buff):
 
     mods = [ Mod('damage', 'mult', 0.15, 0.15) ]
 
-    def on_remove(self, context):
-        context.msg('The bloodlust fades.')
+    def on_remove(self, context: BuffContext):
+        context.actee.msg('The bloodlust fades.')
 
 class Exploited(Buff):
     id = 'exploited'
@@ -33,11 +34,15 @@ class Exploited(Buff):
 
     mods = [ Mod('damage', 'mult', 1, 0) ]
 
-    def after_check(self, context):
-        bh.remove_buff(context, 'exploited')
+    def on_apply(self, context: BuffContext):
+        return generate_context(context.actor, context.actee)
 
-    def on_remove(self, context):
-        context.msg("You cannot sense your target's weakness anymore.")
+    def after_check(self, context: BuffContext):
+        context.actor.msg( "\n|nYou exploit your target's weakness!" )
+        bh.remove_buff(context.actor, context.actor, 'exploited')
+
+    def on_remove(self, context: BuffContext):
+        context.actor.msg( "\n|nYou cannot sense your target's weakness anymore." )
 
 class BuffList():
     '''Initialization of buff and effect typeclasses used to apply buffs to players.

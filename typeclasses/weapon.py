@@ -1,6 +1,6 @@
 from random import choice
 from typeclasses.objects import Object
-from world import destiny_rules
+from world import rules
 
 class Weapon(Object):
     """
@@ -9,8 +9,10 @@ class Weapon(Object):
     def at_object_creation(self):
         "Called when object is first created"
 
-        self.db.buffhandler = {}
-        self.db.perkhandler = {}
+        self.db.buffs = {}
+        self.db.perks = {}
+        self.db.effects = {}
+        self.db.traits = {}
         
         self.db.slot = 'kinetic'
         self.db.element = 'neutral'
@@ -53,16 +55,6 @@ class Weapon(Object):
             'chance':2.0,     # Chance that a shot is "precise", aka a critical. See "hit_roll" in destiny_rules for more
             'mult':2.0        # The multiplier for damage when a precision shot happens
             } 
-
-        # List of a weapon's perks. References to scripts on the weapon
-        self.db.perks = {
-            'innate':None,      # The "innate" perk. Not used for anything besides exotics
-            'barrel':None,      # The barrel perk. Influences base stats
-            'mag':None,         # The magazine perk. Influences base stats
-            'sight':None,       # The sight perk. Influences base stats
-            'style1':None,      # The first style perk. Usually changes how you play
-            'style2':None       # The second style perk. Usually changes how you play
-            }
 
         # Messages for all the things that your gun does
         self.db.msg = {

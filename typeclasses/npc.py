@@ -1,7 +1,7 @@
 from typeclasses.characters import Character
 
 # destiny_rules is the rules module that contains all combat calculations, enums, and other important doodads
-from world import destiny_rules
+from world import rules
 
 import random
 
@@ -125,7 +125,7 @@ class NPC(Character):
 
         if chance_hit >= hit_roll:
             damage = weapon['damage']
-            destiny_rules.damage_target(damage, None, target)
+            rules.damage_target(damage, None, target)
             msg_damage = "%s damage!" % str(damage)
         elif chance_hit < hit_roll:
             msg_damage = "Miss!"

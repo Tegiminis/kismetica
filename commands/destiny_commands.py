@@ -1,5 +1,6 @@
 from evennia import lockfuncs
 from evennia import Command as BaseCommand
+import typeclasses.handlers.perkhandler as ph
 from world import rules
 from typeclasses import characters as Character
 from evennia import utils
@@ -29,11 +30,11 @@ class CmdAttack(BaseCommand):
         caller = self.caller    
         target = None
         now = time.time()
-        slot = caller.db.held
+        weapon = caller.db.held
 
         if caller.db.cooldowns['basic'] is not None:
             cd = caller.db.cooldowns['basic']
-            rpm = caller.db.weapons[slot].db.speed['fire']
+            rpm = weapon.db.speed['fire']
 
         if cd and now - cd < rpm:
             caller.msg("You cannot fire again so quickly!")
@@ -55,14 +56,10 @@ class CmdAttack(BaseCommand):
         msg_target = target.named()
         msg_caller = caller.named()
 
-        slot = caller.db.held
-        _wep = caller.db.weapons[slot]
-
-        shield_broke = False
+        _wep = caller.db.held
 
         msg_post = ''
         msg_perk = ''
-        _name = ''
 
         if target:
             if utils.inherits_from(target, 'typeclasses.npc.NPC') or target.db.crucible == True:
@@ -75,27 +72,24 @@ class CmdAttack(BaseCommand):
 
                 # Fires however many shots you tell it to. AKA 5 shots = 5 loops
                 for x in range(shots):
-                    _hit = rules.roll_hit(caller, target)               # The hit roll
-                    _dmg = rules.calculate_damage(caller, target, *_hit)   # The damage roll
-                    _prv = target.db.shield['current']                          # Used to determine if the target's shield was already broken
+                    _hit = rules.roll_hit(caller, target)                       # The hit roll
+                    _dmg = rules.calculate_damage(caller, target, *_hit)     # The damage roll
+
+                    if _hit[0]:
+                            msg_perk += ph.trigger_effects(weapon, 'hit')
+                            msg_perk += ph.trigger_effects(caller, 'hit')
 
                     if _dmg <= 0:
                         str_hits += "|nMiss! "                     # If you don't damage something, it's obviously a miss! For now.
                     else:
-                        msg_perk += rules.damage_target(_dmg, target)         # Damage the target and return any perk-related messages
-                        total += _dmg                                                       # Add the damage you did to the total (for messaging)
+                        msg_perk += rules.damage_target(_dmg, target)         # Damage the target and return any effect-related messages
+                        total += _dmg                                         # Add the damage you did to the total (for messaging)
 
                         # Formatting based on if it's a crit or not
                         if _hit[1] is True:
                             str_hits += "|y%i! " % _dmg            # Critical hit!
                         else:
                             str_hits += "|n%i! " % _dmg            # Normal hit!
-
-                        # Shield break messaging. Only happens if the target has shield left to break.
-                        if target.db.shield['current'] < _prv and target.db.shield['current'] == 0 and shield_broke == False:
-                            _name = target.named()
-                            msg_post += ("%s's shield cracks and shatters!" % _name).capitalize()
-                            shield_broke = True
 
                         # Killshot detection. Immediately stops the attack and breaks the for loop when target dies.
                         if target.db.health['current'] <= 0:
@@ -201,7 +195,7 @@ class CmdEquip(BaseCommand):
 
         if target:
             if target.location.id == caller.id:
-                caller.db.weapons[target.db.slot] = target
+                caller.db.held = target
                 caller.msg("You equip the %s. %s" % (name, target.db.msg['equip']))
 
                 _name = caller.named()
@@ -266,6 +260,7 @@ class CmdCheck(BaseCommand):
                 for x in buffs:
                     msg += x + "\n|n"
                 caller.msg(msg)
+            return
         
         target = caller.search(self.args)
         buffs = bh.view_buffs(target)
@@ -275,9 +270,7 @@ class CmdCheck(BaseCommand):
                 msg += x + "\n|n"
             caller.msg(msg)
         else:
-            caller.msg('There are no buffs on the target.')
-        
-        
+            caller.msg('There are no buffs on the target.')  
 
 class CmdPTest(BaseCommand):
     """

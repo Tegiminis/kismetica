@@ -1,3 +1,4 @@
+from typeclasses.context import BuffContext
 from evennia import lockfuncs
 from evennia import Command as BaseCommand
 from world import rules
@@ -123,7 +124,7 @@ class CmdBuff(BaseCommand):
             return
 
         if target:
-            bh.add_buff(target, self.args[1])
+            buff: BuffContext = bh.add_buff(caller, target, self.args[1])
             pass
 
 class CmdPerk(BaseCommand):
