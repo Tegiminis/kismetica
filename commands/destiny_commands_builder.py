@@ -1,9 +1,9 @@
 from evennia import lockfuncs
 from evennia import Command as BaseCommand
-from world import destiny_rules
+from world import rules
 from typeclasses import characters as Character
-from typeclasses import buffhandler as buff
-from typeclasses import perkhandler as ph
+from typeclasses.handlers import buffhandler as bh
+from typeclasses.handlers import perkhandler as ph
 from evennia import utils
 import time
 
@@ -123,7 +123,7 @@ class CmdBuff(BaseCommand):
             return
 
         if target:
-            buff.add_buff(target.db.buffs, self.args[1])
+            bh.add_buff(target, self.args[1])
             pass
 
 class CmdPerk(BaseCommand):

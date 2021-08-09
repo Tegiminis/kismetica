@@ -1,9 +1,9 @@
 from evennia import lockfuncs
 from evennia import Command as BaseCommand
-from world import destiny_rules
+from world import rules
 from typeclasses import characters as Character
 from evennia import utils
-from typeclasses.buffhandler import view_buffs
+import typeclasses.handlers.buffhandler as bh
 import time
 
 class CmdAttack(BaseCommand):
@@ -75,14 +75,14 @@ class CmdAttack(BaseCommand):
 
                 # Fires however many shots you tell it to. AKA 5 shots = 5 loops
                 for x in range(shots):
-                    _hit = destiny_rules.roll_hit(caller, target)               # The hit roll
-                    _dmg = destiny_rules.calculate_damage(caller, target, *_hit)   # The damage roll
+                    _hit = rules.roll_hit(caller, target)               # The hit roll
+                    _dmg = rules.calculate_damage(caller, target, *_hit)   # The damage roll
                     _prv = target.db.shield['current']                          # Used to determine if the target's shield was already broken
 
                     if _dmg <= 0:
                         str_hits += "|nMiss! "                     # If you don't damage something, it's obviously a miss! For now.
                     else:
-                        msg_perk += destiny_rules.damage_target(_dmg, target)         # Damage the target and return any perk-related messages
+                        msg_perk += rules.damage_target(_dmg, target)         # Damage the target and return any perk-related messages
                         total += _dmg                                                       # Add the damage you did to the total (for messaging)
 
                         # Formatting based on if it's a crit or not
@@ -260,7 +260,7 @@ class CmdCheck(BaseCommand):
         caller = self.caller
  
         if not self.args:
-            buffs = view_buffs(caller)
+            buffs = bh.view_buffs(caller)
             if buffs:
                 msg = 'You are currently buffed by: \n|n\n|n'
                 for x in buffs:
@@ -268,9 +268,9 @@ class CmdCheck(BaseCommand):
                 caller.msg(msg)
         
         target = caller.search(self.args)
-        buffs = view_buffs(target)
+        buffs = bh.view_buffs(target)
         if buffs:
-            msg = 'You are currently buffed by: \n|n\n|n'
+            msg = '%s is currently buffed by: \n|n\n|n' + target.named()
             for x in buffs:
                 msg += x + "\n|n"
             caller.msg(msg)

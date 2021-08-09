@@ -1,10 +1,14 @@
+from typeclasses.buff import Buff
 import random
 from random import randint
 from typeclasses import characters as Character
 from evennia import utils
+from typeclasses.objects import Object
 import time
-import typeclasses.buffhandler as bh
-import typeclasses.perkhandler as ph
+import typeclasses.handlers.buffhandler as bh
+import typeclasses.handlers.perkhandler as ph
+import typeclasses.handlers.effecthandler as eh
+import typeclasses.handlers.traithandler as th
 
 slot = {'kinetic':0 , 'energy':1 , 'power':2}
 element = {'neutral':0 , 'void':1 , 'solar':2, 'arc':3}
@@ -46,8 +50,8 @@ def roll_hit(origin, target):
         accuracy += 0.2
 
     # Apply any buffs from your weapon and player
-    # bh.check_buffs(weapon, accuracy, 'accuracy')
-    # bh.check_buffs(origin, accuracy, 'accuracy')
+    accuracy = bh.check_buffs(weapon, accuracy, 'accuracy')
+    accuracy = bh.check_buffs(origin, accuracy, 'accuracy')
 
     # Modify the hit roll by the weapon's accuracy and the range penalty
     # 1.0 is unchanged roll
@@ -90,9 +94,14 @@ def calculate_damage(origin, target, hit, crit):
     origin.msg('Buffed Damage: ' + str(damage))
 
     # Trigger any perks that function on hit
-    ph.trigger_perk(origin, 'hit')
+    
+    
 
     return damage
+
+def trigger_effects(obj, trigger: str):
+    ph.trigger_perk(obj, 'hit')
+    eh.trigger_effect(obj, 'hit')
 
 def damage_target(damage, target):
     # Actually does the nitty gritty of damaging a target
@@ -143,3 +152,45 @@ def check_time(start, end, duration):
     if duration == -1 or duration == None or start == None or end == None: return False
     if duration < end - start: return True
     else: return False
+
+def check_stat_mods(obj: Object, base: float, stat: str) -> float:    
+    '''Finds all buffs related to a stat and applies their effects.
+    
+    Args:
+        obj: The object with a buffhandler
+        base: The base value you intend to modify
+        stat: The string that designates which stat buffs you want
+        
+    Returns the base value modified by the relevant buffs.'''
+
+    # Buff cleanup to make sure all buffs are valid before processing
+    bh.cleanup_buffs(obj)
+
+    # Buff handler assignment, so we can find the relevant buffs
+    handler = []
+    if obj.db.buffs: handler = obj.db.buffs.values()
+    else: return base
+
+    # Find all buffs related to the specified stat.
+    stat_list: list = bh.find_buffs_by_value(handler, 'stat', stat)
+    if not stat_list: return base
+
+    # Add all arithmetic buffs together
+    add_list = bh.find_buffs_by_value(stat_list, 'modifier', 'add')
+    add = bh.calculate_mods(add_list, "add")
+    obj.msg("Additional damage: " + str(add))
+
+    # Add all multiplication buffs together
+    mult_list = bh.find_buffs_by_value(stat_list, 'modifier', 'mult')
+    mult = bh.calculate_mods(mult_list, "mult")
+    obj.msg("Damage multiplier: " + str(1 + mult))
+
+    # The final result
+    final = (base + add) * (1 + mult)
+
+    # Run the "after check" functions on all relevant buffs
+    for x in stat_list:
+        buff: Buff = x.get('ref')()
+        buff.after_check(obj)
+
+    return final

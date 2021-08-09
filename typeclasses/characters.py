@@ -22,9 +22,11 @@ class Character(DefaultCharacter):
         
         self.scripts.stop()
 
-        # The dictionaries we use for buffs and perks
+        # The dictionaries we use for buffs, perks, effects, and traits
         self.db.buffs = {}
         self.db.perks = {}
+        self.db.effects = {}
+        self.db.traits = {}
 
         # Health values
         # [Current, Max]
