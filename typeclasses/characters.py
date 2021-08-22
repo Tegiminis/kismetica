@@ -9,14 +9,22 @@ creation commands.
 """
 import commands.default_cmdsets as default
 import commands.destiny_cmdsets as destiny
+import typeclasses.handlers.buffhandler as bh
 from evennia import DefaultCharacter
-
-# The rules module that contains all combat calculations, dicts, and other important doodads
-from world import rules
 
 class Character(DefaultCharacter):
 
     # Character class inherited by all characters in the MUD. Stats here will be used by every character in the game.
+
+    @property
+    def evasion(self):
+        _ev = bh.check_stat_mods(self, self.db.evasion, 'evasion')
+        return _ev
+
+    @property
+    def maxHealth(self):
+        _mh = bh.check_stat_mods(self, self.db.maxHealth, 'maxhealth')
+        return _mh
 
     def at_object_creation(self):
         
@@ -29,28 +37,23 @@ class Character(DefaultCharacter):
         self.db.traits = {}
 
         # Health values
-        # [Current, Max]
-        self.db.health = {"current":100, "max":100}
+        self.db.health = 100
+        self.db.maxHealth = 100
+
+        self.db.evasion = 1.0
 
         # Are you a "Named" character? All characters start as false, except players, who start true. 
         # Must be manually enabled for named NPCs
         self.db.named = False
 
-        # Shield mechanics. Commented out for the time being while I figure out what to do with it.
-        # self.db.shield = {"current":100, "max":100, "regen":10, "delay":5, "lasthit":0, "element":"neutral"}
-
-        # if not self.scripts.get('shield_regen'):
-        #     self.scripts.add(dscript.ShieldRegen)
-
     def at_init(self):
         # Used if you use attack someone or use 'target'
         self.ndb.target = 0
 
-    def named(self):
-        _name = self.key
-        if self.db.named is False:
-            _name = "the " + _name
-        return _name
+    @property
+    def name(self) -> str:
+        if self.db.named is False: return "the " + self.key
+        else: return self.key
 
 
     """
@@ -79,6 +82,8 @@ class PlayerCharacter(Character):
 
     # The module we use for all player characters. This contains player-specific stats.
 
+    weightMax = 100
+    
     def at_object_creation(self):
         
         super().at_object_creation()
@@ -93,12 +98,8 @@ class PlayerCharacter(Character):
         # Your held weapon. What you shoot with when you use 'attack'
         self.db.held = None
 
-        # List of character's equipped armor
-        # [Head, Arms, Body, Legs, Class]
-        self.db.equipped_armor = {"head":None, "arms":None, "body":None, "legs":None, "class":None}
-
-        # Are you capable of being attacked, aka in PvP?
-        self.db.pvp = False
+        # List of character's equipped armor. Equipped armor will replace anything in the same slot.
+        self.db.armor = {}
 
         # Proficiencies. They determine what access to skills you have. 
         # Each proficiency is a linear level progression
@@ -107,6 +108,10 @@ class PlayerCharacter(Character):
         }
         
         # Cooldowns!
-        self.db.cooldowns = {'basic':0, 'swap':0, 'equip':0, 'move':0}
+        self.db.cooldown = 0
+    
+    @property
+    def weight(self):
+        return self.myweight
 
     pass

@@ -13,13 +13,12 @@ class NPC(Character):
         # Various types of messaging
         self.db.msg = {
             'idle': [
-                "%s stomps their feet impatiently." % self.named(),
-                "%s bares their teeth menacingly." % self.named()
+                "%s stomps their feet impatiently." % self.name,
+                "%s bares their teeth menacingly." % self.name
             ],
-            'despawn': "%s crumbles away into a fine dust." % self.named(),
-            'advance': "%s lumbers forward, stomping the ground with chitinous feet." % self.named(),
-            'respawn': '%s revives in a glittering beam of light.' % self.named(),
-            'retreat': "%s backs up to find a better position." % self.named()
+            'despawn': "%s crumbles away into a fine dust." % self.name,
+            'respawn': '%s revives in a glittering beam of light.' % self.name,
+            'retreat': "%s backs up to find a better position." % self.name
         }
 
         self.db.lootable = True     # Can this mob be looted?
@@ -45,7 +44,7 @@ class NPC(Character):
 
         }
 
-        # The range the NPC always sits at. You suffer an accuracy penalty shooting at enemies outside your range
+        # The range the NPC sits at. You suffer an accuracy penalty shooting at enemies outside your range
         self.db.range = 2
 
         # States for the state machine
@@ -131,12 +130,12 @@ class NPC(Character):
             msg_damage = "Miss!"
 
         target.msg(
-            ( "\n|n" + (weapon['msg'] % (self.named(), 'you', weapon['name'])).capitalize() ) +
+            ( "\n|n" + (weapon['msg'] % (self.name, 'you', weapon['name'])).capitalize() ) +
             ( "\n|n" + msg_damage )
         )
 
         self.location.msg_contents(
-            ( "\n|n" + (weapon['msg'] % (self.named(), target.named(), weapon['name'])).capitalize() ) +
+            ( "\n|n" + (weapon['msg'] % (self.name, target.name, weapon['name'])).capitalize() ) +
             ( "\n|n" + msg_damage ), 
             exclude=(self, target)
         )

@@ -1,4 +1,5 @@
-import copy
+from evennia.utils import utils
+from typeclasses.weapon import Weapon
 
 class Context():
     '''A container for "context" information. Base class is a relation between two objects: actor and acted upon.'''
@@ -28,12 +29,14 @@ class BuffContext(Context):
     duration = None
     stacks = None
     start = None
+    owner = None
 
     def __init__(self, actor, actee, handler, id) -> None:
         self.actor = actor
         self.actee = actee
         self.handler = handler
         self.id = id
+        if utils.inherits_from(actee, Weapon): self.owner = actee.location
         if id in handler.keys():
             self.ref = handler[id]['ref']
             self.duration = handler[id]['duration']

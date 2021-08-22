@@ -1,3 +1,5 @@
+from typeclasses.content.workshop import RapidHit
+from typeclasses.content.perklist import RampagePerk
 from typeclasses.context import BuffContext
 from evennia import lockfuncs
 from evennia import Command as BaseCommand
@@ -132,13 +134,18 @@ class CmdPerk(BaseCommand):
     Add perk to a target.
 
     Usage:
-      perk <target> <perk reference>
+      perk <target> <perk> <slot>
 
-    Applies the specified buff to the target. All perks are defined in perkinit.py   
+    Applies the specified perk to the target. If slot is included, will use that instead of the perk id for the dictionary key. 
     """
     key = "perk"
     aliases = ["perk"]
 
+    perklist = {
+        'rampage' : RampagePerk,
+        'rapidhit' : RapidHit
+    }
+    
     def parse(self):
         self.args = self.args.split()
 
@@ -146,6 +153,7 @@ class CmdPerk(BaseCommand):
         caller = self.caller    
         target = None
         now = time.time()
+        slot = None
 
         length = len(self.args)
 
@@ -159,5 +167,10 @@ class CmdPerk(BaseCommand):
             caller.msg("You need to pick a target.")
             return
 
-        if target:
-            ph.add_perk(target, self.args[1])
+        if length == 3: slot = self.args[2]
+
+        _perk = self.perklist.get(self.args[1])
+        caller.msg('Debug: Perk applied = ' + str(_perk))
+
+        if target and _perk: ph.add_perk(target, _perk, slot)
+        else: caller.msg("Invalid perk.")

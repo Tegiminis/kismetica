@@ -1,4 +1,4 @@
-from evennia import lockfuncs
+from evennia import DefaultCharacter, lockfuncs
 from evennia import Command as BaseCommand
 import typeclasses.handlers.perkhandler as ph
 from world import rules
@@ -27,18 +27,10 @@ class CmdAttack(BaseCommand):
         self.args = self.args.strip()
 
     def func(self):
-        caller = self.caller    
+        caller: DefaultCharacter = self.caller    
         target = None
         now = time.time()
         weapon = caller.db.held
-
-        if caller.db.cooldowns['basic'] is not None:
-            cd = caller.db.cooldowns['basic']
-            rpm = weapon.db.speed['fire']
-
-        if cd and now - cd < rpm:
-            caller.msg("You cannot fire again so quickly!")
-            return
 
         if self.args:
             target = caller.search(self.args)
@@ -53,84 +45,18 @@ class CmdAttack(BaseCommand):
             caller.msg("You cannot attack a dead target.")
             return
 
-        msg_target = target.named()
-        msg_caller = caller.named()
-
-        _wep = caller.db.held
-
-        msg_post = ''
-        msg_perk = ''
-
-        if target:
-            if utils.inherits_from(target, 'typeclasses.npc.NPC') or target.db.crucible == True:
-                # The string of "hits" used for messaging. Looks like this once everything's done: "15! 10! Miss! 10! 10!"
-                str_hits = ''
-
-                #Caching variables.
-                shots = _wep.db.damage['shots'] 
-                total = 0
-
-                # Fires however many shots you tell it to. AKA 5 shots = 5 loops
-                for x in range(shots):
-                    _hit = rules.roll_hit(caller, target)                       # The hit roll
-                    _dmg = rules.calculate_damage(caller, target, *_hit)     # The damage roll
-
-                    if _hit[0]:
-                            msg_perk += ph.trigger_effects(weapon, 'hit')
-                            msg_perk += ph.trigger_effects(caller, 'hit')
-
-                    if _dmg <= 0:
-                        str_hits += "|nMiss! "                     # If you don't damage something, it's obviously a miss! For now.
-                    else:
-                        msg_perk += rules.damage_target(_dmg, target)         # Damage the target and return any effect-related messages
-                        total += _dmg                                         # Add the damage you did to the total (for messaging)
-
-                        # Formatting based on if it's a crit or not
-                        if _hit[1] is True:
-                            str_hits += "|y%i! " % _dmg            # Critical hit!
-                        else:
-                            str_hits += "|n%i! " % _dmg            # Normal hit!
-
-                        # Killshot detection. Immediately stops the attack and breaks the for loop when target dies.
-                        if target.db.health['current'] <= 0:
-                            str_hits += "|rKill shot!|n"
-                            msg_post += "\n|n" + (_wep.db.msg['kill'] % msg_target).capitalize()
-
-                            break
-
-                
-                # Messaging to the shooter, target, and room, respectively.
-                caller.msg(
-                    ( "\n|n" + (_wep.db.msg['attack'] % ('you',msg_target)).capitalize() ) +      # The base attack string
-                    ( "\n|n" + str_hits ) +                                # The hits (10! 15! Miss!)
-                    ( "\n|n" + " = %s damage!" % str(total) ) +            # Total damage dealt
-                    ( "\n|n" + msg_post) +                                 # Any "post" messages, such as status changes (like death)
-                    ( "\n|n" + msg_perk)                                   # Any "perk" messages
-                    )
-                
-                target.msg(
-                    ( "\n|n" + (_wep.db.msg['attack'] % (msg_caller,'you')).capitalize() ) +
-                    ( "\n|n" + str_hits ) +
-                    ( "\n|n" + " = %s damage!" % str(total) )
-                    )
-
-                caller.location.msg_contents(
-                    ( "\n|n" + (_wep.db.msg['attack'] % (msg_caller, msg_target)).capitalize() ) +
-                    ( "\n|n" + str_hits ) +
-                    ( "\n|n" + " = %s damage!" % str(total) ), 
-                    exclude=(caller, target)
-                    )
-
-                if utils.inherits_from(caller, 'typeclasses.characters.PlayerCharacter'):
-                    caller.db.cooldowns['basic'] = now
-
-                utils.delay(rpm, caller.msg, _wep.db.msg['cooldown'])
-
-            else:
-                caller.msg("You must select a valid target to attack!")
+        if caller.db.cooldown:
+            cd = caller.db.cooldown
+            rpm = weapon.rpm
+            if now - cd < rpm:
+                caller.msg("You cannot act again so quickly!")
                 return
 
-        return
+        if target:
+            rules.basic_attack(caller, target)
+        else:
+            caller.msg("You must select a valid target to attack!")
+            return
 
 class CmdTarget(BaseCommand):
     """
@@ -198,7 +124,7 @@ class CmdEquip(BaseCommand):
                 caller.db.held = target
                 caller.msg("You equip the %s. %s" % (name, target.db.msg['equip']))
 
-                _name = caller.named()
+                _name = caller.name
                 name = target.named()
                 caller.location.msg_contents("%s hoists %s in their hands." % (_name, name), exclude=caller)
                 return
@@ -292,5 +218,5 @@ class CmdPTest(BaseCommand):
     def func(self):
         caller = self.caller
         _str = lockfuncs.attr(self.caller, self.caller, "locktest", "8", compare="gt")
-        caller.msg("Attr() returned: %s" % _str)
+        caller.msg( str(caller.weight) )
 

@@ -1,18 +1,13 @@
-from typeclasses.context import BuffContext, Context, generate_context
-import typeclasses.handlers.perkhandler as ph
-from typeclasses.buff import BaseBuff, Buff, Mod
-from typeclasses.perk import Effect
-from typing import List
-
-from evennia import DefaultObject
-from typeclasses.objects import Object
 import time
-import typeclasses.content.bufflist as bl
-import world.rules as dr
 import random
-from evennia import utils
 
-def add_buff(origin: DefaultObject, target: DefaultObject, buff: str, stacks = 1, duration = None) -> Context:
+import typeclasses.handlers.perkhandler as ph
+from typeclasses.buff import BaseBuff, Buff, Perk, Trait, Effect, Mod
+from typeclasses.objects import Object
+from evennia import utils
+from typeclasses.context import BuffContext, Context, generate_context
+
+def add_buff(origin: Object, target: Object, buff: BaseBuff, stacks = 1, duration = None) -> Context:
     '''Add a buff or effect instance to an object or player that can have buffs, respecting all stacking/refresh/reapply rules.
     
     Args:
@@ -27,7 +22,7 @@ def add_buff(origin: DefaultObject, target: DefaultObject, buff: str, stacks = 1
     cleanup_buffs(target)
 
     # The type reference to our buff
-    _ref = vars(bl.BuffList).get(buff)     
+    _ref = buff  
     id = _ref.id
 
     # Create the buff dict that holds the type reference, start time, and stacks
@@ -45,7 +40,7 @@ def add_buff(origin: DefaultObject, target: DefaultObject, buff: str, stacks = 1
 
     return context
 
-def apply_buff(origin: DefaultObject, target: DefaultObject, id: str, buff: dict, stacks):
+def apply_buff(origin: Object, target: Object, id: str, buff: dict, stacks):
     '''Apply a buff to an object, accessible by id. Returns the handler key of the applied buff.'''
     handler: dict = None
     br = buff.get('ref')()
@@ -75,15 +70,15 @@ def apply_buff(origin: DefaultObject, target: DefaultObject, id: str, buff: dict
 
     return context
 
-def remove_buff(origin: DefaultObject, target: DefaultObject, id: str, dispel=False, expire=False, kill=False):
-    '''Remove a buff with matching id from the specified object. Calls on_remove, on_dispel, or on_expire, depending on arguments.
+def remove_buff(origin: Object, target: Object, id: str, dispel=False, expire=False, quiet=False, delay=0):
+    '''Remove a buff or effect with matching id from the specified object. Calls on_remove, on_dispel, or on_expire, depending on arguments.
     
     Args:
         obj:    Object to remove buff from
         id:     The buff id
         dispel: Call on_dispel when True.
         expire: Call on_expire when True.
-        kill:   Do not call on_remove when True.'''
+        quiet:  Do not call on_remove when True.'''
     handler = None
     
     if id in target.db.buffs.keys(): handler = target.db.buffs
@@ -91,34 +86,39 @@ def remove_buff(origin: DefaultObject, target: DefaultObject, id: str, dispel=Fa
     else: return None
 
     buff: Buff = handler[id].get('ref')()
-    context = generate_context(origin, target, buff=id, handler=handler)
-
-    if dispel: buff.on_dispel(context)
-    elif expire: buff.on_expire(context)
-    elif not kill: buff.on_remove(context)
-
-    del handler[id]
     
-    return generate_context(actor=origin, actee=target, buff=id, handler=handler)
+    packed_info = (origin, target, id, dispel, expire, quiet)
 
-def cleanup_buffs(obj) -> str:
-    '''Checks all buffs and effects on the object, and cleans up old ones. Returns all cleanup messages.'''
-    def cleanup(handler):
-        if handler:
-            remove = [ k 
-                for k,v in handler.items() 
-                if time.time() - v.get('start') > v.get('duration') ]
-            for k in remove: 
-                remove_buff(obj, obj, k, expire=True)
+    if delay: utils.delay(delay, remove_buff, *packed_info)
+    else:
+        context = generate_context(target, origin, buff=id, handler=handler)
 
-    handler = obj.db.buffs
-    cleanup(handler)
+        if dispel: buff.on_dispel(context)
+        elif expire: buff.on_expire(context)
+        elif not quiet: buff.on_remove(context)
 
-    handler = obj.db.effects
-    cleanup(handler)
+        del handler[id]
+    
+        return context
+
+def cleanup_buffs(obj):
+    '''Checks all buffs and effects on the object, and cleans up old ones.'''
+
+    if obj.db.buffs:
+        remove = [ k 
+            for k,v in obj.db.buffs.items() 
+            if time.time() - v.get('start') > v.get('duration') ]
+        for k in remove: 
+            remove_buff(obj, obj, k, expire=True)
+
+    if obj.db.effects:
+        remove = [ k 
+            for k,v in obj.db.buffs.items() 
+            if time.time() - v.get('start') > v.get('duration') ]
+        for k in remove: 
+            remove_buff(obj, obj, k, expire=True)
 
     return
- 
 
 def view_buffs(obj) -> list:
     '''Gets the name and flavor of all buffs and effects on the object.'''
@@ -159,7 +159,7 @@ def find_mods_by_value(handler: list, key: str, value) -> dict:
 
     return b
 
-def calculate_mods(buffs: list, modifier):
+def calculate_mods(buffs: list, modifier, stat):
     '''Given a list of buffs, add all the values together.'''
     x = 0.0
     if buffs is None: return x
@@ -168,10 +168,64 @@ def calculate_mods(buffs: list, modifier):
         buff: Buff = v.get('ref')()
         for mod in buff.mods:
             mod : Mod
-            if mod.modifier == modifier:
+            if mod.modifier == modifier and mod.stat == stat:
                 b = mod.base
                 s = v.get('stacks')
                 ps = mod.perstack
 
                 x += b + ( (s - 1) * ps )
     return x
+
+def find_buff(id: str, handler: dict):
+    '''Checks to see if the specified buff id is on the handler.'''
+    if id in handler.keys(): return True
+    else: return False
+
+def check_stat_mods(obj: Object, base: float, stat: str, quiet = False):    
+    '''Finds all buffs and traits related to a stat and applies their effects.
+    
+    Args:
+        obj: The object with a buffhandler
+        base: The base value you intend to modify
+        stat: The string that designates which stat buffs you want
+        
+    Returns the base value modified by the relevant buffs, and any messaging.'''
+
+    # Buff cleanup to make sure all buffs are valid before processing
+    cleanup_buffs(obj)
+
+    # Buff handler assignment, so we can find the relevant buffs
+    buffs = []
+    traits = []
+    if not obj.db.buffs and not obj.db.traits: return base
+    else: 
+        buffs = obj.db.buffs.values()
+        traits = obj.db.traits.values()
+
+    # Find all buffs and traits related to the specified stat.
+    buff_list: list = find_mods_by_value(buffs, 'stat', stat)
+    trait_list: list = find_mods_by_value(traits, 'stat', stat)
+    stat_list = buff_list + trait_list
+
+    if not stat_list: return base
+
+    # Add all arithmetic buffs together
+    add_list = find_mods_by_value(stat_list, 'modifier', 'add')
+    add = calculate_mods(add_list, "add", stat)
+    # obj.location.msg('Debug: (Stat: ' + stat + ', Additional: ' + str(add) + ")" )
+
+    # Add all multiplication buffs together
+    mult_list = find_mods_by_value(stat_list, 'modifier', 'mult')
+    mult = calculate_mods(mult_list, "mult", stat)
+    # obj.location.msg('Debug: (Stat: ' + stat + ', Multiplied: ' + str(mult) + ")" )
+
+    # The final result
+    final = (base + add) * (1.0 + mult)
+
+    # Run the "after check" functions on all relevant buffs
+    for x in stat_list:
+        buff: Buff = x.get('ref')()
+        context = generate_context(obj, obj, buff=buff.id, handler=obj.db.buffs)
+        if not quiet: buff.after_check(context)
+
+    return final
