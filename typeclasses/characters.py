@@ -7,10 +7,16 @@ is setup to be the "default" character type created by the default
 creation commands.
 
 """
+from typeclasses.item import Item
+from evennia.utils import utils
 import commands.default_cmdsets as default
 import commands.destiny_cmdsets as destiny
 import typeclasses.handlers.buffhandler as bh
-from evennia import DefaultCharacter
+from evennia import TICKER_HANDLER, DefaultCharacter
+
+
+import typeclasses.subclass as sc
+from typeclasses.content.soldier import Soldier
 
 class Character(DefaultCharacter):
 
@@ -30,25 +36,22 @@ class Character(DefaultCharacter):
         
         self.scripts.stop()
 
-        # The dictionaries we use for buffs, perks, effects, and traits
+        # The dictionaries we use for buffs, perks, effects, traits, and cooldowns. All characters have these, even NPCs.
         self.db.buffs = {}
         self.db.perks = {}
         self.db.effects = {}
         self.db.traits = {}
+        self.db.cooldowns = {} 
 
-        # Health values
-        self.db.health = 100
-        self.db.maxHealth = 100
+        self.db.health = 100        # Current health
+        self.db.maxHealth = 100     # Max health
 
-        self.db.evasion = 1.0
+        self.db.evasion = 1.0       # Base chance to dodge enemy attacks
 
-        # Are you a "Named" character? All characters start as false, except players, who start true. 
-        # Must be manually enabled for named NPCs
-        self.db.named = False
+        self.db.named = False       # If false, name will be prefixed by "the"
 
     def at_init(self):
-        # Used if you use attack someone or use 'target'
-        self.ndb.target = 0
+        self.ndb.target = None      # Used if you use attack someone or use 'target'
 
     @property
     def name(self) -> str:
@@ -83,6 +86,30 @@ class PlayerCharacter(Character):
     # The module we use for all player characters. This contains player-specific stats.
 
     weightMax = 100
+
+    def add_xp(self, xp: int):
+        '''Adds XP to this object, respecting all capacity rules.'''
+        _xp = bh.check_stat_mods(self, xp, 'xp')
+        self.db.xp = min(self.db.xp + _xp, self.xpCap)
+
+    def learn_xp(self):
+        '''Learns XP, permanent adding it to your current subclass' pool. If your subclass is capped or you have no xp, nothing happens.
+        
+        Returns the amount of XP you learned.'''
+        subclasses : dict = self.db.subclasses
+        subclass : str = self.db.subclass
+
+        if self.db.xp <= 0: return
+        if subclass not in subclasses.keys(): return
+
+        _learn = min(self.db.xp, self.xpGain)
+
+        subclasses[subclass]['xp'] += _learn
+        self.db.xp -= _learn
+
+        sc.check_for_level(self, subclass)
+
+        return _learn
     
     def at_object_creation(self):
         
@@ -92,26 +119,57 @@ class PlayerCharacter(Character):
         self.cmdset.add(destiny.DestinyBasicCmdSet, permanent=True)
         self.cmdset.add(destiny.DestinyBuilderCmdSet, permanent=True)
 
+        self.db.subclasses = {}     # Subclasses dictionary
+        self.db.armor = {}          # Armor dictionary
+        self.db.skills = {}         # Skills dictionary
+
+        # TickerHandler that fires off the "learn" function
+        TICKER_HANDLER.add(15, self.learn_xp)
+
         # Are you a "Named" character? Players start out as true.
         self.db.named = True
 
         # Your held weapon. What you shoot with when you use 'attack'
         self.db.held = None
 
-        # List of character's equipped armor. Equipped armor will replace anything in the same slot.
-        self.db.armor = {}
-
-        # Proficiencies. They determine what access to skills you have. 
-        # Each proficiency is a linear level progression
-        self.db.skills = {
-            'rifle': {'level':0, 'xp':0}
-        }
+        # XP stats. Current and cap XP. 
+        self.db.xp = 0
+        self.db.xpCap = 1000
+        self.db.xpGain = 10
+        self.db.level = 1
         
-        # Cooldowns!
-        self.db.cooldown = 0
+        # Start with soldier subclass on newly-created characters
+        self.db.subclass = 'soldier'
+        sc.add_subclass(self, Soldier)        
     
     @property
     def weight(self):
-        return self.myweight
+        '''The character's current weight, taking into account all held items.'''
+        _weight = 0
 
-    pass
+        for x in self.contents: 
+            if utils.inherits_from(x, Item):
+                x: Item
+                _weight += x.db.weight
+        
+        return _weight
+
+    @property
+    def xpGain(self):
+        '''The amount of XP you learn from your cap with each tick.'''
+        _gain = bh.check_stat_mods(self, self.level * 50, 'gain')
+        return _gain
+
+    @property
+    def xpCap(self):
+        '''The amount of XP you can have "stored". It is "learned" with each tick.'''
+        _cap = bh.check_stat_mods(self, self.level * 1000, 'cap')
+        return _cap
+
+    @property
+    def level(self):
+        '''The combined levels of all a player's subclasses.'''
+        subclasses: dict = self.db.subclasses
+        _lvl = 0
+        for x in subclasses.values(): _lvl += x.get('level', 1)
+        return _lvl

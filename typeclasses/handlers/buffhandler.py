@@ -142,15 +142,19 @@ def view_buffs(obj) -> list:
     return message
 
 def find_mods_by_value(handler: list, key: str, value) -> dict:
-    '''Returns a list of all buffs and traits on the handler with a mod whose variable matches the value.'''
+    '''Returns a list of all buffs or traits on the handler with a mod whose variable matches the value.'''
     if handler is None: return None
     
     b = []
 
     for v in handler:
-        buff: Buff = v.get('ref')()
-        if buff.mods:
-            for _m in buff.mods:
+        _ref = None
+        
+        if utils.inherits_from(v, Trait): _ref: Trait = v()
+        else: _ref: Buff = v.get('ref')()
+
+        if _ref.mods:
+            for _m in _ref.mods:
                 _m: Mod
                 val = vars(_m).get(key)
                 if value == val: 

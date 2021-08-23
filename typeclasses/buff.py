@@ -2,15 +2,14 @@ from typeclasses.context import BuffContext
 from typeclasses.objects import DefaultObject as Object
 
 class BaseBuff():
-    '''Base class for all "buffs" in the game. Buffs are permanent and temporary modifications to stats.
+    '''Base class for all "buffs" in the game. Buffs are permanent and temporary modifications to stats, and trigger conditions that run arbitrary code.
 
     There are 4 kinds of buffs:
         Buff:   Stat modification, temporary
         Trait:  Stat modification, permanent
         Effect: Trigger condition, temporary
         Perk:   Trigger condition, permanent
-    
-    Vars:
+    Strings:
         id:         The buff's unique ID. Will be used as the buff's key in the handler
         name:       The buff's name. Used for user messaging
         flavor:     The buff's flavor text. Used for user messaging
@@ -32,10 +31,10 @@ class Buff(BaseBuff):
     '''A buff is comprised of one or more temporary stat modifications.
 
     Strings:
-        id:         The buff's unique ID. Will be used as the trait's key in the handler
+        id:         The buff's unique ID. Will be used as the buff's key in the handler
         name:       The buff's name. Used for user messaging
         flavor:     The buff's flavor text. Used for user messaging
-    Values:
+    Vars:
         duration:   Buff duration in seconds. Will use this if the add_buff keyword is not overloaded. -1 for a "permanent" buff
         maxstacks:  The maximum number of stacks the buff can have.
         mods:       The modifiers the buff applies. See Mod class.
@@ -65,36 +64,35 @@ class Buff(BaseBuff):
         '''Hook function to run when this buff expires from an object.'''
         pass
 
-class Trait(Buff):
-    '''A trait is comprised of one or more permanent stat modifications.
-    
-    Vars:
-        slot:       If defined, uses this for the perk's dictionary key. Otherwise, uses the perk id.
+class Trait(BaseBuff):
+    '''A trait is comprised of one or more temporary stat modifications.
+
+    Strings:
         id:         The trait's unique ID. Will be used as the trait's key in the handler
         name:       The trait's name. Used for user messaging
         flavor:     The trait's flavor text. Used for user messaging
-        mods:       The modifiers the trait applies. See Mod class'''
-
-    slot = ''
+    Vars:
+        mods:       The modifiers the trait applies. See Mod class.'''
     
-    duration = -1
+    mods = []
 
     pass
 
 class Perk(BaseBuff):
     '''A permanent effect which fires off when its trigger condition is met.
     
+    Strings:
+        id:         The perk's unique ID. Will be used as the perk's key in the handler
+        name:       The perk's name. Used for user messaging
+        flavor:     The perk's flavor text. Used for user messaging
     Vars:
         slot:       If defined, uses this for the perk's dictionary key. Otherwise, uses the perk id.
         trigger:    Trigger string, used to activate it through the perk handler.
         release:    Release string, currently unused.
-
     Funcs:
         on_trigger: Hook for code to run when the perk is triggered. Required.
         on_release: Hook for code to run when the perk is released.
     '''
-
-    slot = None         # The perk's slot. If not None, will use this for the perk's dict key
 
     trigger = ''        # The perk's trigger string, used for functions
     release = ''        # The perk's release string, used for functions
@@ -110,7 +108,19 @@ class Perk(BaseBuff):
         pass
 
 class Effect(Buff):
-    '''A perk-like buff that has trigger conditions, allowing it to "fire off" when certain conditions are met.'''
+    '''A perk-like buff that has trigger conditions, allowing it to "fire off" when certain conditions are met.
+    
+    Strings:
+        id:         The buff's unique ID. Will be used as the buff's key in the handler
+        name:       The buff's name. Used for user messaging
+        flavor:     The buff's flavor text. Used for user messaging
+    Vars:
+        slot:       If defined, uses this for the effect's dictionary key. Otherwise, uses the effect id.
+        trigger:    Trigger string, used to activate it through the effect handler.
+        release:    Release string, currently unused.
+    Funcs:
+        on_trigger: Hook for code to run when the effect is triggered. Required.
+        on_release: Hook for code to run when the effect is released.'''
     
     trigger = ''        # The effect's trigger string, used for functions
     release = ''        # The effect's release string, used for functions
@@ -137,7 +147,7 @@ class Mod():
     perstack = 0                # How much additional value is added to the buff per stack
     modifier = 'add'                 # The modifier the buff applies. 'add' or 'mult' 
 
-    def __init__(self, stat: str, modifier: str, base, perstack) -> None:
+    def __init__(self, stat: str, modifier: str, base, perstack = 0) -> None:
         '''
         Args:
             stat:       The stat the buff affects. Essentially a tag used to find the buff for coding purposes

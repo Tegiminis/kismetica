@@ -200,15 +200,10 @@ class CmdCheck(BaseCommand):
 
 class CmdPTest(BaseCommand):
     """
-    Tests if locks can use dicts
-
-    Usage:
-      ptest
-
-    A debug command to test lockfuncs.
+    Testing command. Does whatever you tell it to.
     """
 
-    key = "ptest"
+    key = "test"
     locks = "cmd: perm(Builder)"
     help_category = "General"
 
@@ -217,6 +212,5 @@ class CmdPTest(BaseCommand):
 
     def func(self):
         caller = self.caller
-        _str = lockfuncs.attr(self.caller, self.caller, "locktest", "8", compare="gt")
-        caller.msg( str(caller.weight) )
+        caller.msg( str(caller.xpGain) )
 
