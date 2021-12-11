@@ -51,10 +51,30 @@ class WeakenPerk(Perk):
     trigger = 'hit'
 
     def on_trigger(self, context: BuffContext) -> BuffContext:
-        context.owner.msg('Debug: Attempting to weaken')
         bh.add_buff(context.origin, context.target, bl.Weakened)
+
+class LeechRoundPerk(Perk):
+    id = 'leechround'
+    name = 'Leech Round'
+    flavor = 'Primes enemies with a leeching worm which heals attackers.'
+
+    trigger = 'hit'
+
+    def on_trigger(self, context: BuffContext) -> BuffContext:
+        bh.add_buff(context.origin, context.target, bl.Leeching)
+
+class ThornsPerk(Perk):
+    id = 'thorns'
+    name = 'Thorns'
+    flavor = 'Damages attackers'
+
+    trigger = 'thorns'
+
+    def on_trigger(self, context: BuffContext) -> BuffContext:
+        context.dc.origin.damage_health(context.dc.damage * 0.1)
 
 class PerkList():
     rampage = RampagePerk
     exploit = ExploitPerk
     weaken = WeakenPerk
+    leechround = LeechRoundPerk

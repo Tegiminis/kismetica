@@ -41,8 +41,15 @@ class Character(DefaultCharacter):
     def at_init(self):
         self.ndb.target = None      # Used if you use attack someone or use 'target'
 
+    def damage_health(self, damage: int, msg=None):
+        self.db.health -= max(self.db.health - damage, 0)
+        self.msg('You were damaged by %i!' % damage)
+    def add_health(self, heal: int, msg=None):
+        self.db.health -= max(self.db.health + heal, 0)
+        self.msg('You healed by %i!' % heal)
+    
     @property
-    def name(self) -> str:
+    def named(self) -> str:
         if self.db.named is False: return "the " + self.key
         else: return self.key
     
@@ -93,8 +100,6 @@ class Character(DefaultCharacter):
 class PlayerCharacter(Character):
 
     # The module we use for all player characters. This contains player-specific stats.
-
-    weightMax = 100
 
     def add_xp(self, xp: int):
         '''Adds XP to this object, respecting all capacity rules.'''

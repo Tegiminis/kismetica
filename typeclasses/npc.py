@@ -14,12 +14,12 @@ class NPC(Character):
         # Various types of messaging
         self.db.msg = {
             'idle': [
-                "%s stomps their feet impatiently." % self.name,
-                "%s bares their teeth menacingly." % self.name
+                "%s stomps their feet impatiently." % self.named,
+                "%s bares their teeth menacingly." % self.named
             ],
-            'despawn': "%s crumbles away into a fine dust." % self.name,
-            'respawn': '%s revives in a glittering beam of light.' % self.name,
-            'retreat': "%s backs up to find a better position." % self.name
+            'despawn': "%s crumbles away into a fine dust." % self.named,
+            'respawn': '%s revives in a glittering beam of light.' % self.named,
+            'retreat': "%s backs up to find a better position." % self.named
         }
 
         self.db.lootable = True     # Can this mob be looted?
@@ -135,7 +135,7 @@ class NPC(Character):
         )
 
         self.location.msg_contents(
-            ( "\n|n" + (weapon['msg'] % (self.name, target.name, weapon['name'])).capitalize() ) +
+            ( "\n|n" + (weapon['msg'] % (self.name, target.named, weapon['name'])).capitalize() ) +
             ( "\n|n" + msg_damage ), 
             exclude=(self, target)
         )

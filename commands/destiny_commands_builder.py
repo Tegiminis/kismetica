@@ -1,5 +1,5 @@
 from typeclasses.content.workshop import RapidHit
-from typeclasses.content.perklist import ExploitPerk, RampagePerk, WeakenPerk
+from typeclasses.content.perklist import ExploitPerk, LeechRoundPerk, RampagePerk, ThornsPerk, WeakenPerk
 from typeclasses.context import BuffContext
 from evennia import lockfuncs
 from evennia import Command as BaseCommand
@@ -143,7 +143,9 @@ class CmdPerk(BaseCommand):
     perklist = {
         'rampage' : RampagePerk,
         'exploit' : ExploitPerk,
-        'weaken' : WeakenPerk
+        'weaken' : WeakenPerk,
+        'leech' : LeechRoundPerk,
+        'thorns' : ThornsPerk
     }
     
     def parse(self):

@@ -4,7 +4,7 @@ import random
 from typeclasses.buff import BaseBuff, Buff, Perk, Mod
 from typeclasses.objects import Object
 from evennia import utils
-from typeclasses.context import BuffContext, Context, generate_context
+from typeclasses.context import BuffContext, Context, DamageContext, generate_context
 
 def add_buff(origin: Object, target: Object, buff: BaseBuff, stacks = 1, duration = None) -> Context:
     '''Add a buff or effect instance to an object or player that can have buffs, respecting all stacking/refresh/reapply rules.
@@ -138,7 +138,6 @@ def collect_mods(handler, stat: str):
             if m.stat == stat:
                 stacks = 1 if 'stacks' not in buff.keys() else buff['stacks']
                 packed_mod = (m, stacks)
-                if 'origin' in buff.keys(): buff['origin'].location.msg('Debug: Checking for mods of type %s applied by you.' % 'stat')
                 mods.append(packed_mod)
                 buffs.append(buff)
 
@@ -181,7 +180,7 @@ def check_stat_mods(obj: Object, base: float, stat: str, quiet = False):
     cleanup_buffs(obj)
 
     if not obj.db.buffs and not obj.db.perks: 
-        obj.location.msg('Debug: No buffs or perks found')
+        # obj.location.msg('Debug: No buffs or perks found')
         return base
 
     # Buff handler assignment, so we can find the relevant buffs
@@ -189,9 +188,7 @@ def check_stat_mods(obj: Object, base: float, stat: str, quiet = False):
 
     # Find all buffs and traits related to the specified stat.
     _toApply: list = collect_mods(_traits, stat)
-    if _toApply:
-        obj.location.msg('Debug Checking Modifiers of type: ' + stat)
-        obj.location.msg('Mods collected: ' + str(_toApply))
+    # if _toApply:  obj.location.msg('Mods collected: ' + str(_toApply))
 
     if not _toApply: return base
 
@@ -201,7 +198,7 @@ def check_stat_mods(obj: Object, base: float, stat: str, quiet = False):
     # Run the "after check" functions on all relevant buffs
     for buff in _toApply[0]:
         _handler = None
-        if 'origin' in buff.keys(): buff['origin'].location.msg('Debug Checking buff of type: ' + stat)
+        # if 'origin' in buff.keys(): buff['origin'].location.msg('Debug Checking buff of type: ' + stat)
         ref = buff['ref']
         _handler = obj.db.buffs if isinstance(ref, Buff) else obj.db.perks 
         context = generate_context(obj, obj, buff=buff, handler=_handler)
@@ -220,7 +217,7 @@ def add_perk(obj: Object, perk: Perk, slot: str = None):
     else: obj.db.perks[perk.id] = b     
 
 def remove_perk(origin, target, id):
-    '''Removes a perk or trait with matching id or slot from the object's handler. Calls the perk's on_remove function.'''
+    '''Removes a perk with matching id or slot from the object's handler. Calls the perk's on_remove function.'''
     handler = target.db.perks
 
     if id in handler.keys():
@@ -233,7 +230,7 @@ def remove_perk(origin, target, id):
         return context
     else: return None
 
-def trigger_effects(self, target, trigger: str) -> str:
+def trigger_effects(self, target, trigger: str, dc : DamageContext = None) -> str:
     '''Activates all perks and effects on the origin that have the same trigger string. Returns a list of all messaging for the perks/effects.
     Vars:
         self:       The game object whose effects you wish to trigger. "origin" in BuffContext
@@ -265,7 +262,7 @@ def trigger_effects(self, target, trigger: str) -> str:
         if isinstance(_eff, Buff): _handler = self.db.buffs
         elif isinstance (_eff, Perk): _handler = self.db.perks
 
-        context = generate_context(self, target, buff=x, handler=_handler)
+        context = generate_context(self, target, buff=x, handler=_handler, dc=dc)
         trigger_context = _eff.on_trigger(context)
     
     _msg = ''

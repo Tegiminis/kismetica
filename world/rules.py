@@ -1,8 +1,8 @@
 import random
-from evennia import DefaultCharacter, utils
 import time
+from typeclasses.context import DamageContext, generate_context
+from evennia import DefaultCharacter, utils
 import typeclasses.handlers.buffhandler as bh
-
 from typeclasses.weapon import Weapon
 
 slot = {'kinetic':0 , 'energy':1 , 'power':2}
@@ -10,41 +10,47 @@ element = {'neutral':0 , 'void':1 , 'solar':2, 'arc':3}
 ammo = {'primary':0 , 'special':1 , 'power':2}
 armor = {'head':0 , 'arms':1 , 'chest':2, 'legs':3, 'class':4}
 
-def basic_attack(origin: DefaultCharacter, target: DefaultCharacter):
+def basic_attack(attacker: DefaultCharacter, defender: DefaultCharacter):
     '''The most basic attack a player can perform. Uses a weapon, held by origin, to attack the target.
     
     Attacker must have a weapon in db.held, otherwise this command will return an error.
     '''
-    weapon: Weapon = origin.db.held
+    weapon: Weapon = attacker.db.held
     now = time.time()
 
-    if utils.inherits_from(target, 'typeclasses.npc.NPC') or target.db.crucible == True:
+    if utils.inherits_from(defender, 'typeclasses.npc.NPC') or defender.db.crucible == True:
         # The string of "hits" used for messaging. Looks like this once everything's done: "15! 10! Miss! 10! 10!"
         d_msg = ''
 
         # Hit calculation and initial attack messages
-        hit = roll_hit(origin, target)
-        origin.msg( "\n|n" + (weapon.db.msg['attack'] % ('you',target)).capitalize())
+        hit = roll_hit(attacker, defender)
+        attacker.msg( "\n|n" + (weapon.db.msg['attack'] % ('you',defender.named)).capitalize())
         if hit[1]: d_msg += '|yCrit! '
 
         # Damage calculation and messaging
-        damage = calculate_damage(origin, target, *hit)    
-        d_msg += "%i damage!" % damage             
+        damage = calculate_damage(attacker, defender, *hit)    
+        d_msg += "%i damage!" % damage
+        dc : DamageContext = generate_context(attacker, defender, damage, weapon)             
 
         if hit[0]:
-            damage_target(damage, target)
-            origin.msg( d_msg )
-            bh.trigger_effects(weapon, target, 'hit')
-            bh.trigger_effects(origin, target, 'hit')
+            damage_target(damage, defender)
+            attacker.msg( d_msg )
+
+            bh.trigger_effects(weapon, defender, 'hit', dc)
+            bh.trigger_effects(attacker, defender, 'hit', dc)
+            
             if hit[1]:
-                bh.trigger_effects(weapon, target, 'crit')
-                bh.trigger_effects(origin, target, 'crit')
+                bh.trigger_effects(weapon, defender, 'crit', dc)
+                bh.trigger_effects(attacker, defender, 'crit', dc)
+            
+            bh.trigger_effects(defender, attacker, 'thorns', dc)
+            bh.trigger_effects(defender, defender, 'injury', dc)
         else:
-            origin.msg( weapon.db.msg['miss'] )
+            attacker.msg( weapon.db.msg['miss'] )
 
-        origin.db.cooldown = now
+        attacker.db.cooldown = now
 
-        utils.delay(weapon.rpm, origin.msg, weapon.db.msg['cooldown'])
+        utils.delay(weapon.rpm, attacker.msg, weapon.db.msg['cooldown'])
 
 def roll_hit(attacker, defender):
     '''
@@ -60,9 +66,12 @@ def roll_hit(attacker, defender):
     weapon: Weapon = attacker.db.held
 
     # Apply all accuracy and crit buffs for attack, and evasion buffs for defense
-    accuracy = bh.check_stat_mods(attacker, weapon.accuracy, 'accuracy')
-    crit = bh.check_stat_mods(attacker, weapon.critChance, 'crit')
-    evasion = bh.check_stat_mods(defender, defender.evasion, 'evasion')
+    accuracy = weapon.accuracy
+    accuracy = bh.check_stat_mods(attacker, accuracy, 'accuracy')
+    crit = weapon.critChance
+    crit = bh.check_stat_mods(attacker, crit, 'crit')
+    evasion = defender.evasion
+    evasion = bh.check_stat_mods(defender, evasion, 'evasion')
 
     # Apply a range penalty equal to 20% times the difference in defender and attacker range
     range_penalty = 1.0

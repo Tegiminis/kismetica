@@ -17,7 +17,7 @@ class RampageBuff(Buff):
 
     mods = [ Mod('damage', 'mult', 0.15, 0.15) ]
 
-    def on_remove(self, context: BuffContext):
+    def on_expire(self, context: BuffContext):
         context.owner.msg('The bloodlust fades.')
 
 class Exploit(Buff):
@@ -81,8 +81,24 @@ class Weakened(Buff):
 
     mods = [ Mod('injury', 'add', 100) ]
 
-    def after_check(self, context: BuffContext):
-        context.applier.location.msg_contents('Debug: Checking Weakened debuff')
+class Leeching(Buff):
+    id = 'leeching'
+    name = 'Leeching'
+    flavor = 'Attacking this target fills you with vigor.'
+
+    duration = 30
+
+    refresh = True
+    stacking = False
+    unique = False
+
+    trigger = 'thorns'
+
+    def on_trigger(self, context: BuffContext) -> BuffContext:
+        target = context.target
+        target.msg('Debug: Attempting leech.')
+        heal = context.dc.damage * 0.1
+        target.add_health(heal)
 
 class BuffList():
     '''Initialization of buff and effect typeclasses used to apply buffs to players.
@@ -92,3 +108,4 @@ class BuffList():
     rampage = RampageBuff
     exploited = Exploited
     exploit = Exploit
+    leeching = Leeching

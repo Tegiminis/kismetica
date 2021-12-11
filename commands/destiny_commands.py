@@ -123,11 +123,11 @@ class CmdEquip(BaseCommand):
         if target:
             if target.location.id == caller.id:
                 caller.db.held = target
-                caller.msg("You equip the %s. %s" % (name, target.db.msg['equip']))
+                caller.msg("You equip the %s. %s" % (target.named, target.db.msg['equip']))
 
-                _name = caller.name
-                name = target.named()
-                caller.location.msg_contents("%s hoists %s in their hands." % (_name, name), exclude=caller)
+                _name = caller.named
+                name = target.named
+                caller.location.msg_contents("%s hoists %s in their hands." % (caller.named, target.named), exclude=caller)
                 return
             else:
                 caller.msg("You must have a weapon in your inventory in order to equip it.")
@@ -192,7 +192,7 @@ class CmdCheck(BaseCommand):
         target = caller.search(self.args)
         buffs = bh.view_buffs(target)
         if buffs:
-            msg = target.named().capitalize() + ' is currently buffed by: \n|n\n|n'
+            msg = target.name.capitalize() + ' is currently buffed by: \n|n\n|n'
             for x in buffs:
                 msg += x + "\n|n"
             caller.msg(msg)

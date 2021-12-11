@@ -54,11 +54,10 @@ class Weapon(Object):
 
         # Gun's rarity. Common, Uncommon, Rare, Legendary, Unique, Exotic. Dictates number of perks when gun is rolled on.
         self.db.rarity = 1
-
+    
+    @property
     def named(self):
-        _name = self.key
-        if self.db.named is False:
-                _name = "the " + _name
+        _name = self.key if self.db.named is True else "the " + self.name
         return _name
 
     def at_desc(self, looker, **kwargs):
@@ -73,9 +72,9 @@ class Weapon(Object):
     @property
     def damage(self):
         _dmg = random.randint(self.damageMin, self.damageMax)
-        self.location.msg('Debug Randomized Damage: ' + str(_dmg))
+        # self.location.msg('Debug Randomized Damage: ' + str(_dmg))
         _modifiedDmg = bh.check_stat_mods(self, _dmg, 'damage')
-        self.location.msg('Debug Modified Damage: ' + str(_modifiedDmg - _dmg))
+        # self.location.msg('Debug Modified Damage: ' + str(_modifiedDmg - _dmg))
         return _modifiedDmg
 
     @property

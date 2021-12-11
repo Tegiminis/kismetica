@@ -1,5 +1,4 @@
 from evennia.utils import utils
-from typeclasses.weapon import Weapon
 
 class Context():
     '''A container for "context" information. Base class is a relation between two objects: origin and acted upon.'''
@@ -32,12 +31,14 @@ class BuffContext(Context):
     owner = None
     buff = None
     applier = None
+    dc = None
 
-    def __init__(self, origin, target, buff, handler) -> None:
+    def __init__(self, origin, target, buff, handler, dc: DamageContext = None) -> None:
         self.origin = origin
         self.target = target
         self.handler = handler
-        if utils.inherits_from(origin, Weapon): self.owner = target.location
+        self.dc = dc
+        self.owner = origin.location
 
         _k = buff.keys()
         self.id = buff ['uid'] if 'uid' in _k else buff['ref'].id
@@ -47,7 +48,7 @@ class BuffContext(Context):
         if 'stacks' in _k: self.stacks = buff['stacks']
         if 'start' in _k: self.start = buff['start']
 
-def generate_context(origin=None, target=None, damage=None, weapon=None, buff=None, handler=None) -> Context:
+def generate_context(origin=None, target=None, damage=None, weapon=None, buff=None, handler=None, dc=None) -> Context:
     '''Wrapper function for generating contexts. Takes a type and named arguments to create the context.'''
 
     if not origin: origin = target
@@ -55,10 +56,10 @@ def generate_context(origin=None, target=None, damage=None, weapon=None, buff=No
 
     context = None
 
-    if damage or weapon:
+    if damage and weapon:
         context = DamageContext(origin, target, weapon, damage)
-    elif buff or handler:
-        context = BuffContext(origin, target, buff, handler)
+    elif buff and handler:
+        context = BuffContext(origin, target, buff, handler, dc)
     else:
         context = Context(origin, target)
 
