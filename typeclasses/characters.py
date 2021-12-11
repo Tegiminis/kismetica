@@ -20,17 +20,7 @@ from typeclasses.content.soldier import Soldier
 
 class Character(DefaultCharacter):
 
-    # Character class inherited by all characters in the MUD. Stats here will be used by every character in the game.
-
-    @property
-    def evasion(self):
-        _ev = bh.check_stat_mods(self, self.db.evasion, 'evasion')
-        return _ev
-
-    @property
-    def maxHealth(self):
-        _mh = bh.check_stat_mods(self, self.db.maxHealth, 'maxhealth')
-        return _mh
+    # Character class inherited by all characters in the MUD. Stats here will be used by every character in the game.    
 
     def at_object_creation(self):
         
@@ -39,8 +29,6 @@ class Character(DefaultCharacter):
         # The dictionaries we use for buffs, perks, effects, traits, and cooldowns. All characters have these, even NPCs.
         self.db.buffs = {}
         self.db.perks = {}
-        self.db.effects = {}
-        self.db.traits = {}
         self.db.cooldowns = {} 
 
         self.db.health = 100        # Current health
@@ -57,7 +45,28 @@ class Character(DefaultCharacter):
     def name(self) -> str:
         if self.db.named is False: return "the " + self.key
         else: return self.key
+    
+    @property
+    def evasion(self):
+        _ev = bh.check_stat_mods(self, self.db.evasion, 'evasion')
+        return _ev
 
+    @property
+    def maxHealth(self):
+        _mh = bh.check_stat_mods(self, self.db.maxHealth, 'maxhealth')
+        return _mh
+
+    @property
+    def traits(self):
+        _perks = [x for x in self.db.perks.values() if x['ref']().mods ]
+        _buffs = [x for x in self.db.buffs.values() if x['ref']().mods ]
+        return _perks + _buffs
+
+    @property
+    def effects(self):
+        _perks = [x for x in self.db.perks.values() if x['ref']().trigger ]
+        _buffs = [x for x in self.db.buffs.values() if x['ref']().trigger ]
+        return _perks + _buffs
 
     """
     The Character defaults to reimplementing some of base Object's hook methods with the

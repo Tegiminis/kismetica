@@ -1,11 +1,12 @@
 from evennia import DefaultCharacter, lockfuncs
 from evennia import Command as BaseCommand
-import typeclasses.handlers.perkhandler as ph
 from world import rules
 from typeclasses import characters as Character
 from evennia import utils
 import typeclasses.handlers.buffhandler as bh
 import time
+import world.loot as loot
+from typeclasses.context import generate_context
 
 class CmdAttack(BaseCommand):
     """
@@ -191,7 +192,7 @@ class CmdCheck(BaseCommand):
         target = caller.search(self.args)
         buffs = bh.view_buffs(target)
         if buffs:
-            msg = '%s is currently buffed by: \n|n\n|n' + target.named()
+            msg = target.named().capitalize() + ' is currently buffed by: \n|n\n|n'
             for x in buffs:
                 msg += x + "\n|n"
             caller.msg(msg)
@@ -214,3 +215,28 @@ class CmdPTest(BaseCommand):
         caller = self.caller
         caller.msg( str(caller.xpGain) )
 
+class CmdLootTest(BaseCommand):
+    """
+    Testing command. Does whatever you tell it to.
+    """
+
+    key = "ltest"
+    locks = "cmd: perm(Builder)"
+    help_category = "General"
+
+    table = [
+        (loot.TestWeapon, 100)
+    ]
+
+    def parse(self):
+        self.target = self.args.strip()
+
+    def func(self):
+        caller = self.caller
+        context = generate_context(caller)
+        _t = loot.roll(1.0)
+        caller.msg("Debug: Loot roll: " + str(_t) )
+
+        if loot.roll(1.0):
+            result = loot.roll_on_table(self.table, context)
+            loot.parse_result(result, context)

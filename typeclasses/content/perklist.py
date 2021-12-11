@@ -1,5 +1,5 @@
 from typeclasses.context import Context, BuffContext, generate_context
-from typeclasses.buff import Buff, Perk, Trait, Effect, Mod
+from typeclasses.buff import Buff, Perk, Mod
 import typeclasses.handlers.buffhandler as bh
 import typeclasses.content.bufflist as bl
 
@@ -8,7 +8,7 @@ class RampagePerk(Perk):
     name = 'Rampage'
     flavor = 'Kills with this weapon temporarily increase its damage.'
 
-    trigger = 'kill'
+    trigger = 'hit'
 
     stack_msg = {
         1: 'You feel a bloodlust welling up inside you.',
@@ -17,9 +17,44 @@ class RampagePerk(Perk):
     } 
 
     def on_trigger(self, context: Context):
-        bc: BuffContext = bh.add_buff(context.actor, context.actee, bl.RampageBuff)
-        if bc.stacks in self.stack_msg: context.actee.msg( self.stack_msg[bc.stacks] )
+        bc: BuffContext = bh.add_buff(context.origin, context.origin, bl.RampageBuff)
+        if bc.stacks in self.stack_msg: context.owner.msg( self.stack_msg[bc.stacks] )
         return bc
+
+class ExploitPerk(Perk):
+
+    id = 'exploit'
+    name = 'Exploit'
+    flavor = 'Shooting an enemy with this weapon allows you to find their weakness.'
+
+    trigger = 'hit'
+
+    stack_msg = {
+        1:"You begin to notice flaws in your opponent's defense.",
+        10:"You're certain you've found a weakness. You just need more time.",
+        20:"You've discovered your opponent's weak spot."
+    }
+
+    trigger_msg = ''
+
+    def on_trigger(self, context: Context) -> BuffContext:
+        if 'exploited' in context.origin.db.buffs.keys(): return
+        bc: BuffContext = bh.add_buff(context.origin, context.origin, bl.Exploit)
+        if bc.stacks in self.stack_msg: bc.owner.msg( self.stack_msg[bc.stacks] )
+        return bc
+
+class WeakenPerk(Perk):
+    id = 'weaken'
+    name = 'Weaken'
+    flavor = 'Shooting an enemy with this weapon increases the damage they take from all sources.'
+
+    trigger = 'hit'
+
+    def on_trigger(self, context: BuffContext) -> BuffContext:
+        context.owner.msg('Debug: Attempting to weaken')
+        bh.add_buff(context.origin, context.target, bl.Weakened)
 
 class PerkList():
     rampage = RampagePerk
+    exploit = ExploitPerk
+    weaken = WeakenPerk

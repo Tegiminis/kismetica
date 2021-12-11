@@ -2,7 +2,6 @@ import random
 from evennia import DefaultCharacter, utils
 import time
 import typeclasses.handlers.buffhandler as bh
-import typeclasses.handlers.perkhandler as ph
 
 from typeclasses.weapon import Weapon
 
@@ -35,8 +34,11 @@ def basic_attack(origin: DefaultCharacter, target: DefaultCharacter):
         if hit[0]:
             damage_target(damage, target)
             origin.msg( d_msg )
-            ph.trigger_effects(weapon, 'hit')
-            ph.trigger_effects(origin, 'hit')
+            bh.trigger_effects(weapon, target, 'hit')
+            bh.trigger_effects(origin, target, 'hit')
+            if hit[1]:
+                bh.trigger_effects(weapon, target, 'crit')
+                bh.trigger_effects(origin, target, 'crit')
         else:
             origin.msg( weapon.db.msg['miss'] )
 
@@ -69,8 +71,9 @@ def roll_hit(attacker, defender):
     hit = random.random()
     evasion = random.random()
 
-    # Apply any player accuracy buffs
+    # Apply any character and weapon accuracy buffs
     accuracy = bh.check_stat_mods(attacker, accuracy, 'accuracy')
+    # attacker.msg('Debug Accuracy: ' + str(accuracy))
 
     # Modify the hit roll by the accuracy value.
     hit = hit * accuracy
@@ -85,10 +88,9 @@ def calculate_damage(attacker, defender, hit, crit) -> float:
 
     weapon: Weapon = attacker.db.held
 
-    # Roll to find damage based on weapon's min/max
-    damage = random.randint(weapon.damageMin, weapon.damageMax)
-
-    # attacker.msg('Base Damage: ' + str(damage))
+    # Roll to find damage based on weapon's min/max, and apply weapon buffs
+    attacker.msg('Debug Base Damage: ' + str(weapon.db.damage))
+    damage = weapon.damage
 
     # Apply falloff, if relevant. Falloff is a flat 20% damage penalty
     if weapon.falloff < defender.db.range: damage *= 0.8
@@ -96,19 +98,14 @@ def calculate_damage(attacker, defender, hit, crit) -> float:
     # All damage is multiplied by crit
     if crit is True: 
         damage = round(damage * weapon.critMult)
-        ph.trigger_effects(weapon, 'crit')
 
     # attacker.msg('Crit Damage: ' + str(damage))
 
-    # Apply all character-level buffs to damage
-    attacker_buffed = bh.check_stat_mods(attacker, damage, 'damage')
-    damage = attacker_buffed
-    
-    # Trigger any perks that function on hit. Returns a list of the perk's messages.
-    # msg = ph.trigger_effects(weapon, 'hit')
-    # msg += ph.trigger_effects(attacker, 'hit')
-
-    # attacker.msg(msg)
+    # Apply all character-level buffs and debuffs to damage
+    damage = bh.check_stat_mods(attacker, damage, 'damage')
+    attacker.msg('Debug Buff-Modified Damage: ' + str(damage))
+    damage = bh.check_stat_mods(defender, damage, 'injury')
+    attacker.msg('Debug Debuff-Modified Damage: ' + str(damage))
 
     bh.cleanup_buffs(attacker)
     return round(damage)
@@ -121,6 +118,8 @@ def damage_target(damage, target):
     # If the target has 0 health, kill it
     if target.db.health <= 0:
         kill(target)
+
+    # Trigger 
 
     return
 

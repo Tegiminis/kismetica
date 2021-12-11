@@ -1,7 +1,7 @@
 '''Where new perks and buffs are made!'''
 
 from typeclasses.context import Context, BuffContext, generate_context
-from typeclasses.buff import Buff, Perk, Trait, Effect, Mod
+from typeclasses.buff import Buff, Perk, Mod
 import typeclasses.handlers.buffhandler as bh
 from typeclasses.buff import Buff, Mod
 
@@ -16,7 +16,7 @@ class FourthTime(Perk):
         bc: BuffContext = bh.add_buff(context.actor, context.actee, FourthTimeEffect)
         return bc
 
-class FourthTimeEffect(Effect):
+class FourthTimeEffect(Buff):
     id = 'fourthtime'
     name = "Fourth Time's The Charm"
     flavor = "Rapidly landing precision hits returns two rounds to the magazine."
@@ -70,7 +70,7 @@ class KillClipPerk(Perk):
     def on_trigger(self, context: BuffContext) -> BuffContext:
         return bh.add_buff(context.actor, context.actee, KillClipEffect)
 
-class KillClipEffect(Effect):
+class KillClipEffect(Buff):
     id = 'killclip'
     name = 'Kill Clip'
     flavor = 'Reloading after a kill grants increased damage'

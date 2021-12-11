@@ -1,12 +1,11 @@
 from typeclasses.content.workshop import RapidHit
-from typeclasses.content.perklist import RampagePerk
+from typeclasses.content.perklist import ExploitPerk, RampagePerk, WeakenPerk
 from typeclasses.context import BuffContext
 from evennia import lockfuncs
 from evennia import Command as BaseCommand
 from world import rules
 from typeclasses import characters as Character
 from typeclasses.handlers import buffhandler as bh
-from typeclasses.handlers import perkhandler as ph
 from evennia import utils
 import time
 
@@ -143,7 +142,8 @@ class CmdPerk(BaseCommand):
 
     perklist = {
         'rampage' : RampagePerk,
-        'rapidhit' : RapidHit
+        'exploit' : ExploitPerk,
+        'weaken' : WeakenPerk
     }
     
     def parse(self):
@@ -172,5 +172,5 @@ class CmdPerk(BaseCommand):
         _perk = self.perklist.get(self.args[1])
         caller.msg('Debug: Perk applied = ' + str(_perk))
 
-        if target and _perk: ph.add_perk(target, _perk, slot)
+        if target and _perk: bh.add_perk(target, _perk, slot)
         else: caller.msg("Invalid perk.")

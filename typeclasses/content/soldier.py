@@ -1,7 +1,7 @@
 from typeclasses.subclass import Subclass
-from typeclasses.buff import Trait, Mod
+from typeclasses.buff import Perk, Mod
 
-class SoldierMarksman(Trait):
+class SoldierMarksman(Perk):
     id = 'soldiermarksman'
     name = 'Marksman'
     flavor = 'Increased accuracy.'

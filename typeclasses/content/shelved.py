@@ -1,7 +1,7 @@
 '''For content which is otherwise inaccessible'''
 
 from typeclasses.context import Context, BuffContext, generate_context
-from typeclasses.buff import Buff, Perk, Trait, Effect, Mod
+from typeclasses.buff import Buff, Perk, Mod
 import typeclasses.handlers.buffhandler as bh
 import random
 
@@ -27,7 +27,7 @@ class ExploitPerk(Perk):
         if bc.stacks in self.stack_msg: context.actee.msg( self.stack_msg[bc.stacks] )
         return bc
 
-class Exploit(Effect):
+class Exploit(Buff):
     id = 'exploit'
     name = 'Exploit'
     flavor = "You are learning your opponent's weaknesses."

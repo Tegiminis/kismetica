@@ -1,3 +1,4 @@
+import random
 from typeclasses.objects import Object
 from typeclasses.handlers import buffhandler as bh
 
@@ -11,8 +12,6 @@ class Weapon(Object):
 
         self.db.buffs = {}
         self.db.perks = {}
-        self.db.effects = {}
-        self.db.traits = {}
 
         self.db.cooldowns = {}
 
@@ -73,17 +72,20 @@ class Weapon(Object):
     
     @property
     def damage(self):
-        _dmg = bh.check_stat_mods(self, self.db.damage, 'damage')
-        return _dmg
+        _dmg = random.randint(self.damageMin, self.damageMax)
+        self.location.msg('Debug Randomized Damage: ' + str(_dmg))
+        _modifiedDmg = bh.check_stat_mods(self, _dmg, 'damage')
+        self.location.msg('Debug Modified Damage: ' + str(_modifiedDmg - _dmg))
+        return _modifiedDmg
 
     @property
     def damageMin(self):
-        _min = self.damage / 2
+        _min = self.db.damage / 2
         return int( _min + ( _min * (self.stability / 100) ) )
 
     @property
     def damageMax(self):
-        _dmg = self.damage
+        _dmg = self.db.damage
         _max = _dmg / 2
         return int( _dmg + _max + (_max * (self.range / 100)) )
 
@@ -147,4 +149,19 @@ class Weapon(Object):
     def shots(self):
         _shots = bh.check_stat_mods(self, self.db.shots, 'shots')
         return _shots
+    
+    @property
+    def traits(self):
+        _perks = [x for x in self.db.perks.values() if x['ref']().mods ]
+        _buffs = [x for x in self.db.buffs.values() if x['ref']().mods ]
+        # self.location.msg('Debug Modifier Perks And Buffs: ' + str(_perks + _buffs))
+        return _perks + _buffs
+
+    @property
+    def effects(self):
+        _perks = [x for x in self.db.perks.values() if x['ref']().trigger ]
+        _buffs = [x for x in self.db.buffs.values() if x['ref']().trigger ]
+        _perks.extend(_buffs)
+        # self.location.msg("Debug Effects: " + str(_perks))
+        return _perks
     #endregion

@@ -92,12 +92,4 @@ class AIBasic(Script):
             delay = self.obj.db.timer['respawn']
             self.obj.db.state = 'respawn'
 
-        self.restart( interval=delay )
-
-
-        
-        
-
-
-
-        
+        self.restart( interval=delay )    

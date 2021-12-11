@@ -1,8 +1,6 @@
-
-
 from evennia import CmdSet, utils
-from typeclasses.buff import Perk, Trait, Mod
-import typeclasses.handlers.perkhandler as ph
+from typeclasses.buff import Perk, Mod
+from typeclasses.handlers import buffhandler as bh
 
 class Subclass():
     '''A bundle of subclass information. Used to set traits and grant access to the class' command sets.'''
@@ -20,7 +18,7 @@ class Subclass():
 
     def add_traits(self, target, level):
         '''Function which adds traits whenever you level. Should not be overloaded.'''
-        if level in self.traits: ph.add_perk(target, self.traits[level])
+        if level in self.traits: bh.add_perk(target, self.traits[level])
             
     def on_level(self, target):
         '''Hook function which fires off after you level'''

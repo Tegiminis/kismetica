@@ -1,3 +1,4 @@
+import typeclasses.handlers.buffhandler as bh
 from typeclasses.characters import Character
 
 # destiny_rules is the rules module that contains all combat calculations, enums, and other important doodads
@@ -6,7 +7,7 @@ from world import rules
 import random
 
 class NPC(Character):
-    
+
     def at_object_creation(self):
         super().at_object_creation()
         
@@ -41,7 +42,6 @@ class NPC(Character):
             'acc': 1.5,
             'msg': '%s shoots %s with a %s.',
             'cooldown': 6
-
         }
 
         # The range the NPC sits at. You suffer an accuracy penalty shooting at enemies outside your range

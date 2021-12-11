@@ -12,6 +12,7 @@ class DestinyBasicCmdSet(CmdSet):
         self.add(basic.CmdEquip())
         self.add(basic.CmdSwitch())
         self.add(basic.CmdPTest())
+        self.add(basic.CmdLootTest())
         self.add(basic.CmdCheck())
 
 class DestinyBuilderCmdSet(CmdSet):
