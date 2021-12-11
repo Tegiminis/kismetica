@@ -58,9 +58,11 @@ def roll_hit(attacker, defender):
     '''
     # Get the weapon used, required for a good portion of the hit calculation
     weapon: Weapon = attacker.db.held
-    accuracy = weapon.accuracy
-    crit = weapon.critChance
-    evade = defender.evasion
+
+    # Apply all accuracy and crit buffs for attack, and evasion buffs for defense
+    accuracy = bh.check_stat_mods(attacker, weapon.accuracy, 'accuracy')
+    crit = bh.check_stat_mods(attacker, weapon.critChance, 'crit')
+    evasion = bh.check_stat_mods(defender, defender.evasion, 'evasion')
 
     # Apply a range penalty equal to 20% times the difference in defender and attacker range
     range_penalty = 1.0
@@ -69,16 +71,13 @@ def roll_hit(attacker, defender):
     # Random values for hit calculations
     # hit must be > evasion for the player to hit
     hit = random.random()
-    evasion = random.random()
-
-    # Apply any character and weapon accuracy buffs
-    accuracy = bh.check_stat_mods(attacker, accuracy, 'accuracy')
-    # attacker.msg('Debug Accuracy: ' + str(accuracy))
+    dodge = random.random()
 
     # Modify the hit roll by the accuracy value.
     hit = hit * accuracy
+    dodge = dodge * evasion
 
-    return (hit > evasion, hit > evasion * crit)
+    return (hit > dodge, hit > dodge * crit)
 
 def calculate_damage(attacker, defender, hit, crit) -> float:
     '''Calculates damage against a defender.'''
@@ -89,7 +88,7 @@ def calculate_damage(attacker, defender, hit, crit) -> float:
     weapon: Weapon = attacker.db.held
 
     # Roll to find damage based on weapon's min/max, and apply weapon buffs
-    attacker.msg('Debug Base Damage: ' + str(weapon.db.damage))
+    # attacker.msg('Debug Base Damage: ' + str(weapon.db.damage))
     damage = weapon.damage
 
     # Apply falloff, if relevant. Falloff is a flat 20% damage penalty
@@ -101,11 +100,13 @@ def calculate_damage(attacker, defender, hit, crit) -> float:
 
     # attacker.msg('Crit Damage: ' + str(damage))
 
-    # Apply all character-level buffs and debuffs to damage
+    # Apply all attacker buffs to damage
     damage = bh.check_stat_mods(attacker, damage, 'damage')
-    attacker.msg('Debug Buff-Modified Damage: ' + str(damage))
+    # attacker.msg('Debug Attacker-modified Damage: ' + str(damage))
+
+    # Apply all defender buffs to damage
     damage = bh.check_stat_mods(defender, damage, 'injury')
-    attacker.msg('Debug Debuff-Modified Damage: ' + str(damage))
+    # attacker.msg('Debug Defender-modified Damage: ' + str(damage))
 
     bh.cleanup_buffs(attacker)
     return round(damage)
@@ -118,8 +119,6 @@ def damage_target(damage, target):
     # If the target has 0 health, kill it
     if target.db.health <= 0:
         kill(target)
-
-    # Trigger 
 
     return
 
