@@ -11,7 +11,7 @@ from typeclasses.item import Item
 from evennia.utils import utils
 import commands.default_cmdsets as default
 import commands.destiny_cmdsets as destiny
-import typeclasses.handlers.buffhandler as bh
+import typeclasses.buffhandler as bh
 from evennia import TICKER_HANDLER, DefaultCharacter
 
 
@@ -42,10 +42,11 @@ class Character(DefaultCharacter):
         self.ndb.target = None      # Used if you use attack someone or use 'target'
 
     def damage_health(self, damage: int, msg=None):
-        self.db.health -= max(self.db.health - damage, 0)
+        self.db.health = max(self.db.health - damage, 0)
         self.msg('You were damaged by %i!' % damage)
+    
     def add_health(self, heal: int, msg=None):
-        self.db.health -= max(self.db.health + heal, 0)
+        self.db.health = max(self.db.health + heal, 0)
         self.msg('You healed by %i!' % heal)
     
     @property

@@ -1,8 +1,10 @@
 import random
+from typeclasses.buffhandler import add_perk
 import evennia
 from evennia.utils.utils import inherits_from
 from typeclasses.weapon import Weapon
 from typeclasses.context import Context
+import typeclasses.content.perklist as pl
 
 class NPCStub():
     '''This is just my little organizational tool for figuring out the system of looting
@@ -12,15 +14,25 @@ class NPCStub():
         2.  Use loot command on corpse
         3.  Each entry in "loot rolls" table is rolled on
         4.  If roll is successful, returns the loot table to continue rolling on for a (guaranteed) reward
-        5.     
+        5.  If it is a reward that can have perks, it randomly generates a number of perks, based on the item rarity
     '''
 
 class TestWeapon(Weapon):
     
+    def roll_perks(self, perks, slot):
+        _toApply = roll_on_table(perks)
+        add_perk(self, _toApply, slot)
+
     def at_object_creation(self):
         "Called when object is first created"
         super().at_object_creation()
         
+        slot1 = [(pl.ExploitPerk, 5), 
+            (pl.RampagePerk, 5),
+            (pl.LeechRoundPerk, 5)]
+
+        self.roll_perks(slot1, "slot1")
+
         # Ammo stats
         self.db.ammo = 30
         self.db.maxAmmo = 30
@@ -65,18 +77,13 @@ def roll(chance: float):
     if (roll <= chance): return True
     else: return False
 
-def roll_on_table(table: list, context: Context):
+def roll_on_table(table: list, context: Context = None):
     '''Takes a list of tuples with the format (value, chance) and rolls to find which one to return. Guaranteed to return a value.'''
     _total = 0
-    for x in table: 
-        if context: 
-            context.actor.msg("Debug: Loot Weight: " + str(x[1]))
-            _total += x[1]
+    for x in table: _total += x[1]
+    
+    if context: context.origin.msg("Debug: Loot Weight: " + str(x[1]))
+            
     for x in table:
         if ( roll(x[1] / _total) ): return x[0]
         else: _total -= x[1]
-
-def parse_result(obj, context: Context):
-    '''Parses the result of a loot drop. This means creating objects, adding currency, and so on.'''
-    if inherits_from(obj, Weapon):
-        evennia.create_object(obj, key="test weapon", location=context.actor.location)

@@ -3,10 +3,10 @@ from evennia import Command as BaseCommand
 from world import rules
 from typeclasses import characters as Character
 from evennia import utils
-import typeclasses.handlers.buffhandler as bh
+import typeclasses.buffhandler as bh
 import time
 import world.loot as loot
-from typeclasses.context import generate_context
+from typeclasses.context import Context
 
 class CmdAttack(BaseCommand):
     """
@@ -233,7 +233,7 @@ class CmdLootTest(BaseCommand):
 
     def func(self):
         caller = self.caller
-        context = generate_context(caller)
+        context = Context(caller, caller)
         _t = loot.roll(1.0)
         caller.msg("Debug: Loot roll: " + str(_t) )
 

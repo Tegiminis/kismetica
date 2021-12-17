@@ -1,5 +1,5 @@
 from typeclasses.objects import DefaultObject as Object
-from typeclasses.context import BuffContext
+from typeclasses.context import Context
 
 class BaseBuff():
     '''Base class for all "buffs" in the game. Buffs are permanent and temporary modifications to stats, and trigger conditions that run arbitrary code.
@@ -25,32 +25,40 @@ class BaseBuff():
 
     mods = None
 
-    def on_apply(self, context: BuffContext):
+    def on_apply(self, context: Context) -> Context:
         '''Hook function to run when this buff is applied to an object.'''
         pass 
     
-    def on_remove(self, context: BuffContext):
+    def on_remove(self, context: Context) -> Context:
         '''Hook function to run when this buff is removed from an object.'''
         pass
 
-    def on_dispel(self, context: BuffContext):
+    def on_remove_stack(self, context: Context) -> Context:
+        '''Hook function to run when this buff loses stacks.'''
+        pass
+
+    def on_dispel(self, context: Context) -> Context:
         '''Hook function to run when this buff is dispelled from an object (removed by someone other than the buff holder).'''
         pass
 
-    def on_expire(self, context: BuffContext):
+    def on_expire(self, context: Context) -> Context:
         '''Hook function to run when this buff expires from an object.'''
         pass
 
-    def after_check(self, context: BuffContext):
+    def after_check(self, context: Context) -> Context:
         '''Hook function to run after this buff's mods are checked.'''
         pass
 
-    def on_trigger(self, context: BuffContext) -> BuffContext:
+    def on_trigger(self, context: Context) -> Context:
         '''Hook for the code you want to run whenever the effect is triggered. Required.'''
         pass
 
-    def on_release(self, context: BuffContext) -> BuffContext:
+    def on_release(self, context: Context) -> Context:
         '''Hook for the code you want to run whenever the effect is released (reverse of trigger). Optional.'''
+        pass
+
+    def on_tick(self, context: Context) -> Context:
+        '''Hook for actions that occur per-tick, a designer-set sub-duration.'''
         pass
 
 class Buff(BaseBuff):
@@ -93,8 +101,6 @@ class Perk(BaseBuff):
     '''
 
     slot = None
-    
-    
 
 class Mod():
     '''A single stat modification. One buff or trait can hold multiple mods, for the same or different stats.'''
@@ -102,7 +108,7 @@ class Mod():
     stat = 'damage'             # The stat the buff affects. Essentially a tag used to find the buff for coding purposes  
     base = 0                    # Buff's value
     perstack = 0                # How much additional value is added to the buff per stack
-    modifier = 'add'                 # The modifier the buff applies. 'add' or 'mult' 
+    modifier = 'add'            # The modifier the buff applies. 'add' or 'mult' 
 
     def __init__(self, stat: str, modifier: str, base, perstack = 0) -> None:
         '''

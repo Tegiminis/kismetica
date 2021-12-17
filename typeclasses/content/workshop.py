@@ -1,8 +1,8 @@
 '''Where new perks and buffs are made!'''
 
-from typeclasses.context import Context, BuffContext, generate_context
+from typeclasses.context import Context
 from typeclasses.buff import Buff, Perk, Mod
-import typeclasses.handlers.buffhandler as bh
+import typeclasses.buffhandler as bh
 from typeclasses.buff import Buff, Mod
 
 class FourthTime(Perk):
@@ -12,8 +12,8 @@ class FourthTime(Perk):
     
     trigger = 'crit'
 
-    def on_trigger(self, context: BuffContext) -> BuffContext:
-        bc: BuffContext = bh.add_buff(context.actor, context.actee, FourthTimeEffect)
+    def on_trigger(self, context: Context) -> Context:
+        bc: Context = bh.add_buff(context.origin, context.target, FourthTimeEffect)
         return bc
 
 class FourthTimeEffect(Buff):
@@ -26,11 +26,11 @@ class FourthTimeEffect(Buff):
 
     trigger = 'crit'
 
-    def on_trigger(self, context: BuffContext) -> BuffContext:
+    def on_trigger(self, context: Context) -> Context:
         if context.stacks >= 4: 
             context.owner.msg('Your magazine feels slightly heavier.')
             self.db.ammo += 2
-            return bh.remove_buff(context.actee, context.actee, self.id)
+            return bh.remove_buff(context.target, context.target, self.id)
 
 class RapidHit(Perk):
     id = 'rapidhit'
@@ -39,8 +39,8 @@ class RapidHit(Perk):
     
     trigger = 'crit'
 
-    def on_trigger(self, context: BuffContext) -> BuffContext:
-        bc: BuffContext = bh.add_buff(context.actor, context.actee, RapidHitBuff)
+    def on_trigger(self, context: Context) -> Context:
+        bc: Context = bh.add_buff(context.origin, context.target, RapidHitBuff)
         return bc
 
 class RapidHitBuff(Buff):
@@ -67,8 +67,8 @@ class KillClipPerk(Perk):
     
     trigger = 'kill'
 
-    def on_trigger(self, context: BuffContext) -> BuffContext:
-        return bh.add_buff(context.actor, context.actee, KillClipEffect)
+    def on_trigger(self, context: Context) -> Context:
+        return bh.add_buff(context.origin, context.target, KillClipEffect)
 
 class KillClipEffect(Buff):
     id = 'killclip'
@@ -79,9 +79,9 @@ class KillClipEffect(Buff):
 
     duration = 30
 
-    def on_trigger(self, context: BuffContext) -> BuffContext:
-        context.actee.msg('Your weapon begins to glow with otherworldly light.')
-        return bh.add_buff(context.actor, context.actee, KillClipBuff)
+    def on_trigger(self, context: Context) -> Context:
+        context.target.msg('Your weapon begins to glow with otherworldly light.')
+        return bh.add_buff(context.origin, context.target, KillClipBuff)
 
 class KillClipBuff(Buff):
     id = 'killclip'
@@ -96,5 +96,5 @@ class KillClipBuff(Buff):
 
     mods = [ Mod('damage', 'mult', 0.25, 0.0) ]
 
-    def on_remove(self, context: BuffContext):
-        context.actee.msg('The glow around your weapon dissipates.')
+    def on_remove(self, context: Context):
+        context.target.msg('The glow around your weapon dissipates.')

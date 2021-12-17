@@ -1,8 +1,8 @@
 import random
 import time
-from typeclasses.context import DamageContext, generate_context
-from evennia import DefaultCharacter, utils
-import typeclasses.handlers.buffhandler as bh
+from evennia import utils
+from typeclasses.context import Context
+import typeclasses.buffhandler as bh
 from typeclasses.weapon import Weapon
 
 slot = {'kinetic':0 , 'energy':1 , 'power':2}
@@ -10,7 +10,9 @@ element = {'neutral':0 , 'void':1 , 'solar':2, 'arc':3}
 ammo = {'primary':0 , 'special':1 , 'power':2}
 armor = {'head':0 , 'arms':1 , 'chest':2, 'legs':3, 'class':4}
 
-def basic_attack(attacker: DefaultCharacter, defender: DefaultCharacter):
+
+
+def basic_attack(attacker, defender):
     '''The most basic attack a player can perform. Uses a weapon, held by origin, to attack the target.
     
     Attacker must have a weapon in db.held, otherwise this command will return an error.
@@ -28,12 +30,14 @@ def basic_attack(attacker: DefaultCharacter, defender: DefaultCharacter):
         if hit[1]: d_msg += '|yCrit! '
 
         # Damage calculation and messaging
+        # attacker.msg('Debug Defender Health Before Attack: ' + str(defender.db.health))
         damage = calculate_damage(attacker, defender, *hit)    
         d_msg += "%i damage!" % damage
-        dc : DamageContext = generate_context(attacker, defender, damage, weapon)             
+        dc : Context = Context(attacker, defender, weapon=weapon, damage=damage)           
 
         if hit[0]:
-            damage_target(damage, defender)
+            defender.damage_health(damage)
+            # attacker.msg('Debug Defender Health After Attack: ' + str(defender.db.health))
             attacker.msg( d_msg )
 
             bh.trigger_effects(weapon, defender, 'hit', dc)
@@ -81,10 +85,12 @@ def roll_hit(attacker, defender):
     # hit must be > evasion for the player to hit
     hit = random.random()
     dodge = random.random()
+    #attacker.msg('Debug rolls: Hit %f | Dodge %f' % (hit, dodge))
 
     # Modify the hit roll by the accuracy value.
     hit = hit * accuracy
     dodge = dodge * evasion
+    #attacker.msg('Debug modified rolls: Hit %f | Dodge %f' % (hit, dodge))
 
     return (hit > dodge, hit > dodge * crit)
 
@@ -97,7 +103,7 @@ def calculate_damage(attacker, defender, hit, crit) -> float:
     weapon: Weapon = attacker.db.held
 
     # Roll to find damage based on weapon's min/max, and apply weapon buffs
-    # attacker.msg('Debug Base Damage: ' + str(weapon.db.damage))
+    attacker.msg('Debug Base Damage: ' + str(weapon.db.damage))
     damage = weapon.damage
 
     # Apply falloff, if relevant. Falloff is a flat 20% damage penalty
@@ -126,19 +132,18 @@ def damage_target(damage, target):
     target.db.health -= damage
 
     # If the target has 0 health, kill it
-    if target.db.health <= 0:
-        kill(target)
+    # if target.db.health <= 0:
+    #     kill(target)
 
     return
 
 def kill(origin):
     # Kills whatever object is called for the function
-    if utils.inherits_from(origin, 'typeclasses.npc.NPC'):
-        origin.db.state = 'dead'
-        for x in find_scripts_by_tag(origin, 'ai'):
-            x.restart( interval=origin.db.timer['dead'], start_delay=True )
-
-    return
+    # if utils.inherits_from(origin, 'typeclasses.npc.NPC'):
+        # origin.db.state = 'dead'
+        # for x in find_scripts_by_tag(origin, 'ai'):
+        #     x.restart( interval=origin.db.timer['dead'], start_delay=True )
+    pass
 
 def revive(origin):
     origin.location.msg_contents( 'Debug: Revival started' )

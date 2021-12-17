@@ -1,6 +1,6 @@
 import random
 from typeclasses.objects import Object
-from typeclasses.handlers import buffhandler as bh
+from typeclasses import buffhandler as bh
 
 class Weapon(Object):
     """

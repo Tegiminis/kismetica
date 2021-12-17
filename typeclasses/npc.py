@@ -1,4 +1,4 @@
-import typeclasses.handlers.buffhandler as bh
+import typeclasses.buffhandler as bh
 from typeclasses.characters import Character
 
 # destiny_rules is the rules module that contains all combat calculations, enums, and other important doodads

@@ -1,7 +1,7 @@
 import random
 from typeclasses.buff import Buff, Perk, Mod
-from typeclasses.context import BuffContext, generate_context
-import typeclasses.handlers.buffhandler as bh
+from typeclasses.context import Context
+import typeclasses.buffhandler as bh
     
 class RampageBuff(Buff):
     id = 'rampage'
@@ -17,8 +17,8 @@ class RampageBuff(Buff):
 
     mods = [ Mod('damage', 'mult', 0.15, 0.15) ]
 
-    def on_expire(self, context: BuffContext):
-        context.owner.msg('The bloodlust fades.')
+    def on_expire(self, context: Context):
+        context.origin.location.msg('The bloodlust fades.')
 
 class Exploit(Buff):
     id = 'exploit'
@@ -34,19 +34,19 @@ class Exploit(Buff):
     unique = False
     maxstacks = 20
 
-    def on_trigger(self, context: BuffContext) -> BuffContext:
+    def on_trigger(self, context: Context) -> Context:
         chance = context.stacks / 20
         roll = random.random()
 
         if chance > roll:
             bh.add_buff(context.origin, context.origin, Exploited)
-            context.owner.msg("An opportunity presents itself!")
+            context.origin.location.msg("An opportunity presents itself!")
             bh.remove_buff(context.origin, context.origin, 'exploit')
         
         return context
 
-    def on_expire(self, context: BuffContext) -> str:
-        context.owner.msg("The opportunity passes.")
+    def on_expire(self, context: Context) -> str:
+        context.origin.location.msg("The opportunity passes.")
 
 class Exploited(Buff):
     id = 'exploited'
@@ -61,12 +61,12 @@ class Exploited(Buff):
 
     mods = [ Mod('damage', 'add', 100) ]
 
-    def after_check(self, context: BuffContext):
-        context.owner.msg( "You exploit your target's weakness!" )
+    def after_check(self, context: Context):
+        context.origin.msg( "You exploit your target's weakness!" )
         bh.remove_buff(context.origin, context.origin, 'exploited', delay=0.01)
 
-    def on_remove(self, context: BuffContext):
-        context.owner.msg( "\n|nYou cannot sense your target's weakness anymore." )
+    def on_remove(self, context: Context):
+        context.origin.msg( "\n|nYou cannot sense your target's weakness anymore." )
 
 class Weakened(Buff):
     id = 'weakened'
@@ -94,10 +94,10 @@ class Leeching(Buff):
 
     trigger = 'thorns'
 
-    def on_trigger(self, context: BuffContext) -> BuffContext:
+    def on_trigger(self, context: Context) -> Context:
         target = context.target
         target.msg('Debug: Attempting leech.')
-        heal = context.dc.damage * 0.1
+        heal = context.damage * 0.1
         target.add_health(heal)
 
 class BuffList():

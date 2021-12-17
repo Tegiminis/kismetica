@@ -4,7 +4,7 @@ import random
 from typeclasses.buff import BaseBuff, Buff, Perk, Mod
 from typeclasses.objects import Object
 from evennia import utils
-from typeclasses.context import BuffContext, Context, DamageContext, generate_context
+from typeclasses.context import Context
 
 def add_buff(origin: Object, target: Object, buff: BaseBuff, stacks = 1, duration = None) -> Context:
     '''Add a buff or effect instance to an object or player that can have buffs, respecting all stacking/refresh/reapply rules.
@@ -34,7 +34,7 @@ def add_buff(origin: Object, target: Object, buff: BaseBuff, stacks = 1, duratio
     # Clean up the buff at the end of its duration through a delayed cleanup call
     utils.delay( b['duration'] + 0.01, cleanup_buffs, target, persistent=True )
 
-    # Apply the buff and pass the BuffContext upwards.
+    # Apply the buff and pass the Context upwards.
     context = apply_buff(origin, target, id, b, stacks)
 
     return context
@@ -62,7 +62,7 @@ def apply_buff(origin: Object, target: Object, id: str, buff: dict, stacks):
     else: 
         handler[p_id] = buff
     
-    context: BuffContext = generate_context(origin, target, buff=handler[p_id], handler=handler)
+    context: Context = Context(origin, target, buff=handler[p_id], handler=handler)
 
     return context
 
@@ -85,7 +85,7 @@ def remove_buff(origin: Object, target: Object, id: str, dispel=False, expire=Fa
 
     if delay: utils.delay(delay, remove_buff, *packed_info)
     else:
-        context = generate_context(target, origin, buff=handler[id], handler=handler)
+        context = Context(target, origin, buff=handler[id], handler=handler)
 
         if dispel: _buff.on_dispel(context)
         elif expire: _buff.on_expire(context)
@@ -201,7 +201,7 @@ def check_stat_mods(obj: Object, base: float, stat: str, quiet = False):
         # if 'origin' in buff.keys(): buff['origin'].location.msg('Debug Checking buff of type: ' + stat)
         ref = buff['ref']
         _handler = obj.db.buffs if isinstance(ref, Buff) else obj.db.perks 
-        context = generate_context(obj, obj, buff=buff, handler=_handler)
+        context = Context(obj, obj, buff=buff, handler=_handler)
         if not quiet: ref().after_check(context)
 
     return final
@@ -216,13 +216,13 @@ def add_perk(obj: Object, perk: Perk, slot: str = None):
     elif perk.slot: obj.db.perks[perk.slot] = b
     else: obj.db.perks[perk.id] = b     
 
-def remove_perk(origin, target, id):
+def remove_perk(origin, target, id) -> Context:
     '''Removes a perk with matching id or slot from the object's handler. Calls the perk's on_remove function.'''
     handler = target.db.perks
 
     if id in handler.keys():
         perk: Perk = handler[id].get('ref')()
-        context = generate_context(target, origin, perk=perk, handler=handler)
+        context = Context(target, origin, perk=perk, handler=handler)
 
         perk.on_remove(context)
         del handler[id]
@@ -230,21 +230,20 @@ def remove_perk(origin, target, id):
         return context
     else: return None
 
-def trigger_effects(self, target, trigger: str, dc : DamageContext = None) -> str:
+def trigger_effects(origin, target, trigger: str, context:Context = None) -> str:
     '''Activates all perks and effects on the origin that have the same trigger string. Returns a list of all messaging for the perks/effects.
     Vars:
-        self:       The game object whose effects you wish to trigger. "origin" in BuffContext
-        target:     The target of the action. "target" in BuffContext.
+        origin:     The game object whose effects you wish to trigger.
+        target:     The target of the action.
         trigger:    The trigger string. For an effect to trigger, it must share this trigger string
     '''
     cleanup_buffs(target)
 
     # self.location.msg('Triggering effects of type: ' + trigger)
 
-    _effects = self.effects
+    _effects = origin.effects
     if _effects is None: return None
 
-    messaging = []
     toActivate = []
 
     # Find all perks to trigger
@@ -259,15 +258,13 @@ def trigger_effects(self, target, trigger: str, dc : DamageContext = None) -> st
         _eff : BaseBuff = x['ref']()
         _handler = None
 
-        if isinstance(_eff, Buff): _handler = self.db.buffs
-        elif isinstance (_eff, Perk): _handler = self.db.perks
+        if isinstance(_eff, Buff): _handler = origin.db.buffs
+        elif isinstance (_eff, Perk): _handler = origin.db.perks
 
-        context = generate_context(self, target, buff=x, handler=_handler, dc=dc)
-        trigger_context = _eff.on_trigger(context)
-    
-    _msg = ''
-    for x in messaging: _msg += x + "\n|n"
-    return _msg
+        _context = Context(origin, target, buff=x, handler=_handler, weapon=context.weapon, damage=context.damage)
+
+        # origin.location.msg("Debug Weapon Context: " + str(_context.weapon))
+        tc = _eff.on_trigger(_context)
 
 def check_for_perk(target, perk) -> bool:
     '''Checks to see if the specified perk is on the object. 
@@ -283,4 +280,20 @@ def check_for_perk(target, perk) -> bool:
     elif isinstance(perk, Perk):
         for x in handler.values(): 
             if isinstance(x['ref'], perk): return True
+    else: return False
+
+def check_for_buff(target, buff) -> bool:
+    '''Checks to see if the specified buff is on the object. 
+    Args:
+        target: The object to test
+        perk:   The id string or class reference to check for
+
+    Returns a bool.'''
+    handler = target.db.buffs
+
+    if isinstance(buff, str):
+        if buff in handler.keys(): return True
+    elif isinstance(buff, Buff):
+        for x in handler.values(): 
+            if isinstance(x['ref'], buff): return True
     else: return False

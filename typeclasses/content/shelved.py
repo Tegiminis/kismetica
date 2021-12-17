@@ -2,7 +2,7 @@
 
 from typeclasses.context import Context, BuffContext, generate_context
 from typeclasses.buff import Buff, Perk, Mod
-import typeclasses.handlers.buffhandler as bh
+import typeclasses.buffhandler as bh
 import random
 
 class ExploitPerk(Perk):

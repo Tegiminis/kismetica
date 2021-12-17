@@ -1,6 +1,6 @@
 from evennia import CmdSet, utils
 from typeclasses.buff import Perk, Mod
-from typeclasses.handlers import buffhandler as bh
+from typeclasses import buffhandler as bh
 
 class Subclass():
     '''A bundle of subclass information. Used to set traits and grant access to the class' command sets.'''

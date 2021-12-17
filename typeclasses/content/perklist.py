@@ -1,6 +1,6 @@
-from typeclasses.context import Context, BuffContext, generate_context
+from typeclasses.context import Context
 from typeclasses.buff import Buff, Perk, Mod
-import typeclasses.handlers.buffhandler as bh
+import typeclasses.buffhandler as bh
 import typeclasses.content.bufflist as bl
 
 class RampagePerk(Perk):
@@ -17,7 +17,8 @@ class RampagePerk(Perk):
     } 
 
     def on_trigger(self, context: Context):
-        bc: BuffContext = bh.add_buff(context.origin, context.origin, bl.RampageBuff)
+        context.origin.location.msg("Debug Owner Context: " + str(context.owner))
+        bc: Context = bh.add_buff(context.origin, context.origin, bl.RampageBuff)
         if bc.stacks in self.stack_msg: context.owner.msg( self.stack_msg[bc.stacks] )
         return bc
 
@@ -37,10 +38,11 @@ class ExploitPerk(Perk):
 
     trigger_msg = ''
 
-    def on_trigger(self, context: Context) -> BuffContext:
-        if 'exploited' in context.origin.db.buffs.keys(): return
-        bc: BuffContext = bh.add_buff(context.origin, context.origin, bl.Exploit)
-        if bc.stacks in self.stack_msg: bc.owner.msg( self.stack_msg[bc.stacks] )
+    def on_trigger(self, context: Context) -> Context:
+        
+        if bh.check_for_buff(context.origin, bl.Exploited): return None
+        bc: Context = bh.add_buff(context.origin, context.origin, bl.Exploit)
+        if bc.stacks in self.stack_msg: context.owner.msg( self.stack_msg[bc.stacks] )
         return bc
 
 class WeakenPerk(Perk):
@@ -50,7 +52,7 @@ class WeakenPerk(Perk):
 
     trigger = 'hit'
 
-    def on_trigger(self, context: BuffContext) -> BuffContext:
+    def on_trigger(self, context: Context) -> Context:
         bh.add_buff(context.origin, context.target, bl.Weakened)
 
 class LeechRoundPerk(Perk):
@@ -60,7 +62,7 @@ class LeechRoundPerk(Perk):
 
     trigger = 'hit'
 
-    def on_trigger(self, context: BuffContext) -> BuffContext:
+    def on_trigger(self, context: Context) -> Context:
         bh.add_buff(context.origin, context.target, bl.Leeching)
 
 class ThornsPerk(Perk):
@@ -70,8 +72,8 @@ class ThornsPerk(Perk):
 
     trigger = 'thorns'
 
-    def on_trigger(self, context: BuffContext) -> BuffContext:
-        context.dc.origin.damage_health(context.dc.damage * 0.1)
+    def on_trigger(self, context: Context) -> Context:
+        context.origin.damage_health(context.damage * 0.1)
 
 class PerkList():
     rampage = RampagePerk

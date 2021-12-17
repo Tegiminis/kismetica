@@ -1,11 +1,11 @@
 from typeclasses.content.workshop import RapidHit
 from typeclasses.content.perklist import ExploitPerk, LeechRoundPerk, RampagePerk, ThornsPerk, WeakenPerk
-from typeclasses.context import BuffContext
+from typeclasses.context import Context
 from evennia import lockfuncs
 from evennia import Command as BaseCommand
 from world import rules
 from typeclasses import characters as Character
-from typeclasses.handlers import buffhandler as bh
+from typeclasses import buffhandler as bh
 from evennia import utils
 import time
 
@@ -125,7 +125,7 @@ class CmdBuff(BaseCommand):
             return
 
         if target:
-            buff: BuffContext = bh.add_buff(caller, target, self.args[1])
+            buff: Context = bh.add_buff(caller, target, self.args[1])
             pass
 
 class CmdPerk(BaseCommand):
