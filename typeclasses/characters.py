@@ -8,10 +8,10 @@ creation commands.
 
 """
 from typeclasses.item import Item
-from evennia.utils import utils
+from evennia.utils import utils, lazy_property
 import commands.default_cmdsets as default
 import commands.destiny_cmdsets as destiny
-import typeclasses.buffhandler as bh
+from typeclasses.buff import BuffHandler, PerkHandler
 from evennia import TICKER_HANDLER, DefaultCharacter
 
 
@@ -21,6 +21,14 @@ from typeclasses.content.soldier import Soldier
 class Character(DefaultCharacter):
 
     # Character class inherited by all characters in the MUD. Stats here will be used by every character in the game.    
+
+    @lazy_property
+    def buffs(self) -> BuffHandler:
+        return BuffHandler(self)
+
+    @lazy_property
+    def perks(self) -> PerkHandler:
+        return PerkHandler(self)
 
     def at_object_creation(self):
         
@@ -56,12 +64,12 @@ class Character(DefaultCharacter):
     
     @property
     def evasion(self):
-        _ev = bh.check_stat_mods(self, self.db.evasion, 'evasion')
+        _ev = self.buffs.check(self.db.evasion, 'evasion')
         return _ev
 
     @property
     def maxHealth(self):
-        _mh = bh.check_stat_mods(self, self.db.maxHealth, 'maxhealth')
+        _mh = self.buffs.check(self.db.maxHealth, 'maxhealth')
         return _mh
 
     @property
@@ -101,30 +109,6 @@ class Character(DefaultCharacter):
 class PlayerCharacter(Character):
 
     # The module we use for all player characters. This contains player-specific stats.
-
-    def add_xp(self, xp: int):
-        '''Adds XP to this object, respecting all capacity rules.'''
-        _xp = bh.check_stat_mods(self, xp, 'xp')
-        self.db.xp = min(self.db.xp + _xp, self.xpCap)
-
-    def learn_xp(self):
-        '''Learns XP, permanent adding it to your current subclass' pool. If your subclass is capped or you have no xp, nothing happens.
-        
-        Returns the amount of XP you learned.'''
-        subclasses : dict = self.db.subclasses
-        subclass : str = self.db.subclass
-
-        if self.db.xp <= 0: return
-        if subclass not in subclasses.keys(): return
-
-        _learn = min(self.db.xp, self.xpGain)
-
-        subclasses[subclass]['xp'] += _learn
-        self.db.xp -= _learn
-
-        sc.check_for_level(self, subclass)
-
-        return _learn
     
     def at_object_creation(self):
         
@@ -139,7 +123,7 @@ class PlayerCharacter(Character):
         self.db.skills = {}         # Skills dictionary
 
         # TickerHandler that fires off the "learn" function
-        TICKER_HANDLER.add(15, self.learn_xp)
+        # TICKER_HANDLER.add(15, self.learn_xp)
 
         # Are you a "Named" character? Players start out as true.
         self.db.named = True
@@ -154,8 +138,8 @@ class PlayerCharacter(Character):
         self.db.level = 1
         
         # Start with soldier subclass on newly-created characters
-        self.db.subclass = 'soldier'
-        sc.add_subclass(self, Soldier)        
+        # self.db.subclass = 'soldier'
+        # sc.add_subclass(self, Soldier)        
     
     @property
     def weight(self):
@@ -172,13 +156,13 @@ class PlayerCharacter(Character):
     @property
     def xpGain(self):
         '''The amount of XP you learn from your cap with each tick.'''
-        _gain = bh.check_stat_mods(self, self.level * 50, 'gain')
+        _gain = self.buffs.check(self.level * 50, 'gain')
         return _gain
 
     @property
     def xpCap(self):
         '''The amount of XP you can have "stored". It is "learned" with each tick.'''
-        _cap = bh.check_stat_mods(self, self.level * 1000, 'cap')
+        _cap = self.buffs.check(self.level * 1000, 'cap')
         return _cap
 
     @property

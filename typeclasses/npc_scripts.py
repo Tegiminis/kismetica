@@ -3,7 +3,6 @@ import time
 from typeclasses.scripts import Script
 from typeclasses.npc import NPC
 from evennia import utils
-from world import destiny_rules as rules
 
 class AIBasic(Script): 
     """
@@ -31,65 +30,63 @@ class AIBasic(Script):
 
     def at_repeat(self):
 
-        state = self.obj.db.state
+        npc : NPC = self.obj
+        
+        state = npc.db.state
         delay = 5  
 
         # If this AI is "attacking", it does the basic AI ranged attack
         if state == 'attack':           
-            if self.obj.db.target.is_superuser:
-                self.obj.db.target = None
+            if npc.db.target.is_superuser: npc.db.target = None
             
-            if self.obj.db.target != None:                                     
-                if self.obj.db.target.location == self.obj.location:              
-                    delay = self.obj.db.basic_ranged['cooldown']
-                    self.obj.npc_attack(self.obj.db.target)                    
-                elif self.obj.db.target.location != self.obj.location:       
-                    hunt = self.obj.hunt(self.obj.db.target)
-                    if hunt != None:
-                        self.obj.move_to(hunt)
-                    else:
-                        self.obj.db.target = None                         
+            if npc.db.target != None:                                     
+                if npc.db.target.location == npc.location:              
+                    delay = npc.db.basic_ranged['cooldown']
+                    npc.npc_attack(npc.db.target)                    
+                elif npc.db.target.location != npc.location:       
+                    hunt = npc.hunt(npc.db.target)
+                    if hunt != None: npc.move_to(hunt)
+                    else: npc.db.target = None                         
 
-            if self.obj.db.target == None:
-                self.obj.db.state = 'search'
+            if npc.db.target == None: npc.db.state = 'search'
 
         # If this AI is searching the current room, it tries to find a target to attack
         if state == 'search':
-            delay = self.obj.db.timer['search']
+            delay = npc.db.timer['search']
             
-            targets = self.obj.find_targets(self.obj.location)
+            targets = npc.find_targets(npc.location)
             if targets:
-                self.obj.db.target = random.choice(targets)
+                npc.db.target = random.choice(targets)
 
             # If you found a target, start attacking.
             # Otherwise, if the dice roll right, go on patrol.
-            target = self.obj.db.target
+            target = npc.db.target
             if target != None:
-                delay = self.obj.db.timer['attack']
-                self.obj.db.state = 'attack'   
+                delay = npc.db.timer['attack']
+                npc.db.state = 'attack'   
             else:
-                self.obj.location.msg_contents( random.choice(self.obj.db.msg['idle']).capitalize() )
-                self.obj.db.state = 'patrol'
+                npc.location.msg_contents( random.choice(npc.db.msg['idle']).capitalize() )
+                npc.db.state = 'patrol'
 
         # If the AI is patrolling, that means it is randomly moving from room to room in search of targets
         if state == 'patrol' or state == 'active':
-            self.obj.patrol_move()
-            delay = self.obj.db.timer['search']
-            self.obj.db.state = 'search'       
+            npc.patrol_move()
+            delay = npc.db.timer['search']
+            npc.db.state = 'search'       
         
         # If this AI is ready to respawn, teleport it home and make it start patrolling
         if state == 'respawn':
-            self.obj.db.health['current'] = self.obj.db.health['max']
-            self.obj.db.shield['current'] = self.obj.db.shield['max']
-            self.obj.location.msg_contents( self.obj.db.msg['respawn'].capitalize() )
-            delay = self.obj.db.timer['patrol']
-            self.obj.db.state = 'patrol'
+            npc.db.health['current'] = npc.db.health['max']
+            npc.db.shield['current'] = npc.db.shield['max']
+            npc.location.msg_contents( npc.db.msg['respawn'].capitalize() )
+            delay = npc.db.timer['patrol']
+            npc.db.state = 'patrol'
         
         # If this AI is dead, begin respawn process
         if state == 'dead':
-            self.obj.location.msg_contents( self.obj.db.msg['despawn'].capitalize() )
-            self.obj.move_to(self.obj.home, True)
-            delay = self.obj.db.timer['respawn']
-            self.obj.db.state = 'respawn'
+            npc.location.msg_contents( npc.db.msg['despawn'].capitalize() )
+            npc.move_to(npc.home, True)
+            delay = npc.db.timer['respawn']
+            npc.db.state = 'respawn'
 
         self.restart( interval=delay )    

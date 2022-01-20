@@ -2,15 +2,12 @@ import random
 import time
 from evennia import utils
 from typeclasses.context import Context
-import typeclasses.buffhandler as bh
 from typeclasses.weapon import Weapon
 
 slot = {'kinetic':0 , 'energy':1 , 'power':2}
 element = {'neutral':0 , 'void':1 , 'solar':2, 'arc':3}
 ammo = {'primary':0 , 'special':1 , 'power':2}
 armor = {'head':0 , 'arms':1 , 'chest':2, 'legs':3, 'class':4}
-
-
 
 def basic_attack(attacker, defender):
     '''The most basic attack a player can perform. Uses a weapon, held by origin, to attack the target.
@@ -40,15 +37,15 @@ def basic_attack(attacker, defender):
             # attacker.msg('Debug Defender Health After Attack: ' + str(defender.db.health))
             attacker.msg( d_msg )
 
-            bh.trigger_effects(weapon, defender, 'hit', dc)
-            bh.trigger_effects(attacker, defender, 'hit', dc)
+            weapon.buffs.trigger('hit', context=dc)
+            attacker.buffs.trigger('hit', context=dc)
             
             if hit[1]:
-                bh.trigger_effects(weapon, defender, 'crit', dc)
-                bh.trigger_effects(attacker, defender, 'crit', dc)
+                weapon.buffs.trigger('crit', context=dc)
+                attacker.buffs.trigger('crit', context=dc)
             
-            bh.trigger_effects(defender, attacker, 'thorns', dc)
-            bh.trigger_effects(defender, defender, 'injury', dc)
+            defender.buffs.trigger('thorns', context=dc)
+            defender.buffs.trigger('injury', context=dc)
         else:
             attacker.msg( weapon.db.msg['miss'] )
 
@@ -71,11 +68,11 @@ def roll_hit(attacker, defender):
 
     # Apply all accuracy and crit buffs for attack, and evasion buffs for defense
     accuracy = weapon.accuracy
-    accuracy = bh.check_stat_mods(attacker, accuracy, 'accuracy')
+    accuracy = attacker.buffs.check(accuracy, 'accuracy')
     crit = weapon.critChance
-    crit = bh.check_stat_mods(attacker, crit, 'crit')
+    crit = attacker.buffs.check(crit, 'crit')
     evasion = defender.evasion
-    evasion = bh.check_stat_mods(defender, evasion, 'evasion')
+    evasion = defender.buffs.check(evasion, 'evasion')
 
     # Apply a range penalty equal to 20% times the difference in defender and attacker range
     range_penalty = 1.0
@@ -103,7 +100,7 @@ def calculate_damage(attacker, defender, hit, crit) -> float:
     weapon: Weapon = attacker.db.held
 
     # Roll to find damage based on weapon's min/max, and apply weapon buffs
-    attacker.msg('Debug Base Damage: ' + str(weapon.db.damage))
+    # attacker.msg('Debug Base Damage: ' + str(weapon.db.damage))
     damage = weapon.damage
 
     # Apply falloff, if relevant. Falloff is a flat 20% damage penalty
@@ -116,14 +113,16 @@ def calculate_damage(attacker, defender, hit, crit) -> float:
     # attacker.msg('Crit Damage: ' + str(damage))
 
     # Apply all attacker buffs to damage
-    damage = bh.check_stat_mods(attacker, damage, 'damage')
+    damage = attacker.buffs.check(damage, 'damage')
     # attacker.msg('Debug Attacker-modified Damage: ' + str(damage))
 
     # Apply all defender buffs to damage
-    damage = bh.check_stat_mods(defender, damage, 'injury')
+    damage = defender.buffs.check(damage, 'injury')
     # attacker.msg('Debug Defender-modified Damage: ' + str(damage))
 
-    bh.cleanup_buffs(attacker)
+    attacker.buffs.cleanup()
+    defender.buffs.cleanup()
+
     return round(damage)
 
 def damage_target(damage, target):

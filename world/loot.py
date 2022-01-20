@@ -1,5 +1,4 @@
 import random
-from typeclasses.buffhandler import add_perk
 import evennia
 from evennia.utils.utils import inherits_from
 from typeclasses.weapon import Weapon
@@ -21,7 +20,7 @@ class TestWeapon(Weapon):
     
     def roll_perks(self, perks, slot):
         _toApply = roll_on_table(perks)
-        add_perk(self, _toApply, slot)
+        self.perks.add(_toApply, slot)
 
     def at_object_creation(self):
         "Called when object is first created"
@@ -87,3 +86,8 @@ def roll_on_table(table: list, context: Context = None):
     for x in table:
         if ( roll(x[1] / _total) ): return x[0]
         else: _total -= x[1]
+
+def parse_result(obj, context: Context):
+    '''Parses the result of a loot drop. This means creating objects, adding currency, and so on.'''
+    if inherits_from(obj, Weapon):
+        evennia.create_object(obj, key="test weapon", location=context.origin.location)

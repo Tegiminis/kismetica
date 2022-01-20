@@ -1,59 +1,50 @@
+import time
+import copy
 from evennia.utils import utils
 
 class Context():
-    '''An container for "event context" information. Used to pass event information between functions and objects, mostly for buffs and combat.'''
+    '''A container for "event context" information. Used to pass event information between functions and objects, mostly for buffs and combat.'''
     origin = None
     target = None
+
+    # Combat context information
     weapon = None
     damage = None
-    buff = None
-    handler = None
 
-    #region derived properties
-    @property
-    def id(self):
-        _id = None
-        if self.buff:
-            _buff = self.buff
-            _id = _buff['uid'] if 'uid' in _buff.keys() else _buff['ref'].id
-        return _id
-    
-    @property
-    def applier(self):
-        _applier = None
-        if self.buff:
-            if 'origin' in self.buff.keys(): _applier = self.buff['origin']
-        return _applier
+    # Buff context information
+    _buff = None
+    buffID = None
+    buffStart = None
+    buffStacks = None
+    buffDuration = None
+    buffApplier = None
+    buffPrevTick = None
+    buffHandler = None
 
     @property
-    def duration(self):
-        _dur = None
-        if self.buff:
-            if 'duration' in self.buff.keys(): _dur = self.buff['duration']
-        return _dur
-
-    @property
-    def stacks(self):
-        _stacks = None
-        if self.buff:
-            if 'stacks' in self.buff.keys(): _stacks = self.buff['stacks']
-        return _stacks
-
-    @property
-    def start(self):
-        _start = None
-        if self.buff:
-            if 'start' in self.buff.keys(): _start = self.buff['start']
-        return _start
-
-    @property
-    def owner(self):
+    def weaponOwner(self):
         _owner = None
         if self.weapon: _owner = self.weapon.location
         return _owner
-    #endregion
+
+    @property
+    def buff(self):
+        return self._buff
+    @buff.setter
+    def buff(self, buff):
+        self._buff = buff
+        _keys = buff.keys()
+        self.buffID = buff['uid'] if 'uid' in buff.keys() and buff['uid'] is not None else buff['ref'].id
+        if 'start' in _keys: self.buffStart = self.buff['start']
+        if 'stacks' in _keys: self.buffStacks = self.buff['stacks']
+        if 'duration' in _keys: self.buffDuration = self.buff['duration']
+        if 'prevtick' in _keys: self.buffPrevTick = self.buff['prevtick']
+
+        # self.origin.msg('Debug Last Tick: ' + str(self.buffPrevTick) )
+        # self.origin.msg('Debug ID: ' + str(self.buffID) )
 
     def __init__(self, origin, target, weapon=None, damage=None, buff=None, handler=None) -> None:
+        
         self.origin = origin
         self.target = target
         if weapon:
@@ -62,4 +53,4 @@ class Context():
         
         if buff:
             self.buff = buff
-            self.handler = handler
+            self.buffHandler = handler

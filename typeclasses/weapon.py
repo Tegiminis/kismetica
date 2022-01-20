@@ -1,12 +1,21 @@
 import random
 from typeclasses.objects import Object
-from typeclasses import buffhandler as bh
+from typeclasses.buff import BuffHandler, PerkHandler
+from evennia.utils import lazy_property
 
 class Weapon(Object):
     """
     A weapon that can be used by our illustrious player.
     """
- 
+
+    @lazy_property
+    def buffs(self) -> BuffHandler:
+        return BuffHandler(self)
+
+    @lazy_property
+    def perks(self) -> PerkHandler:
+        return PerkHandler(self)
+    
     def at_object_creation(self):
         "Called when object is first created"
 
@@ -60,9 +69,6 @@ class Weapon(Object):
         _name = self.key if self.db.named is True else "the " + self.name
         return _name
 
-    def at_desc(self, looker, **kwargs):
-        looker.msg('Stability: ' + str(self.stability))
-
     #region properties
     @property
     def ammo(self):
@@ -73,7 +79,7 @@ class Weapon(Object):
     def damage(self):
         _dmg = random.randint(self.damageMin, self.damageMax)
         # self.location.msg('Debug Randomized Damage: ' + str(_dmg))
-        _modifiedDmg = bh.check_stat_mods(self, _dmg, 'damage')
+        _modifiedDmg = self.buffs.check(_dmg, 'damage')
         # self.location.msg('Debug Modified Damage: ' + str(_modifiedDmg - _dmg))
         return _modifiedDmg
 
@@ -90,77 +96,74 @@ class Weapon(Object):
 
     @property
     def accuracy(self):
-        _acc = bh.check_stat_mods(self, self.db.accuracy, 'accuracy')
+        _acc = self.buffs.check(self.db.accuracy, 'accuracy')
         return _acc
 
     @property
     def range(self):
-        _rng = bh.check_stat_mods(self, self.db.range, 'range')
+        _rng = self.buffs.check(self.db.range, 'range')
         return _rng
 
     @property
     def stability(self):
-        _stab = bh.check_stat_mods(self, self.db.stability, 'stability')
+        _stab = self.buffs.check(self.db.stability, 'stability')
         return _stab
 
     @property
     def maxAmmo(self):
-        _ma = bh.check_stat_mods(self, self.db.maxAmmo, 'maxammo')
+        _ma = self.buffs.check(self.db.maxAmmo, 'maxammo')
         return _ma
 
     @property
     def equip(self):
-        _eq = bh.check_stat_mods(self, self.db.equip, 'equip')
+        _eq = self.buffs.check(self.db.equip, 'equip')
         return _eq
 
     @property
     def reload(self):
-        _rl = bh.check_stat_mods(self, self.db.reload, 'reload')
+        _rl = self.buffs.check(self.db.reload, 'reload')
         return _rl
 
     @property
     def rpm(self):
-        _rpm = bh.check_stat_mods(self, self.db.rpm, 'rpm')
+        _rpm = self.buffs.check(self.db.rpm, 'rpm')
         return _rpm
 
     @property
     def cqc(self):
-        _cqc = bh.check_stat_mods(self, self.db.cqc, 'cqc')
+        _cqc = self.buffs.check(self.db.cqc, 'cqc')
         return _cqc
 
     @property
     def falloff(self):
-        _fo = bh.check_stat_mods(self, self.db.falloff, 'falloff')
+        _fo = self.buffs.check(self.db.falloff, 'falloff')
         _fo += int(self.range / 90)
         return _fo
 
     @property
     def critChance(self):
-        _prec = bh.check_stat_mods(self, self.db.critChance, 'critchance')
+        _prec = self.buffs.check(self.db.critChance, 'critchance')
         return _prec
 
     @property
     def critMult(self):
-        _hs = bh.check_stat_mods(self, self.db.critMult, 'critmult')
+        _hs = self.buffs.check(self.db.critMult, 'critmult')
         return _hs
 
     @property
     def shots(self):
-        _shots = bh.check_stat_mods(self, self.db.shots, 'shots')
+        _shots = self.buffs.check(self.db.shots, 'shots')
         return _shots
     
     @property
     def traits(self):
         _perks = [x for x in self.db.perks.values() if x['ref']().mods ]
         _buffs = [x for x in self.db.buffs.values() if x['ref']().mods ]
-        # self.location.msg('Debug Modifier Perks And Buffs: ' + str(_perks + _buffs))
         return _perks + _buffs
 
     @property
     def effects(self):
         _perks = [x for x in self.db.perks.values() if x['ref']().trigger ]
         _buffs = [x for x in self.db.buffs.values() if x['ref']().trigger ]
-        _perks.extend(_buffs)
-        # self.location.msg("Debug Effects: " + str(_perks))
-        return _perks
+        return _perks + _buffs
     #endregion

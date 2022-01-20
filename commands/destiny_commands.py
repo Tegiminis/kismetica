@@ -3,7 +3,6 @@ from evennia import Command as BaseCommand
 from world import rules
 from typeclasses import characters as Character
 from evennia import utils
-import typeclasses.buffhandler as bh
 import time
 import world.loot as loot
 from typeclasses.context import Context
@@ -181,7 +180,7 @@ class CmdCheck(BaseCommand):
         caller = self.caller
  
         if not self.args:
-            buffs = bh.view_buffs(caller)
+            buffs = caller.buffs.view()
             if buffs:
                 msg = 'You are currently buffed by: \n|n\n|n'
                 for x in buffs:
@@ -190,7 +189,7 @@ class CmdCheck(BaseCommand):
             return
         
         target = caller.search(self.args)
-        buffs = bh.view_buffs(target)
+        buffs = target.buffs.view()
         if buffs:
             msg = target.name.capitalize() + ' is currently buffed by: \n|n\n|n'
             for x in buffs:

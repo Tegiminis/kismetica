@@ -1,6 +1,5 @@
 from typeclasses.context import Context
 from typeclasses.buff import Buff, Perk, Mod
-import typeclasses.buffhandler as bh
 import typeclasses.content.bufflist as bl
 
 class RampagePerk(Perk):
@@ -17,9 +16,9 @@ class RampagePerk(Perk):
     } 
 
     def on_trigger(self, context: Context):
-        context.origin.location.msg("Debug Owner Context: " + str(context.owner))
-        bc: Context = bh.add_buff(context.origin, context.origin, bl.RampageBuff)
-        if bc.stacks in self.stack_msg: context.owner.msg( self.stack_msg[bc.stacks] )
+        context.origin.location.msg("Debug Owner Context: " + str(context.weaponOwner))
+        bc: Context = context.weapon.buffs.add(bl.RampageBuff)
+        if bc.buffStacks in self.stack_msg: context.weaponOwner.msg( self.stack_msg[bc.buffStacks] )
         return bc
 
 class ExploitPerk(Perk):
@@ -39,10 +38,9 @@ class ExploitPerk(Perk):
     trigger_msg = ''
 
     def on_trigger(self, context: Context) -> Context:
-        
-        if bh.check_for_buff(context.origin, bl.Exploited): return None
-        bc: Context = bh.add_buff(context.origin, context.origin, bl.Exploit)
-        if bc.stacks in self.stack_msg: context.owner.msg( self.stack_msg[bc.stacks] )
+        if context.weapon.buffs.find(bl.Exploited): return None
+        bc: Context = context.weapon.buffs.add(bl.Exploit, context=context)
+        if bc.buffStacks in self.stack_msg: context.weaponOwner.msg( self.stack_msg[bc.buffStacks] )
         return bc
 
 class WeakenPerk(Perk):
@@ -53,7 +51,7 @@ class WeakenPerk(Perk):
     trigger = 'hit'
 
     def on_trigger(self, context: Context) -> Context:
-        bh.add_buff(context.origin, context.target, bl.Weakened)
+        context.target.buffs.add(bl.Poison, context=context)
 
 class LeechRoundPerk(Perk):
     id = 'leechround'
@@ -63,7 +61,7 @@ class LeechRoundPerk(Perk):
     trigger = 'hit'
 
     def on_trigger(self, context: Context) -> Context:
-        bh.add_buff(context.origin, context.target, bl.Leeching)
+        context.origin.buffs.add(bl.Leeching, context=context)
 
 class ThornsPerk(Perk):
     id = 'thorns'

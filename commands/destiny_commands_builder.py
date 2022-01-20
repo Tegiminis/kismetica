@@ -5,7 +5,6 @@ from evennia import lockfuncs
 from evennia import Command as BaseCommand
 from world import rules
 from typeclasses import characters as Character
-from typeclasses import buffhandler as bh
 from evennia import utils
 import time
 
@@ -125,7 +124,7 @@ class CmdBuff(BaseCommand):
             return
 
         if target:
-            buff: Context = bh.add_buff(caller, target, self.args[1])
+            buff: Context = target.buffs.add(self.args[1])
             pass
 
 class CmdPerk(BaseCommand):
@@ -174,5 +173,5 @@ class CmdPerk(BaseCommand):
         _perk = self.perklist.get(self.args[1])
         caller.msg('Debug: Perk applied = ' + str(_perk))
 
-        if target and _perk: bh.add_perk(target, _perk, slot)
+        if target and _perk: target.perks.add(_perk, slot)
         else: caller.msg("Invalid perk.")

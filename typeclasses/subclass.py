@@ -1,6 +1,38 @@
 from evennia import CmdSet, utils
 from typeclasses.buff import Perk, Mod
-from typeclasses import buffhandler as bh
+
+class JobHandler(object):
+    obj = None
+
+    def __init__(self, obj) -> None:
+        self.obj = obj
+        if not self.obj.has('jobs'): self.obj.db.jobs = {}
+        self.db = self.obj.db.jobs
+    pass
+
+def add_xp(self, xp: int):
+        '''Adds XP to this object, respecting all capacity rules.'''
+        _xp = self.buffs.check(xp, 'xp')
+        self.db.xp = min(self.db.xp + _xp, self.xpCap)
+
+def learn_xp(self):
+    '''Learns XP, permanent adding it to your current subclass' pool. If your subclass is capped or you have no xp, nothing happens.
+    
+    Returns the amount of XP you learned.'''
+    subclasses : dict = self.db.subclasses
+    subclass : str = self.db.subclass
+
+    if self.db.xp <= 0: return
+    if subclass not in subclasses.keys(): return
+
+    _learn = min(self.db.xp, self.xpGain)
+
+    subclasses[subclass]['xp'] += _learn
+    self.db.xp -= _learn
+
+    check_for_level(self, subclass)
+
+    return _learn
 
 class Subclass():
     '''A bundle of subclass information. Used to set traits and grant access to the class' command sets.'''
@@ -18,7 +50,7 @@ class Subclass():
 
     def add_traits(self, target, level):
         '''Function which adds traits whenever you level. Should not be overloaded.'''
-        if level in self.traits: bh.add_perk(target, self.traits[level])
+        if level in self.traits: target.perks.add(self.traits[level])
             
     def on_level(self, target):
         '''Hook function which fires off after you level'''

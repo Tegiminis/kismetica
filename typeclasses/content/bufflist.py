@@ -1,7 +1,6 @@
 import random
 from typeclasses.buff import Buff, Perk, Mod
 from typeclasses.context import Context
-import typeclasses.buffhandler as bh
     
 class RampageBuff(Buff):
     id = 'rampage'
@@ -12,7 +11,7 @@ class RampageBuff(Buff):
 
     refresh = True
     stacking = True
-    unique = False
+    unique = True
     maxstacks = 3
 
     mods = [ Mod('damage', 'mult', 0.15, 0.15) ]
@@ -31,17 +30,17 @@ class Exploit(Buff):
 
     refresh = True
     stacking = True
-    unique = False
+    unique = True
     maxstacks = 20
 
     def on_trigger(self, context: Context) -> Context:
-        chance = context.stacks / 20
+        chance = context.buffStacks / 20
         roll = random.random()
 
         if chance > roll:
-            bh.add_buff(context.origin, context.origin, Exploited)
+            context.origin.buffs.add(Exploited)
             context.origin.location.msg("An opportunity presents itself!")
-            bh.remove_buff(context.origin, context.origin, 'exploit')
+            context.origin.buffs.remove('exploit')
         
         return context
 
@@ -57,13 +56,13 @@ class Exploited(Buff):
 
     refresh = True
     stacking = False
-    unique = False
+    unique = True
 
     mods = [ Mod('damage', 'add', 100) ]
 
     def after_check(self, context: Context):
         context.origin.msg( "You exploit your target's weakness!" )
-        bh.remove_buff(context.origin, context.origin, 'exploited', delay=0.01)
+        context.origin.buffs.remove('exploited', delay=0.01)
 
     def on_remove(self, context: Context):
         context.origin.msg( "\n|nYou cannot sense your target's weakness anymore." )
@@ -77,7 +76,7 @@ class Weakened(Buff):
 
     refresh = True
     stacking = False
-    unique = False
+    unique = True
 
     mods = [ Mod('injury', 'add', 100) ]
 
@@ -90,7 +89,7 @@ class Leeching(Buff):
 
     refresh = True
     stacking = False
-    unique = False
+    unique = True
 
     trigger = 'thorns'
 
@@ -99,6 +98,28 @@ class Leeching(Buff):
         target.msg('Debug: Attempting leech.')
         heal = context.damage * 0.1
         target.add_health(heal)
+
+class Poison(Buff):
+    id = 'poison'
+    name = 'Poison'
+    flavor = 'A poison wracks this body.'
+
+    duration = 30
+
+    refresh = True
+    stacking = True
+    maxstacks = 5
+    unique = True
+
+    ticking = True
+    tickrate = 5
+
+    dmg = 5
+
+    def on_tick(self, context: Context) -> Context:
+        _dmg = self.dmg * context.buffStacks
+        context.target.location.msg_contents("Poison courses through %s's body, dealing %i damage." % (context.target.named,_dmg))
+        context.target.damage_health(_dmg)
 
 class BuffList():
     '''Initialization of buff and effect typeclasses used to apply buffs to players.
@@ -109,3 +130,4 @@ class BuffList():
     exploited = Exploited
     exploit = Exploit
     leeching = Leeching
+    poison = Poison

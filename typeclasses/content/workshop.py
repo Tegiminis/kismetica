@@ -2,8 +2,6 @@
 
 from typeclasses.context import Context
 from typeclasses.buff import Buff, Perk, Mod
-import typeclasses.buffhandler as bh
-from typeclasses.buff import Buff, Mod
 
 class FourthTime(Perk):
     id = 'fourthtime'
@@ -13,7 +11,7 @@ class FourthTime(Perk):
     trigger = 'crit'
 
     def on_trigger(self, context: Context) -> Context:
-        bc: Context = bh.add_buff(context.origin, context.target, FourthTimeEffect)
+        bc: Context = context.origin.buffs.add(FourthTimeEffect)
         return bc
 
 class FourthTimeEffect(Buff):
@@ -28,9 +26,9 @@ class FourthTimeEffect(Buff):
 
     def on_trigger(self, context: Context) -> Context:
         if context.stacks >= 4: 
-            context.owner.msg('Your magazine feels slightly heavier.')
+            context.weaponOwner.msg('Your magazine feels slightly heavier.')
             self.db.ammo += 2
-            return bh.remove_buff(context.target, context.target, self.id)
+            return context.origin.buffs.remove(self.id)
 
 class RapidHit(Perk):
     id = 'rapidhit'
@@ -40,7 +38,7 @@ class RapidHit(Perk):
     trigger = 'crit'
 
     def on_trigger(self, context: Context) -> Context:
-        bc: Context = bh.add_buff(context.origin, context.target, RapidHitBuff)
+        bc: Context = context.origin.buffs.add(RapidHitBuff)
         return bc
 
 class RapidHitBuff(Buff):
@@ -68,7 +66,7 @@ class KillClipPerk(Perk):
     trigger = 'kill'
 
     def on_trigger(self, context: Context) -> Context:
-        return bh.add_buff(context.origin, context.target, KillClipEffect)
+        return context.origin.buffs.add(KillClipEffect)
 
 class KillClipEffect(Buff):
     id = 'killclip'
@@ -81,7 +79,7 @@ class KillClipEffect(Buff):
 
     def on_trigger(self, context: Context) -> Context:
         context.target.msg('Your weapon begins to glow with otherworldly light.')
-        return bh.add_buff(context.origin, context.target, KillClipBuff)
+        return context.origin.buffs.add(KillClipBuff)
 
 class KillClipBuff(Buff):
     id = 'killclip'
