@@ -7,21 +7,30 @@ is setup to be the "default" character type created by the default
 creation commands.
 
 """
-from typeclasses.item import Item
+import time
+from typeclasses.item import InventoryHandler, Item
 from evennia.utils import utils, lazy_property
 import commands.default_cmdsets as default
 import commands.destiny_cmdsets as destiny
 from typeclasses.buff import BuffHandler, PerkHandler
 from evennia import TICKER_HANDLER, DefaultCharacter
+from typeclasses.cooldowns import CooldownHandler
+from context import Context
+import random
 
 
 import typeclasses.subclass as sc
 from typeclasses.content.soldier import Soldier
 
+#region misc handlers
+
+#endregion
+
 class Character(DefaultCharacter):
 
-    # Character class inherited by all characters in the MUD. Stats here will be used by every character in the game.    
+    # Character class inherited by all characters in the MUD, including NPCs
 
+    # Buff and perk handlers
     @lazy_property
     def buffs(self) -> BuffHandler:
         return BuffHandler(self)
@@ -30,11 +39,15 @@ class Character(DefaultCharacter):
     def perks(self) -> PerkHandler:
         return PerkHandler(self)
 
+    @lazy_property
+    def cooldowns(self) -> CooldownHandler:
+        return CooldownHandler(self)
+
     def at_object_creation(self):
         
         self.scripts.stop()
 
-        # The dictionaries we use for buffs, perks, effects, traits, and cooldowns. All characters have these, even NPCs.
+        # The dictionaries we use for buffs, perks, and cooldowns. 
         self.db.buffs = {}
         self.db.perks = {}
         self.db.cooldowns = {} 
@@ -44,22 +57,92 @@ class Character(DefaultCharacter):
 
         self.db.evasion = 1.0       # Base chance to dodge enemy attacks
 
-        self.db.named = False       # If false, name will be prefixed by "the"
-
     def at_init(self):
         self.ndb.target = None      # Used if you use attack someone or use 'target'
 
-    def damage_health(self, damage: int, msg=None):
+    def damage(self, damage: int, msg=None) -> int:
+        '''Applies damage, and returns the damage it applied'''
+        damage = self.buffs.check(damage, 'injury')
         self.db.health = max(self.db.health - damage, 0)
         self.msg('You were damaged by %i!' % damage)
     
-    def add_health(self, heal: int, msg=None):
-        self.db.health = max(self.db.health + heal, 0)
+    def heal(self, heal: int, msg=None) -> int:
+        self.db.health = min(self.db.health + heal, self.db.maxHealth)
         self.msg('You healed by %i!' % heal)
-    
+
+    def shoot(self, defender, damage, crit, mult, accuracy, evasion, 
+        falloff=4, cqc=1) -> Context:
+        '''The most basic attack a character can perform.'''
+        
+        # The context for our combat. 
+        # This holds all sorts of useful info we pass around.
+        combat = Context(self, defender)
+
+        _defender: Character = defender
+
+        # Hit calculation and context update
+        hit = self._roll_hit(accuracy=accuracy, crit=crit, evasion=evasion)
+        combat.hit = hit[0]
+        combat.crit = hit[1]
+
+        # Damage calculation
+        if combat.hit:
+            combat.damage = self._calculate_damage(damage, combat.crit, mult, 
+                falloff < _defender.range)
+
+        return combat
+
+    def _roll_hit(
+        self,
+        accuracy=1.0, crit=2.0, evasion=1.0, cqc=1
+        ) -> tuple(bool, bool):
+        '''
+        Rolls to hit a defender, based on arbitrary accuracy and evasion values.
+        
+        Args:
+            defender: The defender.
+            accuracy: The base accuracy value. Typically your weapon's accuracy
+
+        Returns a tuple of bools: was hit, and was crit
+        '''
+
+        # Apply all accuracy and crit buffs for attack
+        accuracy = self.buffs.check(accuracy, 'accuracy')
+        crit = self.buffs.check(crit, 'crit')
+
+        # Random values for hit calculations
+        # hit must be > evasion for the player to hit
+        hit = random.random()
+        dodge = random.random()
+
+        # Modify the hit roll by the accuracy value.
+        hit = hit * accuracy
+        dodge = dodge * evasion
+
+        # Return a tuple of booleans corresponding to (isHit, isCrit)
+        return (hit > dodge, hit > dodge * crit)
+
+    def _calculate_damage(
+        self, damage,
+        crit=False, critMult=2.0, falloff=False
+        ) -> float:
+        '''Calculates damage output, unmodified by defender armor.'''
+
+        # Apply falloff, if relevant. Falloff is a flat 20% damage penalty
+        if falloff: damage *= 0.8
+
+        # All damage is multiplied by crit
+        if crit is True: damage = round(damage * critMult)
+
+        # Apply all attacker buffs to damage
+        damage = self.buffs.check(damage, 'damage')
+
+        return round(damage)
+
+    #region calculated properties    
     @property
     def named(self) -> str:
-        if self.db.named is False: return "the " + self.key
+        if self.tags.get('named') is None: return "the " + self.key
         else: return self.key
     
     @property
@@ -74,15 +157,16 @@ class Character(DefaultCharacter):
 
     @property
     def traits(self):
-        _perks = [x for x in self.db.perks.values() if x['ref']().mods ]
-        _buffs = [x for x in self.db.buffs.values() if x['ref']().mods ]
+        _perks = self.perks.traits
+        _buffs = self.buffs.traits
         return _perks + _buffs
 
     @property
     def effects(self):
-        _perks = [x for x in self.db.perks.values() if x['ref']().trigger ]
-        _buffs = [x for x in self.db.buffs.values() if x['ref']().trigger ]
+        _perks = self.perks.effects
+        _buffs = self.buffs.effects
         return _perks + _buffs
+    #endregion
 
     """
     The Character defaults to reimplementing some of base Object's hook methods with the
@@ -110,6 +194,10 @@ class PlayerCharacter(Character):
 
     # The module we use for all player characters. This contains player-specific stats.
     
+    @lazy_property
+    def inv(self) -> InventoryHandler:
+        return InventoryHandler(self)
+    
     def at_object_creation(self):
         
         super().at_object_creation()
@@ -126,7 +214,7 @@ class PlayerCharacter(Character):
         # TICKER_HANDLER.add(15, self.learn_xp)
 
         # Are you a "Named" character? Players start out as true.
-        self.db.named = True
+        self.tags.add("named")
 
         # Your held weapon. What you shoot with when you use 'attack'
         self.db.held = None
@@ -140,6 +228,60 @@ class PlayerCharacter(Character):
         # Start with soldier subclass on newly-created characters
         # self.db.subclass = 'soldier'
         # sc.add_subclass(self, Soldier)        
+    
+    def shoot(self, defender, weapon):
+        '''The most basic attack a player can perform. 
+        
+        Attacker must have a weapon in db.held, otherwise 
+        this method will return an error.
+        '''
+        
+        # The context for our combat. 
+        # This holds all sorts of useful info we pass around.
+        combat = Context(self, defender)
+
+        combat.weapon = self.db.held
+        weapon = combat.weapon
+
+        # Variable assignments for legibility
+        rpm = weapon.rpm
+
+        # If it has been too soon since your last attack, or you are attacking an invalid target, stop attacking
+        if self.cooldowns.isActive('attack') or not defender.is_typeclass('typeclasses.npc.NPC'):
+            self.msg("You cannot act again so quickly!")
+            return
+        
+        self.msg((combat.weapon.db.msg['attack'] % ('you',defender.named)).capitalize())
+
+        combat = super().shoot(
+            defender, 
+            weapon.damage, 
+            weapon.critChance, 
+            weapon.critMult, 
+            weapon.accuracy, 
+            defender.evasion, 
+            weapon.falloff, 
+            weapon.cqc)
+
+        if combat.hit: 
+            weapon.buffs.trigger('hit', context=combat)
+            self.buffs.trigger('hit', context=combat)
+
+            if combat.crit: 
+                self.buffs.trigger('crit', context=combat)
+                weapon.buffs.trigger('crit', context=combat)
+
+            combat.damage = defender.damage(combat.damage)
+            damage_message += "%i damage!" % combat.damage
+            self.msg( damage_message + "\n|n" )
+
+            defender.buffs.trigger('thorns', context=combat)
+            defender.buffs.trigger('injury', context=combat)
+        else:
+            self.msg( weapon.db.msg['miss'] )
+
+        self.cooldowns.start('attack', rpm)
+        utils.delay(rpm, self.shoot, defender=defender)
     
     @property
     def weight(self):

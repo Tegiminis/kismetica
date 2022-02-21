@@ -5,7 +5,7 @@ from evennia.utils import lazy_property
 
 class Weapon(Object):
     """
-    A weapon that can be used by our illustrious player.
+    A weapon that can be used by player characters.
     """
 
     @lazy_property
@@ -21,10 +21,6 @@ class Weapon(Object):
 
         self.db.buffs = {}
         self.db.perks = {}
-
-        self.db.cooldowns = {}
-
-        self.db.named = False
 
         # Ammo stats
         self.db.ammo = 30
@@ -43,10 +39,10 @@ class Weapon(Object):
         self.db.reload = 15
         self.db.rpm = 5
 
-        # Range stats. Base stat affects upper damage bracket, cqc affects accuracy when enemy range is below, falloff affects damage when enemy range is above
-        self.db.range = 10
-        self.db.cqc = 1
-        self.db.falloff = 3
+        # Range stats. 
+        self.db.range = 10      # Increases upper damage bracket
+        self.db.cqc = 1         # Decrease accuracy when enemy range is lower
+        self.db.falloff = 3     # Decrease damage when enemy range is higher
 
         # Crit chance and multiplier
         self.db.critChance = 2.0
@@ -66,8 +62,8 @@ class Weapon(Object):
     
     @property
     def named(self):
-        _name = self.key if self.db.named is True else "the " + self.name
-        return _name
+        if self.tags.get('named') is None: return "the " + self.key
+        else: return self.key
 
     #region properties
     @property
@@ -136,8 +132,11 @@ class Weapon(Object):
 
     @property
     def falloff(self):
-        _fo = self.buffs.check(self.db.falloff, 'falloff')
+        '''The range at which you see a 20% damage penalty. This must be higher
+        than a defender's range in order to avoid damage penalty. Having a
+        high range stat can buff this by one tier.'''
         _fo += int(self.range / 90)
+        _fo = self.buffs.check(self.db.falloff, 'falloff')
         return _fo
 
     @property
@@ -157,13 +156,13 @@ class Weapon(Object):
     
     @property
     def traits(self):
-        _perks = [x for x in self.db.perks.values() if x['ref']().mods ]
-        _buffs = [x for x in self.db.buffs.values() if x['ref']().mods ]
+        _buffs = self.buffs.traits
+        _perks = self.buffs.perks
         return _perks + _buffs
 
     @property
     def effects(self):
-        _perks = [x for x in self.db.perks.values() if x['ref']().trigger ]
-        _buffs = [x for x in self.db.buffs.values() if x['ref']().trigger ]
+        _perks = self.perks.effects
+        _buffs = self.buffs.effects
         return _perks + _buffs
     #endregion

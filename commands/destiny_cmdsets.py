@@ -10,7 +10,7 @@ class DestinyBasicCmdSet(CmdSet):
         self.add(basic.CmdAttack())
         self.add(basic.CmdTarget())
         self.add(basic.CmdEquip())
-        self.add(basic.CmdSwitch())
+        self.add(basic.CmdDraw())
         self.add(basic.CmdPTest())
         self.add(basic.CmdLootTest())
         self.add(basic.CmdCheck())

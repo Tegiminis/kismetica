@@ -80,11 +80,9 @@ def roll_on_table(table: list, context: Context = None):
     '''Takes a list of tuples with the format (value, chance) and rolls to find which one to return. Guaranteed to return a value.'''
     _total = 0
     for x in table: _total += x[1]
-    
-    if context: context.origin.msg("Debug: Loot Weight: " + str(x[1]))
             
     for x in table:
-        if ( roll(x[1] / _total) ): return x[0]
+        if roll(x[1] / _total): return x[0]
         else: _total -= x[1]
 
 def parse_result(obj, context: Context):

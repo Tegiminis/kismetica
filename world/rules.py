@@ -4,54 +4,61 @@ from evennia import utils
 from typeclasses.context import Context
 from typeclasses.weapon import Weapon
 
-slot = {'kinetic':0 , 'energy':1 , 'power':2}
-element = {'neutral':0 , 'void':1 , 'solar':2, 'arc':3}
-ammo = {'primary':0 , 'special':1 , 'power':2}
-armor = {'head':0 , 'arms':1 , 'chest':2, 'legs':3, 'class':4}
-
 def basic_attack(attacker, defender):
     '''The most basic attack a player can perform. Uses a weapon, held by origin, to attack the target.
     
     Attacker must have a weapon in db.held, otherwise this command will return an error.
     '''
-    weapon: Weapon = attacker.db.held
-    now = time.time()
+    
+    # The context for our combat. 
+    # This holds all sorts of useful info we pass around.
+    combat = Context(attacker, defender)
 
-    if utils.inherits_from(defender, 'typeclasses.npc.NPC') or defender.db.crucible == True:
-        # The string of "hits" used for messaging. Looks like this once everything's done: "15! 10! Miss! 10! 10!"
-        d_msg = ''
+    combat.weapon = attacker.db.held
+    weapon = combat.weapon
 
-        # Hit calculation and initial attack messages
-        hit = roll_hit(attacker, defender)
-        attacker.msg( "\n|n" + (weapon.db.msg['attack'] % ('you',defender.named)).capitalize())
-        if hit[1]: d_msg += '|yCrit! '
+    # Variable assignments for legibility
+    rpm = combat.weapon.rpm
 
-        # Damage calculation and messaging
-        # attacker.msg('Debug Defender Health Before Attack: ' + str(defender.db.health))
-        damage = calculate_damage(attacker, defender, *hit)    
-        d_msg += "%i damage!" % damage
-        dc : Context = Context(attacker, defender, weapon=weapon, damage=damage)           
+    # If it has been too soon since your last attack, or you are attacking an invalid target, stop attacking
+    if attacker.cooldowns.isActive('attack') or not defender.is_typeclass('typeclasses.npc.NPC'):
+        attacker.msg("You cannot act again so quickly!")
+        return
 
-        if hit[0]:
-            defender.damage_health(damage)
-            # attacker.msg('Debug Defender Health After Attack: ' + str(defender.db.health))
-            attacker.msg( d_msg )
+    # The string of "hits" used for messaging.
+    damage_message = ''
 
-            weapon.buffs.trigger('hit', context=dc)
-            attacker.buffs.trigger('hit', context=dc)
-            
-            if hit[1]:
-                weapon.buffs.trigger('crit', context=dc)
-                attacker.buffs.trigger('crit', context=dc)
-            
-            defender.buffs.trigger('thorns', context=dc)
-            defender.buffs.trigger('injury', context=dc)
-        else:
-            attacker.msg( weapon.db.msg['miss'] )
+    # Hit calculation and context update
+    hit = roll_hit(attacker, defender)
+    combat.hit = hit[0]
+    combat.crit = hit[1]
+    
+    attacker.msg((combat.weapon.db.msg['attack'] % ('you',defender.named)).capitalize())
+    if hit[1]: damage_message += '|yCrit! '
 
-        attacker.db.cooldown = now
+    # Damage calculation and messaging
+    combat.damage = calculate_damage(attacker, defender, *hit)    
+    damage_message += "%i damage!" % combat.damage     
 
-        utils.delay(weapon.rpm, attacker.msg, weapon.db.msg['cooldown'])
+    if combat.hit:
+        defender.damage(combat.damage)
+        attacker.msg( damage_message + "\n|n" )
+
+        weapon.buffs.trigger('hit', context=combat)
+        attacker.buffs.trigger('hit', context=combat)
+        
+        if combat.crit:
+            weapon.buffs.trigger('crit', context=combat)
+            attacker.buffs.trigger('crit', context=combat)
+        
+        defender.buffs.trigger('thorns', context=combat)
+        defender.buffs.trigger('injury', context=combat)
+    else:
+        attacker.msg( weapon.db.msg['miss'] )
+
+    attacker.cooldowns.start('attack')
+    utils.delay(rpm, basic_attack, attacker=attacker, defender=defender)
+    
 
 def roll_hit(attacker, defender):
     '''

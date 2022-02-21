@@ -7,8 +7,11 @@ class JobHandler(object):
     def __init__(self, obj) -> None:
         self.obj = obj
         if not self.obj.has('jobs'): self.obj.db.jobs = {}
-        self.db = self.obj.db.jobs
-    pass
+    
+    @property 
+    def db(self):
+        return self.obj.db.jobs
+
 
 def add_xp(self, xp: int):
         '''Adds XP to this object, respecting all capacity rules.'''
@@ -34,8 +37,8 @@ def learn_xp(self):
 
     return _learn
 
-class Subclass():
-    '''A bundle of subclass information. Used to set traits and grant access to the class' command sets.'''
+class Job():
+    '''A bundle of job information. Used to set traits and grant access to the class' command sets.'''
     id = ''
 
     commands: CmdSet = None

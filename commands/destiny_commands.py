@@ -1,7 +1,7 @@
 from evennia import DefaultCharacter, lockfuncs
 from evennia import Command as BaseCommand
 from world import rules
-from typeclasses import characters as Character
+from typeclasses.characters import Character
 from evennia import utils
 import time
 import world.loot as loot
@@ -15,10 +15,8 @@ class CmdAttack(BaseCommand):
       attack <target>
 
     This will attack a target in the same room. If you have selected a target 
-    using the 'target' command, it will use that target instead. You can only
-    attack as fast as your equipped weapon allows. Your chance to hit is 
-    dependent on your weapon's accuracy and range, and your distance from the 
-    target.    
+    using the 'target' command, it will use that target instead. You will
+    continue to attack the target until you stop via disengage.    
     """
     key = "attack"
     aliases = ["shoot"]
@@ -27,7 +25,7 @@ class CmdAttack(BaseCommand):
         self.args = self.args.strip()
 
     def func(self):
-        caller: DefaultCharacter = self.caller    
+        caller: Character = self.caller    
         target = None
         now = time.time()
         weapon = caller.db.held
@@ -45,15 +43,14 @@ class CmdAttack(BaseCommand):
             caller.msg("You cannot attack a dead target.")
             return
 
-        if caller.db.cooldown:
-            cd = caller.db.cooldown
-            rpm = weapon.rpm
-            if now - cd < rpm:
-                caller.msg("You cannot act again so quickly!")
-                return
+
+        if not caller.cooldowns.check('attack', weapon.rpm):
+            caller.msg("You cannot act again so quickly!")
+            return
 
         if target:
-            rules.basic_attack(caller, target)
+            caller.shoot(target, weapon.damage, weapon.critChance, weapon.mult, 
+                weapon.accuracy, target.evasion, weapon.falloff, weapon.cqc)
         else:
             caller.msg("You must select a valid target to attack!")
             return
@@ -136,18 +133,18 @@ class CmdEquip(BaseCommand):
             return
         return
     
-class CmdSwitch(BaseCommand):
+class CmdDraw(BaseCommand):
     """
-    Switch to a slot's weapon
+    Draws the specified slot
 
     Usage:
-        switch <kinetic/energy/power>
+        draw <kinetic/energy/power>
 
     This will switch your active weapon to the weapon in the specified 
     slot. If used without arguments, will stow your weapon.
     """
-    key = "switch"
-    aliases = ["swi","weapon swap","wswap"]
+    key = "draw"
+    aliases = ["weapon swap","wswap"]
 
     def parse(self):
         self.args = self.args.strip()

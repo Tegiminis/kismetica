@@ -1,10 +1,39 @@
-import typeclasses.buffhandler as bh
+from destiny.typeclasses.context import Context
 from typeclasses.characters import Character
 
 # destiny_rules is the rules module that contains all combat calculations, enums, and other important doodads
 from world import rules
 
 import random
+
+class NPCWeapon():
+    name = 'Template'
+    accuracy = 1.0
+    damage = 10
+    element = 'neutral'
+    msg = '%s shoots %s with %s.'
+    cooldown = 6
+
+    def __init__(
+        self,
+        name='Template', 
+        accuracy=1.0, 
+        damage=10,
+        crit=2.0,
+        mult=2.0,
+        element='neutral',
+        msg='%s shoots %s with %s.',
+        cooldown=6
+        ) -> None:
+        
+        self.name = name
+        self.accuracy = accuracy
+        self.damage = damage
+        self.crit = crit
+        self.mult = mult
+        self.element = element
+        self.msg = msg
+        self.cooldown = cooldown
 
 class NPC(Character):
 
@@ -34,15 +63,8 @@ class NPC(Character):
             'respawn': 10           # How long after respawn before thinking again
         }
 
-        # The basic ranged attack for all NPCs.
-        self.db.basic_ranged = {
-            'name':'Hive Boomer',
-            'element':'arc',
-            'damage':20,
-            'acc': 1.5,
-            'msg': '%s shoots %s with a %s.',
-            'cooldown': 6
-        }
+        # The template weapon for all NPCs.
+        self.db.weapon = NPCWeapon()
 
         # The range the NPC sits at. You suffer an accuracy penalty shooting at enemies outside your range
         self.db.range = 2
@@ -110,32 +132,27 @@ class NPC(Character):
             # no exits! teleport to home to get away.
             self.move_to(self.home)
     
-    def npc_attack(self, target):
+    def npc_attack(self, defender):
         """
         Attacks the specified target with the NPC's default weapon
         The most basic form of attack an NPC can do.
         """
-        weapon = self.db.basic_ranged
-        damage = 0
-        msg_damage = ''
+        weapon : NPCWeapon = self.db.weapon
 
-        chance_hit = random.random()
-        hit_roll = random.random()
+        combat = self.shoot(defender, weapon.damage, weapon.crit, weapon.mult, weapon.accuracy, defender.evasion, weapon.falloff, weapon.cqc)
+        msg_damage = ""
 
-        if chance_hit >= hit_roll:
-            damage = weapon['damage']
-            rules.damage_target(damage, None, target)
-            msg_damage = "%s damage!" % str(damage)
-        elif chance_hit < hit_roll:
-            msg_damage = "Miss!"
-
-        target.msg(
-            ( "\n|n" + (weapon['msg'] % (self.name, 'you', weapon['name'])).capitalize() ) +
+        if combat.hit:
+            msg_damage = f"{combat.damage} damage!"
+        else: msg_damage = "Miss!"
+        
+        defender.msg(
+            ( "\n|n" + (weapon.msg % (self.name, 'you', weapon.name)).capitalize() ) +
             ( "\n|n" + msg_damage )
         )
 
         self.location.msg_contents(
-            ( "\n|n" + (weapon['msg'] % (self.name, target.named, weapon['name'])).capitalize() ) +
+            ( "\n|n" + (weapon.msg % (self.name, defender.named, weapon.name)).capitalize() ) +
             ( "\n|n" + msg_damage ), 
-            exclude=(self, target)
+            exclude=(self, defender)
         )

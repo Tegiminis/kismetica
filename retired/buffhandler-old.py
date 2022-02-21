@@ -63,7 +63,7 @@ def apply_buff(origin:Object, target:Object, id:str, buff:dict, stacks, context=
 
     _context.buff = handler[p_id]
     _context.origin.msg("Debug: Buff dict: " + str(handler[p_id]))
-    _context.origin.msg("Debug: Assigning buff in ApplyBuff " + str(_context.buffID))
+    _context.origin.msg("Debug: Assigning buff in ApplyBuff " + str(_context.buffKey))
     _context.buffHandler = handler
 
     _tr = _ref.tickrate
@@ -338,7 +338,7 @@ def tick_buff(buff: dict, context: Context):
     if context.buffDuration < time.time() - context.buffStart: 
         if _tr < time.time() - context.buffLastTick: _ref().on_tick(context)
         return
-    if context.buffID not in context.buffHandler.keys(): return
+    if context.buffKey not in context.buffHandler.keys(): return
 
     _context = copy.copy(context)
     _context.buff = buff

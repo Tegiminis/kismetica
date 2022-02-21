@@ -3,7 +3,7 @@ from typeclasses.buff import Buff, Perk, Mod
 import typeclasses.content.bufflist as bl
 
 class RampagePerk(Perk):
-    id = 'rampage'
+    key = 'rampage'
     name = 'Rampage'
     flavor = 'Kills with this weapon temporarily increase its damage.'
 
@@ -23,7 +23,7 @@ class RampagePerk(Perk):
 
 class ExploitPerk(Perk):
 
-    id = 'exploit'
+    key = 'exploit'
     name = 'Exploit'
     flavor = 'Shooting an enemy with this weapon allows you to find their weakness.'
 
@@ -44,7 +44,7 @@ class ExploitPerk(Perk):
         return bc
 
 class WeakenPerk(Perk):
-    id = 'weaken'
+    key = 'weaken'
     name = 'Weaken'
     flavor = 'Shooting an enemy with this weapon increases the damage they take from all sources.'
 
@@ -54,7 +54,7 @@ class WeakenPerk(Perk):
         context.target.buffs.add(bl.Poison, context=context)
 
 class LeechRoundPerk(Perk):
-    id = 'leechround'
+    key = 'leechround'
     name = 'Leech Round'
     flavor = 'Primes enemies with a leeching worm which heals attackers.'
 
@@ -64,7 +64,7 @@ class LeechRoundPerk(Perk):
         context.origin.buffs.add(bl.Leeching, context=context)
 
 class ThornsPerk(Perk):
-    id = 'thorns'
+    key = 'thorns'
     name = 'Thorns'
     flavor = 'Damages attackers'
 

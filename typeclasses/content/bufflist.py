@@ -3,7 +3,7 @@ from typeclasses.buff import Buff, Perk, Mod
 from typeclasses.context import Context
     
 class RampageBuff(Buff):
-    id = 'rampage'
+    key = 'rampage'
     name = 'Rampage'
     flavor = 'Defeating an enemy has filled you with bloodlust.'
 
@@ -20,7 +20,7 @@ class RampageBuff(Buff):
         context.origin.location.msg('The bloodlust fades.')
 
 class Exploit(Buff):
-    id = 'exploit'
+    key = 'exploit'
     name = 'Exploit'
     flavor = "You are learning your opponent's weaknesses."
 
@@ -48,7 +48,7 @@ class Exploit(Buff):
         context.origin.location.msg("The opportunity passes.")
 
 class Exploited(Buff):
-    id = 'exploited'
+    key = 'exploited'
     name = 'Exploited'
     flavor = "You have sensed your target's vulnerability, and are poised to strike."
 
@@ -68,7 +68,7 @@ class Exploited(Buff):
         context.origin.msg( "\n|nYou cannot sense your target's weakness anymore." )
 
 class Weakened(Buff):
-    id = 'weakened'
+    key = 'weakened'
     name = 'Weakened'
     flavor = 'An unexplained weakness courses through this person.'
 
@@ -81,7 +81,7 @@ class Weakened(Buff):
     mods = [ Mod('injury', 'add', 100) ]
 
 class Leeching(Buff):
-    id = 'leeching'
+    key = 'leeching'
     name = 'Leeching'
     flavor = 'Attacking this target fills you with vigor.'
 
@@ -97,10 +97,10 @@ class Leeching(Buff):
         target = context.target
         target.msg('Debug: Attempting leech.')
         heal = context.damage * 0.1
-        target.add_health(heal)
+        target.heal(heal)
 
 class Poison(Buff):
-    id = 'poison'
+    key = 'poison'
     name = 'Poison'
     flavor = 'A poison wracks this body.'
 
