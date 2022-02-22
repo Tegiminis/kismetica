@@ -1,4 +1,4 @@
-from typeclasses.subclass import Subclass
+from destiny.typeclasses.job import Subclass
 from typeclasses.buff import Perk, Mod
 
 class SoldierMarksman(Perk):

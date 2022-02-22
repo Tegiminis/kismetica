@@ -1,29 +1,37 @@
-from destiny.typeclasses.context import Context
+from evennia.utils.utils import lazy_property
 from typeclasses.characters import Character
-
-# destiny_rules is the rules module that contains all combat calculations, enums, and other important doodads
-from world import rules
+from typeclasses.ai import AIHandler
+from typeclasses.context import Context
 
 import random
 
 class NPCWeapon():
-    name = 'Template'
-    accuracy = 1.0
-    damage = 10
-    element = 'neutral'
-    msg = '%s shoots %s with %s.'
-    cooldown = 6
+    name='Template'
 
+    accuracy=1.0
+    damage=10
+    cooldown=6
+    falloff=4
+    cqc=1
+
+    crit=2.0
+    mult=2.0
+
+    element='neutral'
+    msg='%s shoots %s with %s.'
+    
     def __init__(
         self,
-        name='Template', 
-        accuracy=1.0, 
-        damage=10,
-        crit=2.0,
-        mult=2.0,
-        element='neutral',
-        msg='%s shoots %s with %s.',
-        cooldown=6
+        name, 
+        accuracy, 
+        damage,
+        crit,
+        mult,
+        element,
+        msg,
+        cooldown,
+        falloff,
+        cqc
         ) -> None:
         
         self.name = name
@@ -34,9 +42,15 @@ class NPCWeapon():
         self.element = element
         self.msg = msg
         self.cooldown = cooldown
+        self.falloff = falloff
+        self.cqc = cqc
 
 class NPC(Character):
 
+    @lazy_property
+    def ai(self) -> AIHandler:
+        return AIHandler(self)
+    
     def at_object_creation(self):
         super().at_object_creation()
         
@@ -64,17 +78,16 @@ class NPC(Character):
         }
 
         # The template weapon for all NPCs.
-        self.db.weapon = NPCWeapon()
+        self.db.weapon = NPCWeapon
 
-        # The range the NPC sits at. You suffer an accuracy penalty shooting at enemies outside your range
-        self.db.range = 2
+        self.db.range = 4
 
         # States for the state machine
         self.db.state = 'active'
 
         # The AI's current target
         self.db.target = None
-    
+
     def find_targets(self, location):
         """
         Find all potential targets in the current room.
@@ -137,12 +150,22 @@ class NPC(Character):
         Attacks the specified target with the NPC's default weapon
         The most basic form of attack an NPC can do.
         """
+        # self.location.msg_contents("Debug: Finding NPC weapon")
         weapon : NPCWeapon = self.db.weapon
+        # self.location.msg_contents("Debug: Setting initial combat context")
+        combat = Context(self, defender)
+        # self.location.msg_contents(f"Attacker: {self} | Defender: {defender}")
+        # self.location.msg_contents(f"Damage: {weapon.damage} | Accuracy: {weapon.accuracy} | Crit: {weapon.crit} | Mult: {weapon.mult}")
 
-        combat = self.shoot(defender, weapon.damage, weapon.crit, weapon.mult, weapon.accuracy, defender.evasion, weapon.falloff, weapon.cqc)
-        msg_damage = ""
+        self.location.msg_contents('Debug: Attacking a target in this room.')
+        
+        weapon_stats = (weapon.damage, weapon.crit, weapon.mult, weapon.accuracy, weapon.falloff, weapon.cqc)
+        combat = self.shoot(defender, *weapon_stats, context=combat)
+        
+        self.location.msg_contents(f"Hit: {combat.hit} | Crit: {combat.crit} | Damage: {combat.damage}")
 
         if combat.hit:
+            defender.damage(combat.damage, context=combat)
             msg_damage = f"{combat.damage} damage!"
         else: msg_damage = "Miss!"
         

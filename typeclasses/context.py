@@ -30,13 +30,14 @@ class Context():
         return self._buff
     @buff.setter
     def buff(self, buff):
-        self._buff = buff
-        _keys = buff.keys()
-        self.buffKey = buff['uid'] if 'uid' in _keys and buff['uid'] is not None else buff['ref'].key
-        if 'start' in _keys: self.buffStart = self.buff['start']
-        if 'stacks' in _keys: self.buffStacks = self.buff['stacks']
-        if 'duration' in _keys: self.buffDuration = self.buff['duration']
-        if 'prevtick' in _keys: self.buffPrevTick = self.buff['prevtick']
+        if buff is not None:
+            self._buff = buff
+            _keys = buff.keys()
+            self.buffKey = buff['uid'] if 'uid' in _keys and buff['uid'] is not None else buff['ref'].key
+            if 'start' in _keys: self.buffStart = self.buff['start']
+            if 'stacks' in _keys: self.buffStacks = self.buff['stacks']
+            if 'duration' in _keys: self.buffDuration = self.buff['duration']
+            if 'prevtick' in _keys: self.buffPrevTick = self.buff['prevtick']
 
         # self.origin.msg('Debug Last Tick: ' + str(self.buffPrevTick) )
         # self.origin.msg('Debug ID: ' + str(self.buffKey) )

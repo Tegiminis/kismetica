@@ -8,6 +8,7 @@ class DestinyBasicCmdSet(CmdSet):
 
     def at_cmdset_creation(self):     
         self.add(basic.CmdAttack())
+        self.add(basic.CmdDisengage())
         self.add(basic.CmdTarget())
         self.add(basic.CmdEquip())
         self.add(basic.CmdDraw())

@@ -41,7 +41,7 @@ class AIBasic(Script):
             
             if npc.db.target != None:                                     
                 if npc.db.target.location == npc.location:              
-                    delay = npc.db.basic_ranged['cooldown']
+                    delay = npc.db.weapon.cooldown
                     npc.npc_attack(npc.db.target)                    
                 elif npc.db.target.location != npc.location:       
                     hunt = npc.hunt(npc.db.target)

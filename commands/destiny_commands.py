@@ -1,11 +1,15 @@
+from typing import TYPE_CHECKING
+
 from evennia import DefaultCharacter, lockfuncs
 from evennia import Command as BaseCommand
 from world import rules
-from typeclasses.characters import Character
 from evennia import utils
 import time
 import world.loot as loot
 from typeclasses.context import Context
+
+if TYPE_CHECKING:
+    from typeclasses.characters import PlayerCharacter
 
 class CmdAttack(BaseCommand):
     """
@@ -25,7 +29,7 @@ class CmdAttack(BaseCommand):
         self.args = self.args.strip()
 
     def func(self):
-        caller: Character = self.caller    
+        caller: PlayerCharacter = self.caller    
         target = None
         now = time.time()
         weapon = caller.db.held
@@ -43,17 +47,33 @@ class CmdAttack(BaseCommand):
             caller.msg("You cannot attack a dead target.")
             return
 
-
-        if not caller.cooldowns.check('attack', weapon.rpm):
+        if caller.cooldowns.find('attack'):
             caller.msg("You cannot act again so quickly!")
             return
 
         if target:
-            caller.shoot(target, weapon.damage, weapon.critChance, weapon.mult, 
-                weapon.accuracy, target.evasion, weapon.falloff, weapon.cqc)
+            caller.tags.add('attacking', category='combat')
+            caller.shoot(target)    
         else:
             caller.msg("You must select a valid target to attack!")
             return
+
+class CmdDisengage(BaseCommand):
+    """
+    Stop attacking an opponent
+
+    Usage:
+      disengage    
+    """
+    key = "disengage"
+    aliases = []
+
+    def func(self):
+        caller: PlayerCharacter = self.caller
+        caller.msg('You stop attacking.')
+        caller.location.msg_contents('%s stops attacking.' % caller, exclude=caller)
+        caller.tags.remove('attacking', category='combat')
+
 
 class CmdTarget(BaseCommand):
     """

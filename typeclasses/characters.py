@@ -8,6 +8,8 @@ creation commands.
 
 """
 import time
+from typing import TYPE_CHECKING
+
 from typeclasses.item import InventoryHandler, Item
 from evennia.utils import utils, lazy_property
 import commands.default_cmdsets as default
@@ -15,12 +17,11 @@ import commands.destiny_cmdsets as destiny
 from typeclasses.buff import BuffHandler, PerkHandler
 from evennia import TICKER_HANDLER, DefaultCharacter
 from typeclasses.cooldowns import CooldownHandler
-from context import Context
+from typeclasses.context import Context
 import random
 
-
-import typeclasses.subclass as sc
-from typeclasses.content.soldier import Soldier
+if TYPE_CHECKING:
+    from typeclasses.npc import NPC
 
 #region misc handlers
 
@@ -55,47 +56,91 @@ class Character(DefaultCharacter):
         self.db.health = 100        # Current health
         self.db.maxHealth = 100     # Max health
 
+        self.db.range = 0           # What range the character starts at in a room
         self.db.evasion = 1.0       # Base chance to dodge enemy attacks
 
     def at_init(self):
         self.ndb.target = None      # Used if you use attack someone or use 'target'
+        self.tags.remove('attacking', category='combat')
 
-    def damage(self, damage: int, msg=None) -> int:
+    #region methods
+    def damage(self, damage: int, context=None) -> int:
         '''Applies damage, and returns the damage it applied'''
+        # Damage check
         damage = self.buffs.check(damage, 'injury')
+
+        if context is not None:
+            # Buff triggers
+            self.buffs.trigger('thorns', context=context)
+            self.buffs.trigger('injury', context=context)
+
+        # Apply damage
         self.db.health = max(self.db.health - damage, 0)
         self.msg('You were damaged by %i!' % damage)
+
+        # If you are out of life, you are out of luck
+        self.die()
+
+        return damage
+
+    def die(self, context=None):
+        '''This was your life.'''
+        self.tags.clear(category='combat')
+        self.tags.add('dead', category='state')
+        pass
     
     def heal(self, heal: int, msg=None) -> int:
         self.db.health = min(self.db.health + heal, self.db.maxHealth)
         self.msg('You healed by %i!' % heal)
 
-    def shoot(self, defender, damage, crit, mult, accuracy, evasion, 
-        falloff=4, cqc=1) -> Context:
-        '''The most basic attack a character can perform.'''
+    def shoot(
+        self, defender, 
+        damage, crit, mult, acc, falloff=4, cqc=1, 
+        context=None
+        ) -> Context:
+        '''The most basic attack a character can perform.
         
+        Args:
+            defender:   The target you are shooting
+            damage:     The source damage value; typically weapon damage
+            crit:       Crit chance
+            mult:       Crit multiplier
+            acc:        Accuracy'''
+        
+        # self.location.msg_contents("Debug: Attempting a shot")
+
         # The context for our combat. 
         # This holds all sorts of useful info we pass around.
-        combat = Context(self, defender)
+        if context is None: combat = Context(self, defender)
+        else: combat = context
 
-        _defender: Character = defender
+        _defender : Character = defender
+        evasion = defender.evasion
 
         # Hit calculation and context update
-        hit = self._roll_hit(accuracy=accuracy, crit=crit, evasion=evasion)
+        hit = self._roll_hit(accuracy=acc, crit=crit, evasion=evasion)
         combat.hit = hit[0]
         combat.crit = hit[1]
+        # self.location.msg_contents(f"Hit: {combat.hit} | Crit: {combat.crit}")
 
-        # Damage calculation
+        # Damage calculation and buff triggers
         if combat.hit:
-            combat.damage = self._calculate_damage(damage, combat.crit, mult, 
-                falloff < _defender.range)
+            combat.damage = self._calculate_damage(damage, combat.crit, mult, False)
+            
+            # self.location.msg_contents("Debug: Trigger hit buffs")
+            self.buffs.trigger('hit', context=combat)
+            
+            if combat.crit: 
+                # self.location.msg_contents("Debug: Trigger crit buffs")
+                self.buffs.trigger('crit', context=combat)
 
+        # self.location.msg_contents("Debug: Returning combat context")
         return combat
 
     def _roll_hit(
         self,
         accuracy=1.0, crit=2.0, evasion=1.0, cqc=1
-        ) -> tuple(bool, bool):
+        ) -> tuple:
         '''
         Rolls to hit a defender, based on arbitrary accuracy and evasion values.
         
@@ -138,6 +183,7 @@ class Character(DefaultCharacter):
         damage = self.buffs.check(damage, 'damage')
 
         return round(damage)
+    #endregion
 
     #region calculated properties    
     @property
@@ -153,6 +199,11 @@ class Character(DefaultCharacter):
     @property
     def maxHealth(self):
         _mh = self.buffs.check(self.db.maxHealth, 'maxhealth')
+        return _mh
+
+    @property
+    def range(self):
+        _mh = self.buffs.check(self.db.range, 'range')
         return _mh
 
     @property
@@ -223,22 +274,24 @@ class PlayerCharacter(Character):
         self.db.xp = 0
         self.db.xpCap = 1000
         self.db.xpGain = 10
-        self.db.level = 1
-        
-        # Start with soldier subclass on newly-created characters
-        # self.db.subclass = 'soldier'
-        # sc.add_subclass(self, Soldier)        
+        self.db.level = 1    
     
-    def shoot(self, defender, weapon):
+    def shoot(self, defender):
         '''The most basic attack a player can perform. 
         
         Attacker must have a weapon in db.held, otherwise 
         this method will return an error.
         '''
+        if ('attacking', 'combat') not in self.tags.all(True): 
+            self.msg('You must be attacking!')
+            return
         
+        _defender: NPC = defender
+
         # The context for our combat. 
         # This holds all sorts of useful info we pass around.
-        combat = Context(self, defender)
+        combat = Context(self, _defender)
+        damage_message = ''
 
         combat.weapon = self.db.held
         weapon = combat.weapon
@@ -247,36 +300,29 @@ class PlayerCharacter(Character):
         rpm = weapon.rpm
 
         # If it has been too soon since your last attack, or you are attacking an invalid target, stop attacking
-        if self.cooldowns.isActive('attack') or not defender.is_typeclass('typeclasses.npc.NPC'):
+        if self.cooldowns.find('attack') or not _defender.is_typeclass('typeclasses.npc.NPC'):
             self.msg("You cannot act again so quickly!")
             return
         
-        self.msg((combat.weapon.db.msg['attack'] % ('you',defender.named)).capitalize())
+        self.msg(
+            (combat.weapon.db.msg['attack'] % ('You',_defender.named))
+            )
 
-        combat = super().shoot(
-            defender, 
-            weapon.damage, 
-            weapon.critChance, 
-            weapon.critMult, 
-            weapon.accuracy, 
-            defender.evasion, 
-            weapon.falloff, 
-            weapon.cqc)
+        weapon_stats = (weapon.damage, weapon.critChance, weapon.critMult, weapon.accuracy, weapon.falloff, weapon.cqc)
+        combat = super().shoot(_defender, *weapon_stats, combat)
 
         if combat.hit: 
             weapon.buffs.trigger('hit', context=combat)
-            self.buffs.trigger('hit', context=combat)
-
             if combat.crit: 
-                self.buffs.trigger('crit', context=combat)
                 weapon.buffs.trigger('crit', context=combat)
+                damage_message += '|yCrit! '
 
-            combat.damage = defender.damage(combat.damage)
-            damage_message += "%i damage!" % combat.damage
+            combat.damage = _defender.damage(combat.damage, context=combat)
+            damage_message += "%s damage!" % str(combat.damage)
             self.msg( damage_message + "\n|n" )
 
-            defender.buffs.trigger('thorns', context=combat)
-            defender.buffs.trigger('injury', context=combat)
+            _defender.buffs.trigger('thorns', context=combat)
+            _defender.buffs.trigger('injury', context=combat)
         else:
             self.msg( weapon.db.msg['miss'] )
 

@@ -135,6 +135,7 @@ class Weapon(Object):
         '''The range at which you see a 20% damage penalty. This must be higher
         than a defender's range in order to avoid damage penalty. Having a
         high range stat can buff this by one tier.'''
+        _fo = self.db.falloff
         _fo += int(self.range / 90)
         _fo = self.buffs.check(self.db.falloff, 'falloff')
         return _fo
@@ -157,7 +158,7 @@ class Weapon(Object):
     @property
     def traits(self):
         _buffs = self.buffs.traits
-        _perks = self.buffs.perks
+        _perks = self.perks.traits
         return _perks + _buffs
 
     @property
