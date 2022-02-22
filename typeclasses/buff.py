@@ -138,6 +138,23 @@ class Mod():
         self.perstack = perstack
 
 class BuffHandler(object):
+    '''The handler for buffs. Assigned as a property to buffable game objects.
+    
+    Properties:
+        obj:        The game object this handler is attached to
+        db:         The buff dictionary on the game object
+        traits:     All "trait buffs"; buffs with passive modifiers
+        effects:    All "effect buffs"; buffs with trigger conditions
+
+
+    Methods:
+        add:        Adds the specified buff. Has numerous optional arguments
+        remove:     Removes the specified buff. Requires the buff's "key"
+        cleanup:    Checks for expired buffs and cleans them up
+        view:       Returns a string of buff names and flavor text
+        check:      Modifies a given number by all buffs/perks with the specified string
+        find:       True if specified buff is on object; false if not
+        trigger:    Triggers the effects of all buffs/perks with the specified string'''
 
     obj = None
     
@@ -145,20 +162,23 @@ class BuffHandler(object):
         self.obj = obj
         if not self.obj.attributes.has('buffs'): self.obj.db.buffs = {}
 
+    #region properties
     @property
     def db(self):
         return self.obj.db.buffs
 
     @property
     def traits(self):
-        _buffs = [x for x in self.obj.db.buffs.values() if x['ref'].mods ]
+        _buffs = [x for x in self.db.values() if x['ref'].mods ]
         return _buffs
 
     @property
     def effects(self):
-        _buffs = [x for x in self.obj.db.buffs.values() if x['ref'].trigger ]
+        _buffs = [x for x in self.db.values() if x['ref'].trigger ]
         return _buffs
+    #endregion
     
+    #region methods
     def add(
         self,
         buff: BaseBuff,
@@ -220,7 +240,7 @@ class BuffHandler(object):
         if context: _context.buff = b
         else: 
             _origin = source if source is not None else self.obj
-            _context = Context(_origin, self.obj, buff=b, handler=self.db)
+            _context = Context(_origin, self.obj, buff=b)
 
         _tr = _ref.tickrate
 
@@ -263,7 +283,7 @@ class BuffHandler(object):
         instance : Buff = buff(self.obj)
         
         origin = source if source is not None else self.obj
-        context = Context(origin, self.obj, buff=handler[key], handler=handler)
+        context = Context(origin, self.obj, buff=handler[key])
         
         if not quiet:
             if dispel: instance.on_dispel(context)
@@ -320,7 +340,7 @@ class BuffHandler(object):
             # if 'origin' in buff.keys(): buff['origin'].location.msg('Debug Checking buff of type: ' + stat)
             instance = buff['ref'](self.obj)
             _handler = self.db if isinstance(instance, Buff) else self.obj.db.perks 
-            context = Context(self.obj, self.obj, buff=buff, handler=_handler)
+            context = Context(self.obj, self.obj, buff=buff)
             if not quiet: instance.after_check(context)
             del instance
 
@@ -331,14 +351,9 @@ class BuffHandler(object):
         for b in self.db:
             if b['ref'] == buff: return True
         return False
-
-    
-    def trigger(
-        self, 
-        trigger: str, 
-        source=None, 
-        target=None, 
-        context:Context = None
+ 
+    def trigger(self, trigger: str, 
+        source=None, target=None, context:Context = None
         ) -> str:
         '''Activates all perks and effects on the origin that have the same trigger string. Returns a list of all messaging for the perks/effects.
         Vars:
@@ -348,7 +363,7 @@ class BuffHandler(object):
         self.cleanup()
 
         # self.location.msg('Triggering effects of type: ' + trigger)
-
+        _context = context
         _effects = self.obj.effects
         if _effects is None: return None
 
@@ -365,22 +380,17 @@ class BuffHandler(object):
             _eff : BaseBuff = x['ref']
             instance : BaseBuff = _eff(self.obj)
 
-            if isinstance(_eff, Buff): _handler = self.db
-            else: _handler = self.obj.db.perks
-
-            if context:
-                context.buff = x
-                context.buffHandler = _handler
+            if _context: _context.buff = x
             else: 
                 origin = source if source is not None else self.obj
                 target = target if target is not None else self.obj
 
-                context = Context(origin, target, buff=x, handler=_handler)
+                _context = Context(origin, target, buff=x)
             
-            # origin.location.msg("Debug Weapon Context: " + str(_context.weapon))
-            triggerContext = instance.on_trigger(context)
+            instance.on_trigger(_context)
             del instance
-
+    
+    #region private methods
     def _collect_mods(self, stat: str):
         '''Collects a list of all mods affecting the specified stat on buffs affect this object.
         Vars:
@@ -420,8 +430,26 @@ class BuffHandler(object):
         
         final = (base + add) * (1.0 + mult)
         return final    
+    #endregion
+    #endregion   
 
 class PerkHandler(object):
+    '''The handler for perks. Assigned as a property to perkable game objects.
+
+    You should use the buffhandler (obj.buffs) to .check traits and .trigger
+    effects. The perk handler is purely to add/remove perks, as perks are
+    "more permanent" buffs.
+    
+    Properties:
+        obj:        The game object this handler is attached to
+        db:         The buff dictionary on the game object
+        traits:     All "trait perks"; perks with passive modifiers
+        effects:    All "effect perks"; perks with trigger conditions
+
+    Methods:
+        add:    Adds a perk to the object
+        remove: Removes a perk from the object
+    '''
 
     obj = None
     
@@ -429,6 +457,7 @@ class PerkHandler(object):
         self.obj = obj
         if not self.obj.attributes.has('perks'): self.obj.db.perks = {}
 
+    #region properties
     @property
     def db(self):
         return self.obj.db.perks
@@ -442,9 +471,11 @@ class PerkHandler(object):
     def effects(self):
         _perks = [x for x in self.obj.db.perks.values() if x['ref'].trigger ]
         return _perks
+    #endregion
 
+    #region methods
     def add(self: Object, perk: Perk, slot: str = None):
-        '''Adds the referenced perk or trait to the object's relevant handler.'''
+        '''Adds the referenced perk or trait to the object.'''
         if perk is None: return
         
         b = { 'ref': perk }     
@@ -467,6 +498,7 @@ class PerkHandler(object):
             
             return context
         else: return None
+    #endregion
 
 def cleanup_buffs(obj):
     _buffs = dict(obj.db.buffs)
