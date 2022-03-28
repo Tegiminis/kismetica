@@ -28,3 +28,10 @@ lock functions from evennia.locks.lockfuncs.
 #    """
 #    print "%s tried to access %s. Access denied." % (accessing_obj, accessed_obj)
 #    return False
+
+def equipped(accessing_obj, accessed_obj, *args, **kwargs):
+    if accessed_obj == accessing_obj.db.held : return True
+    return False
+
+def testfalse(accessing_obj, accessed_obj, *args, **kwargs):
+    return False

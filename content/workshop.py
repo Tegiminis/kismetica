@@ -1,7 +1,7 @@
 '''Where new perks and buffs are made!'''
 
 from typeclasses.context import Context
-from typeclasses.buff import Buff, Perk, Mod
+from typeclasses.components.buff import Buff, Perk, Mod
 
 class FourthTime(Perk):
     id = 'fourthtime'

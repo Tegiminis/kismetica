@@ -1,6 +1,6 @@
 from evennia.utils.utils import lazy_property
 from typeclasses.characters import Character
-from typeclasses.ai import AIHandler
+from typeclasses.components.ai import AIHandler
 from typeclasses.context import Context
 
 import random

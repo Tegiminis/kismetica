@@ -10,6 +10,7 @@ from typeclasses.context import Context
 
 if TYPE_CHECKING:
     from typeclasses.characters import PlayerCharacter
+    from typeclasses.weapon import Weapon
 
 class CmdAttack(BaseCommand):
     """
@@ -57,6 +58,27 @@ class CmdAttack(BaseCommand):
         else:
             caller.msg("You must select a valid target to attack!")
             return
+
+class CmdMag(BaseCommand):
+    """
+    Checks your weapon's magazine
+
+    Usage:
+      mag
+
+    This checks the magazine of the weapon you currently have equipped.   
+    """
+    key = "mag"
+    aliases = ["magcheck"]
+
+    def parse(self):
+        self.args = self.args.strip()
+
+    def func(self):
+        caller: PlayerCharacter = self.caller    
+        weapon: Weapon = caller.db.held
+
+        caller.msg( "You check your magazine and see that it is %s." % weapon.magcheck)
 
 class CmdDisengage(BaseCommand):
     """
@@ -106,10 +128,10 @@ class CmdTarget(BaseCommand):
 
 class CmdEquip(BaseCommand):
     """
-    Equip a weapon
+    Equip this weapon
 
     Usage:
-      equip <target>
+      equip
 
     This will equip a weapon you are carrying on you to the weapon's 
     relevant slot. You can equip a kinetic, an energy, and a power 
@@ -119,6 +141,7 @@ class CmdEquip(BaseCommand):
     
     """
     key = "equip"
+    locks = "cmd:holds(self)"
 
     def parse(self):
         self.args = self.args.strip()
@@ -139,7 +162,7 @@ class CmdEquip(BaseCommand):
         if target:
             if target.location.id == caller.id:
                 caller.db.held = target
-                caller.msg("You equip the %s. %s" % (target.named, target.db.msg['equip']))
+                caller.msg("You equip the %s." % target.named)
 
                 _name = caller.named
                 name = target.named
@@ -155,13 +178,12 @@ class CmdEquip(BaseCommand):
     
 class CmdDraw(BaseCommand):
     """
-    Draws the specified slot
+    Draws the specified weapon
 
     Usage:
-        draw <kinetic/energy/power>
+        draw <weapon>
 
-    This will switch your active weapon to the weapon in the specified 
-    slot. If used without arguments, will stow your weapon.
+    This will switch your active weapon to specified weapon, as long as it is equipped.
     """
     key = "draw"
     aliases = ["weapon swap","wswap"]
@@ -174,10 +196,30 @@ class CmdDraw(BaseCommand):
         caller = self.caller
             
         if not self.args:
-            caller.msg("You must pick a slot to equip!")
+            caller.msg("You must specify a weapon to draw.")
             return
 
         caller.db.held = self.args
+
+class CmdDraw(BaseCommand):
+    """
+    Stows your weapon.
+
+    Usage:
+        stow
+
+    This puts your weapon away. You cannot fire it or 
+    """
+    key = "stow"
+    aliases = []
+
+    def parse(self):
+        self.args = self.args.strip()
+
+    def func(self):
+
+        caller = self.caller
+        caller.db.held = None
 
 class CmdCheck(BaseCommand):
     """

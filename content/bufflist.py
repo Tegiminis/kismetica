@@ -1,5 +1,5 @@
 import random
-from typeclasses.buff import Buff, Perk, Mod
+from typeclasses.components.buff import Buff, Perk, Mod
 from typeclasses.context import Context
     
 class RampageBuff(Buff):
@@ -39,7 +39,7 @@ class Exploit(Buff):
 
         if chance > roll:
             context.origin.buffs.add(Exploited)
-            context.origin.location.msg("An opportunity presents itself!")
+            context.origin.location.msg("   An opportunity presents itself!")
             context.origin.buffs.remove('exploit')
         
         return context
@@ -61,7 +61,7 @@ class Exploited(Buff):
     mods = [ Mod('damage', 'add', 100) ]
 
     def after_check(self, context: Context):
-        context.origin.msg( "You exploit your target's weakness!" )
+        context.origin.msg( "   You exploit your target's weakness!" )
         context.origin.buffs.remove('exploited', delay=0.01)
 
     def on_remove(self, context: Context):

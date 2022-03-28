@@ -1,7 +1,37 @@
 import random
 from typeclasses.objects import Object
-from typeclasses.buff import BuffHandler, PerkHandler
+from typeclasses.components.buff import BuffHandler, PerkHandler
 from evennia.utils import lazy_property
+from evennia import Command as BaseCommand
+from evennia import CmdSet
+
+class CmdReload(BaseCommand):
+    """
+    Reloads this weapon if it is in the equipped slot.
+
+    Usage:
+      rel
+
+    """
+    key = "rel"
+
+    def parse(self):
+        pass
+
+    def func(self):
+        _caller = self.caller
+        _obj = self.obj
+        _str = self.obj._reload()        
+        _caller.msg("You slap a new mag into your %s." % _obj)
+        _caller.location.msg_contents("%s reloads their %s." % (_caller, _obj), exclude=_caller)
+        return
+
+class WeaponCmdSet(CmdSet):
+        
+    key = "WeaponCmds"
+
+    def at_cmdset_creation(self):     
+        self.add(CmdReload())
 
 class Weapon(Object):
     """
@@ -16,15 +46,48 @@ class Weapon(Object):
     def perks(self) -> PerkHandler:
         return PerkHandler(self)
     
+    def _reload(self) -> int:
+        """Reloads this weapon and returns the amount of ammo left."""
+        _return = 0
+
+        _ammo = self.db.ammo
+        _mag = self.db.mag
+        _toreload = _mag - _ammo
+
+        if ('primary', 'ammo') in self.tags.all(True): 
+            _return = _toreload
+            self.db.ammo = _mag
+            return _return
+
+        _reserves = self.db.reserves
+        if _reserves <= 0: return 0
+        
+        if _toreload > _reserves: 
+            _return = _reserves
+            self.db.ammo += _reserves
+            self.db.reserves = 0
+        else:
+            _return = _toreload
+            self.db.ammo += _toreload
+            self.db.reserves -= _toreload
+
+        return _return
+
     def at_object_creation(self):
         "Called when object is first created"
 
+        self.cmdset.add(WeaponCmdSet, permanent=True)
+        
+        self.tags.add("primary", category="ammo")
+        
         self.db.buffs = {}
         self.db.perks = {}
 
         # Ammo stats
-        self.db.ammo = 30
-        self.db.maxAmmo = 30
+        self.db.ammo = 5   # Amount of shots you can make
+        self.db.mag = 5    # Mag size; what you reload to
+        self.db.reserves = 0
+        self.db.inventory = 0
         
         # Damage stats
         self.db.damage = 10
@@ -48,13 +111,12 @@ class Weapon(Object):
         self.db.critChance = 2.0
         self.db.critMult = 2.0
 
-        # Messages for all the things that your gun does
+        # Messages for your weapon.
+        # Most weapons only have self (what you see when you attack) and attack (what the room sees when you attack)
+        # Exotics and altered weapons might have unique messages
         self.db.msg = {
-            'miss': 'You miss!', 
-            'attack':'%s shoot at %s.',
-            'equip': '',
-            'kill': '%s crumples to the floor, dead.',
-            'cooldown': 'You can fire again.'
+            'self':'You shoot your %s at %s.',
+            'attack': '%s shoots their %s at %s.'
             }
 
         # Gun's rarity. Common, Uncommon, Rare, Legendary, Unique, Exotic. Dictates number of perks when gun is rolled on.
@@ -65,10 +127,28 @@ class Weapon(Object):
         if self.tags.get('named') is None: return "the " + self.key
         else: return self.key
 
+    @property
+    def magcheck(self):
+
+        _str = ""
+        _perc = self.db.ammo / self.db.mag
+
+        if _perc > 1.0: _str = "overflowing"
+        elif _perc == 1.0: _str = "topped off"
+        elif _perc > 0.8: _str = "nearly full"
+        elif _perc > 0.6: _str = "lightly used"
+        elif _perc > 0.4: _str = "roughly half"
+        elif _perc > 0.2: _str = "running low"
+        elif _perc > 0: _str = "almost out"
+        elif _perc <= 0: _str = "concerningly empty"
+
+        return _str
+        pass
+
     #region properties
     @property
     def ammo(self):
-        self.db.ammo = min(self.db.ammo, self.maxAmmo)
+        # self.db.ammo = min(self.db.ammo, self.maxAmmo)
         return self.db.ammo
     
     @property
@@ -107,8 +187,8 @@ class Weapon(Object):
 
     @property
     def maxAmmo(self):
-        _ma = self.buffs.check(self.db.maxAmmo, 'maxammo')
-        return _ma
+        _mag = self.buffs.check(self.db.mag, 'mag')
+        return _mag
 
     @property
     def equip(self):

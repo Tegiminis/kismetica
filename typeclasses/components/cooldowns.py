@@ -42,8 +42,8 @@ class CooldownHandler(object):
         '''Extends the current cooldown's duration'''
         self.db[key]['duration'] += amount
 
-    def reduce(self, key, amount):
-        '''Reduces the current cooldown's duration'''
+    def shorten(self, key, amount):
+        '''Shortens the current cooldown's duration'''
         self.db[key]['duration'] -= amount
 
     def restart(self, key):
@@ -53,3 +53,7 @@ class CooldownHandler(object):
     def remove(self, key):
         '''Removes a cooldown from the dictionary'''
         del self.db[key]
+    
+    def time_left(self, key) -> float:
+        '''Checks to see how much time is left on cooldown with the specified key.'''
+        return time.time() - self.db[key]['start'] - self.db[key]['duration']

@@ -1,6 +1,6 @@
 from typeclasses.context import Context
-from typeclasses.buff import Buff, Perk, Mod
-import typeclasses.content.bufflist as bl
+from typeclasses.components.buff import Buff, Perk, Mod
+import content.bufflist as bl
 
 class RampagePerk(Perk):
     key = 'rampage'
@@ -10,13 +10,12 @@ class RampagePerk(Perk):
     trigger = 'hit'
 
     stack_msg = {
-        1: 'You feel a bloodlust welling up inside you.',
-        2: 'Your bloodlust calls to you.',
-        3: 'All must die.'
+        1: '    You feel a bloodlust welling up inside you.',
+        2: '    Your bloodlust calls to you.',
+        3: '    All must die.'
     } 
 
     def on_trigger(self, context: Context):
-        context.origin.location.msg("Debug Owner Context: " + str(context.weaponOwner))
         bc: Context = context.weapon.buffs.add(bl.RampageBuff)
         if bc.buffStacks in self.stack_msg: context.weaponOwner.msg( self.stack_msg[bc.buffStacks] )
         return bc
@@ -30,9 +29,9 @@ class ExploitPerk(Perk):
     trigger = 'hit'
 
     stack_msg = {
-        1:"You begin to notice flaws in your opponent's defense.",
-        10:"You're certain you've found a weakness. You just need more time.",
-        20:"You've discovered your opponent's weak spot."
+        1:"    You begin to notice flaws in your opponent's defense.",
+        10:"    You're certain you've found a weakness. You just need more time.",
+        20:"    You've discovered your opponent's weak spot."
     }
 
     trigger_msg = ''

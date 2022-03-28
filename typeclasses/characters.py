@@ -14,14 +14,15 @@ from typeclasses.item import InventoryHandler, Item
 from evennia.utils import utils, lazy_property
 import commands.default_cmdsets as default
 import commands.destiny_cmdsets as destiny
-from typeclasses.buff import BuffHandler, PerkHandler
+from typeclasses.components.buff import BuffHandler, PerkHandler
 from evennia import TICKER_HANDLER, DefaultCharacter
-from typeclasses.cooldowns import CooldownHandler
+from typeclasses.components.cooldowns import CooldownHandler
 from typeclasses.context import Context
 import random
 
 if TYPE_CHECKING:
     from typeclasses.npc import NPC
+    from typeclasses.weapon import Weapon
 
 #region misc handlers
 
@@ -48,6 +49,8 @@ class Character(DefaultCharacter):
         
         self.scripts.stop()
 
+        self.cmdset.add(default.CharacterCmdSet, permanent=True)
+
         # The dictionaries we use for buffs, perks, and cooldowns. 
         self.db.buffs = {}
         self.db.perks = {}
@@ -58,6 +61,8 @@ class Character(DefaultCharacter):
 
         self.db.range = 0           # What range the character starts at in a room
         self.db.evasion = 1.0       # Base chance to dodge enemy attacks
+
+        super().at_object_creation()
 
     def at_init(self):
         self.ndb.target = None      # Used if you use attack someone or use 'target'
@@ -76,7 +81,7 @@ class Character(DefaultCharacter):
 
         # Apply damage
         self.db.health = max(self.db.health - damage, 0)
-        self.msg('You were damaged by %i!' % damage)
+        self.msg(' %i damage!' % damage)
 
         # If you are out of life, you are out of luck
         self.die()
@@ -250,10 +255,7 @@ class PlayerCharacter(Character):
         return InventoryHandler(self)
     
     def at_object_creation(self):
-        
-        super().at_object_creation()
 
-        self.cmdset.add(default.CharacterCmdSet, permanent=True)
         self.cmdset.add(destiny.DestinyBasicCmdSet, permanent=True)
         self.cmdset.add(destiny.DestinyBuilderCmdSet, permanent=True)
 
@@ -282,11 +284,16 @@ class PlayerCharacter(Character):
         Attacker must have a weapon in db.held, otherwise 
         this method will return an error.
         '''
-        if ('attacking', 'combat') not in self.tags.all(True): 
-            self.msg('You must be attacking!')
-            return
+        if ('attacking', 'combat') not in self.tags.all(True): return
         
         _defender: NPC = defender
+        if not _defender.is_typeclass('typeclasses.npc.NPC'): 
+            self.msg("You can only attack NPCs!")
+            return
+
+        if _defender.location != self.location:
+            self.msg("Your target has slipped away from you!")
+            return
 
         # The context for our combat. 
         # This holds all sorts of useful info we pass around.
@@ -294,40 +301,43 @@ class PlayerCharacter(Character):
         damage_message = ''
 
         combat.weapon = self.db.held
-        weapon = combat.weapon
+        weapon : Weapon = combat.weapon
+
+        if weapon.ammo <= 0:
+            self.msg("Your weapon is out of ammo!")
+            return
 
         # Variable assignments for legibility
-        rpm = weapon.rpm
+        _rpm = weapon.rpm
 
-        # If it has been too soon since your last attack, or you are attacking an invalid target, stop attacking
-        if self.cooldowns.find('attack') or not _defender.is_typeclass('typeclasses.npc.NPC'):
-            self.msg("You cannot act again so quickly!")
+        # If it has been too soon since your last attack, figure out when you can attack next, and delay to then
+        if self.cooldowns.find('attack'): 
+            _tl = self.cooldowns.time_left('attack')
+            utils.delay(_tl, self.shoot, defender=defender)
             return
         
-        self.msg(
-            (combat.weapon.db.msg['attack'] % ('You',_defender.named))
-            )
+        self.msg( combat.weapon.db.msg['self'] % ( combat.weapon, _defender.named ) )
+        self.location.msg_contents( combat.weapon.db.msg['attack'] % (self.named, combat.weapon, _defender.named), exclude=self)
 
         weapon_stats = (weapon.damage, weapon.critChance, weapon.critMult, weapon.accuracy, weapon.falloff, weapon.cqc)
         combat = super().shoot(_defender, *weapon_stats, combat)
 
         if combat.hit: 
-            weapon.buffs.trigger('hit', context=combat)
-            if combat.crit: 
-                weapon.buffs.trigger('crit', context=combat)
-                damage_message += '|yCrit! '
-
             combat.damage = _defender.damage(combat.damage, context=combat)
-            damage_message += "%s damage!" % str(combat.damage)
+            damage_message += "    ... %i damage!" % combat.damage
             self.msg( damage_message + "\n|n" )
+
+            weapon.buffs.trigger('hit', context=combat)
+            if combat.crit: weapon.buffs.trigger('crit', context=combat)
 
             _defender.buffs.trigger('thorns', context=combat)
             _defender.buffs.trigger('injury', context=combat)
         else:
-            self.msg( weapon.db.msg['miss'] )
+            self.msg('    ... Miss!')
 
-        self.cooldowns.start('attack', rpm)
-        utils.delay(rpm, self.shoot, defender=defender)
+        weapon.db.ammo -= 1
+        self.cooldowns.start('attack', _rpm)
+        utils.delay(_rpm, self.shoot, defender=defender)
     
     @property
     def weight(self):

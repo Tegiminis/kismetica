@@ -3,7 +3,7 @@ import evennia
 from evennia.utils.utils import inherits_from
 from typeclasses.weapon import Weapon
 from typeclasses.context import Context
-import typeclasses.content.perklist as pl
+import content.perklist as pl
 
 class NPCStub():
     '''This is just my little organizational tool for figuring out the system of looting

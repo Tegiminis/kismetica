@@ -1,5 +1,5 @@
 from evennia import CmdSet, utils
-from typeclasses.buff import Perk, Mod
+from destiny.typeclasses.components.buff import Perk, Mod
 
 class JobHandler(object):
     obj = None

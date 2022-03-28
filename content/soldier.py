@@ -1,5 +1,5 @@
-from destiny.typeclasses.job import Subclass
-from typeclasses.buff import Perk, Mod
+from typeclasses.components.job import Subclass
+from typeclasses.components.buff import Perk, Mod
 
 class SoldierMarksman(Perk):
     id = 'soldiermarksman'

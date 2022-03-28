@@ -1,5 +1,5 @@
-from typeclasses.content.workshop import RapidHit
-from typeclasses.content.perklist import ExploitPerk, LeechRoundPerk, RampagePerk, ThornsPerk, WeakenPerk
+from content.workshop import RapidHit
+from content.perklist import ExploitPerk, LeechRoundPerk, RampagePerk, ThornsPerk, WeakenPerk
 from typeclasses.context import Context
 from evennia import lockfuncs
 from evennia import Command as BaseCommand
