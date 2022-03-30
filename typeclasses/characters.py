@@ -278,13 +278,13 @@ class PlayerCharacter(Character):
         self.db.xpGain = 10
         self.db.level = 1    
     
-    def shoot(self, defender):
-        '''The most basic attack a player can perform. 
+    def basic_attack(self, defender, auto=False, sim=False):
+        '''The most basic ranged attack a player can perform. 
         
         Attacker must have a weapon in db.held, otherwise 
         this method will return an error.
         '''
-        if ('attacking', 'combat') not in self.tags.all(True): return
+        if not self.tags.has('attacking', 'combat'): return
         
         _defender: NPC = defender
         if not _defender.is_typeclass('typeclasses.npc.NPC'): 
@@ -337,7 +337,8 @@ class PlayerCharacter(Character):
 
         weapon.db.ammo -= 1
         self.cooldowns.start('attack', _rpm)
-        utils.delay(_rpm, self.shoot, defender=defender)
+        
+        if auto: utils.delay(_rpm, self.shoot, defender=defender)
     
     @property
     def weight(self):
