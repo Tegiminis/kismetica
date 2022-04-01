@@ -33,10 +33,12 @@ class CooldownHandler(object):
             False:  Cooldown time is up, cooldown not found'''
         return not self.check(key)
     
-    def start(self, key, duration):
+    def start(self, key: str, duration):
         '''Sets the initial cooldown time and duration'''
         _cd = {'start': time.time(), 'duration': duration}
         self.db[key] = _cd
+        _msg = "%s Cooldown: %i seconds" % (key.capitalize(), int(duration))
+        self.obj.msg(_msg)
 
     def extend(self, key, amount):
         '''Extends the current cooldown's duration'''

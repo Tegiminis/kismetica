@@ -162,12 +162,14 @@ class Character(DefaultCharacter):
 
         # Random values for hit calculations
         # hit must be > evasion for the player to hit
-        hit = random.random()
-        dodge = random.random()
+        hit = random.random() * 100
+        dodge = random.random() * 100
 
         # Modify the hit roll by the accuracy value.
-        hit = hit * accuracy
-        dodge = dodge * evasion
+        hit += accuracy * random.random()
+        dodge += evasion * random.random()
+
+        self.msg(f"  HIT: +{int(hit)} vs EVA: +{int(dodge)}")
 
         # Return a tuple of booleans corresponding to (isHit, isCrit)
         return (hit > dodge, hit > dodge * crit)
@@ -179,7 +181,7 @@ class Character(DefaultCharacter):
         '''Calculates damage output, unmodified by defender armor.'''
 
         # Apply falloff, if relevant. Falloff is a flat 20% damage penalty
-        if falloff: damage *= 0.8
+        # if falloff: damage *= 0.8
 
         # All damage is multiplied by crit
         if crit is True: damage = round(damage * critMult)
@@ -318,6 +320,21 @@ class PlayerCharacter(Character):
             utils.delay(_tl, self.basic_attack, defender=defender)
             return
         
+        # Default messages for hits and crits, depending on the damage type
+        # (bullet, plasma, slashing, blunt)
+        default_msg = {
+            "bullet": {
+                "hit": ["%s staggers under the flurry of bullets."],
+                "crit": ["Blood spurts uncontrollably from %s's newly-apportioned wounds!"]
+            },
+            "fusion": {
+                "hit": ["Bolts of multicolored plasma singe %s's armor."],
+                "crit": ["Molten matter fuses to flesh as %s screams in agony!"]
+            }
+
+        }
+
+        # Messaging for yourself and the room
         self.msg( combat.weapon.db.msg['self'] % ( combat.weapon, _defender.named ) )
         self.location.msg_contents( combat.weapon.db.msg['attack'] % (self.named, combat.weapon, _defender.named), exclude=self)
 
@@ -326,11 +343,15 @@ class PlayerCharacter(Character):
 
         if combat.hit: 
             combat.damage = _defender.damage(combat.damage, context=combat)
-            damage_message += "    ... %i damage!" % combat.damage
-            self.msg( damage_message + "\n|n" )
+            hit_msg = random.choice(default_msg['bullet']['hit']) % _defender.named
+            crit_msg = random.choice(default_msg['bullet']['crit']) % _defender.named
+            self.msg( "    ... %i damage! |n\n" % combat.damage )
+            self.msg("    " +  hit_msg.capitalize() + "|n\n")
 
             weapon.buffs.trigger('hit', context=combat)
-            if combat.crit: weapon.buffs.trigger('crit', context=combat)
+            if combat.crit: 
+                self.msg("    " +  crit_msg.capitalize() + "|n\n")
+                weapon.buffs.trigger('crit', context=combat)
 
             _defender.buffs.trigger('thorns', context=combat)
             _defender.buffs.trigger('injury', context=combat)
