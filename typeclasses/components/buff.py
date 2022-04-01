@@ -18,6 +18,7 @@ class BaseBuff():
     key = 'template'             # The buff's unique key. Will be used as the buff's key in the handler
     name = 'Template'           # The buff's name. Used for user messaging
     flavor = 'Template'         # The buff's flavor text. Used for user messaging
+    isVisible = True            # If the buff is considered "visible"; it shows up to the player
 
     trigger = None        # The effect's trigger string, used for functions
     release = None        # The effect's release string, used for functions
@@ -77,7 +78,7 @@ class Buff(BaseBuff):
     '''A buff is comprised of one or more temporary stat modifications or trigger effects. Includes a duration, stack size, and so on.
 
     Strings:
-        key:         The buff's unique key. Will be used as the buff's key in the handler
+        key:        The buff's unique key. Will be used as the buff's key in the handler
         name:       The buff's name. Used for user messaging
         flavor:     The buff's flavor text. Used for user messaging
     Vars:
@@ -98,6 +99,10 @@ class Buff(BaseBuff):
 
     ticking = False
     tickrate = 5
+
+    def ticknum(self, start):
+        x = (time.time() - start) / self.tickrate
+        return int(x)
 
 class Perk(BaseBuff):
     '''A permanent buff. Uses "slot" for the key in the dict.
@@ -202,13 +207,10 @@ class BuffHandler(object):
         Returns the buff context for the action.
         '''
 
-        self.cleanup()
-
+        
         _ref: Buff = buff  
         _key = _ref.key if key is None else key
         _context: Context = context if context else None
-        handler = self.db
-        
 
         # Create the buff dict that holds a reference and all runtime information.
         b = { 
@@ -223,9 +225,9 @@ class BuffHandler(object):
         uid = str( int( random.random() * 10000 ))
         pid = _key + uid
 
-        if _key in handler.keys(): 
+        if _key in self.db.keys(): 
             if _ref.unique: 
-                b = dict( handler[_key] )
+                b = dict( self.db[_key] )
                 if _ref.refresh: b['start'] = time.time()
                 if _ref.stacking: b['stacks'] = min( b['stacks'] + stacks, _ref.maxstacks )
             if _ref.unique is False: 
@@ -235,7 +237,7 @@ class BuffHandler(object):
         b['prevtick'] = time.time() if _ref.ticking else None
         b['duration'] = duration if duration else _ref.duration
 
-        handler[_key] = b
+        self.db[_key] = b
 
         if context: _context.buff = b
         else: 
@@ -246,12 +248,15 @@ class BuffHandler(object):
 
         instance: BaseBuff = _ref(self.obj)
         instance.on_apply(_context)
-        del instance
+
+        # del instance
+        # self.obj.location.msg("   |rBreakpoint: |nClean cache")
 
         if _ref.ticking:
             # utils.delay(_tr, tick_buff, persistent=True, buff=buff, context=context)
-            tick_buff(handler[_key], context)
-
+            # self.obj.location.msg("   |rBreakpoint: |nStart ticking")
+            tick_buff(b, _context)
+        
         # Clean up the buff at the end of its duration through a delayed cleanup call
         utils.delay( b['duration'] + 0.01, cleanup_buffs, self.obj, persistent=True )
 
@@ -274,26 +279,27 @@ class BuffHandler(object):
             dispel: Call on_dispel when True.
             expire: Call on_expire when True.
             quiet:  Do not call on_remove when True.'''
-        
-        handler = self.db
-        
-        if key not in handler: return None
+
+        if key not in self.db: return None
     
-        buff: Buff = handler[key]['ref']
+        buff: Buff = self.db[key]['ref']
         instance : Buff = buff(self.obj)
         
         origin = source if source is not None else self.obj
-        context = Context(origin, self.obj, buff=handler[key])
+        context = Context(origin, self.obj, buff=self.db[key])
         
         if not quiet:
-            if dispel: instance.on_dispel(context)
-            elif expire: instance.on_expire(context) 
+            if dispel: 
+                instance.on_dispel(context)
+            elif expire: 
+                instance.on_expire(context)
 
             instance.on_remove(context)
 
+
         del instance
-        del handler[key]
-    
+        del self.db[key]
+
         return context
 
     def cleanup(self):
@@ -306,10 +312,10 @@ class BuffHandler(object):
         message = []
         
         if self.db:
-            handler = self.db.values()
-            for x in handler:
+            _cache = self.db.values()
+            for x in _cache:
                 buff: Buff = x.get('ref')
-                msg = buff.name + ": " + buff.flavor
+                msg = "    " + buff.name + ": " + buff.flavor
                 message.append(msg)
         
         return message
@@ -324,7 +330,7 @@ class BuffHandler(object):
         Returns the base value modified by relevant buffs, and any messaging.'''
 
         # Buff cleanup to make sure all buffs are valid before processing
-        self.obj.buffs.cleanup()
+        self.cleanup()
 
         # Find all buffs and traits related to the specified stat.
         _toApply: tuple = self._collect_mods(stat)
@@ -395,13 +401,13 @@ class BuffHandler(object):
         '''Collects a list of all mods affecting the specified stat on buffs affect this object.
         Vars:
             stat:       The string to search for in the Mods on buffs'''
-        handler = self.obj.traits
-        if not handler: return None
+        _cache = self.obj.traits
+        if not _cache: return None
         
         mods = []
         buffs = []
 
-        for buff in handler:
+        for buff in _cache:
             ref = buff['ref']
 
             for m in ref.mods:
@@ -489,7 +495,7 @@ class PerkHandler(object):
         origin = source if source is not None else self.obj
         if key in self.db.keys():
             perk = self.db[key]['ref']
-            context = Context(origin, self.obj, perk=perk, handler=self.db)
+            context = Context(origin, self.obj, buff=perk, handler=self.db)
 
             instance: Perk = perk()
             instance.on_remove(context)
@@ -501,41 +507,51 @@ class PerkHandler(object):
     #endregion
 
 def cleanup_buffs(obj):
+    '''Cleans up all buffs on that object. Removes any buffs which have an expired timer'''
     _buffs = dict(obj.db.buffs)
+    
     if _buffs:
-            remove = [ k 
-                for k,v in _buffs.items() 
-                if v['duration'] < time.time() - v['start'] ]
-            for k in remove: 
-                obj.buffs.remove(k, expire=True)
+        # Dict comprehension to find buffs for removal
+        remove = [ k 
+            for k,v in _buffs.items() 
+            if v['duration'] < time.time() - v['start']]
+
+        # obj.location.msg("Debug: Cleaning up buffs | %s" % str(remove))
+        
+        # Remove all buffs in the list
+        for k in remove: 
+            obj.buffs.remove(k, expire=True)
 
 def tick_buff(buff: dict, context: Context, initial=True):
-        '''Ticks a buff. If a buff's ticking value is True, this is called when the buff is applied, and then once per tick cycle.'''
+    '''Ticks a buff. If a buff's ticking value is True, this is called when the buff is applied, and then once per tick cycle.'''
+    # Cache a reference and find the buff on the object
+    _buffs = context.target.db.buffs
+    if context.buffKey in _buffs.keys(): 
+        context.buff = _buffs[context.buffKey]
+        buff = _buffs[context.buffKey]
 
-        # Cache a reference and find the buff on the object
-        _buffs = context.target.db.buffs
-        if context.buffKey in _buffs.keys(): 
-            context.buff = _buffs[context.buffKey]
-            buff = _buffs[context.buffKey]
+    # Instantiate the buff and tickrate
+    ref: BaseBuff = buff['ref'](context.target)
+    _tr = ref.tickrate
 
-        # Instantiate the buff and tickrate
-        ref: BaseBuff = buff['ref'](context.target)
-        _tr = ref.tickrate
-
-        # This stops the old ticking process if you refresh/stack the buff
-        if _tr > time.time() - context.buffPrevTick and initial is not True: return
-        
-        # If the duration has run out, tick one last time, then stop this process
-        if context.buffDuration < time.time() - context.buffStart:
-            if _tr < time.time() - context.buffPrevTick: ref.on_tick(context)
-            return
-        
-        # If the buff has since been removed, stop this process
-        if context.buffKey not in context.target.buffs.db.keys(): return
-
-        # If it's time, call the buff's on_tick method and update prevtick
+    # This stops the old ticking process if you refresh/stack the buff
+    if _tr > time.time() - context.buffPrevTick and initial is not True: 
+        return
+    
+    # If the duration has run out, tick one last time, then stop this process
+    if context.buffDuration < time.time() - context.buffStart:
         if _tr < time.time() - context.buffPrevTick: ref.on_tick(context)
-        buff['prevtick'] = time.time()
+        return
+    
+    # If the buff has since been removed, stop this process
+    if context.buffKey not in _buffs.keys(): 
+        return
 
-        # Recur this function at the tickrate interval, if it didn't stop/fail
-        utils.delay(_tr, tick_buff, buff=context.buff, context=context, initial=False)
+    # If it's time, call the buff's on_tick method and update prevtick
+    if _tr < time.time() - context.buffPrevTick: 
+        ref.on_tick(context)
+    
+    buff['prevtick'] = time.time()
+
+    # Recur this function at the tickrate interval, if it didn't stop/fail
+    utils.delay(_tr, tick_buff, buff=context.buff, context=context, initial=False)

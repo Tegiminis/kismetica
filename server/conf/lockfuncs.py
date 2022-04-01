@@ -35,3 +35,17 @@ def equipped(accessing_obj, accessed_obj, *args, **kwargs):
 
 def testfalse(accessing_obj, accessed_obj, *args, **kwargs):
     return False
+
+def tagged(accessing_obj, accessed_obj, *args, **kwargs):
+    """
+    Usage:
+        tag(tagkey)
+        tag(tagkey, category)
+
+    Identical to the lockfunc tag(), except it applies to the accessed object instead.
+    """
+    if hasattr(accessed_obj, "obj"):
+        accessed_obj = accessed_obj.obj
+    tagkey = args[0] if args else None
+    category = args[1] if len(args) > 1 else None
+    return accessed_obj.tags.has(tagkey, category=category)

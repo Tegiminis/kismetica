@@ -56,4 +56,6 @@ class CooldownHandler(object):
     
     def time_left(self, key) -> float:
         '''Checks to see how much time is left on cooldown with the specified key.'''
-        return time.time() - self.db[key]['start'] - self.db[key]['duration']
+        _elapsed = time.time() - self.db[key]['start']
+        _dur = self.db[key]['duration']
+        return max(0, _dur - _elapsed)

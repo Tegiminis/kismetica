@@ -56,8 +56,8 @@ class Character(DefaultCharacter):
         self.db.perks = {}
         self.db.cooldowns = {} 
 
-        self.db.health = 100        # Current health
-        self.db.maxHealth = 100     # Max health
+        self.db.hp = 100        # Current hp
+        self.db.maxHP = 100     # Max hp
 
         self.db.range = 0           # What range the character starts at in a room
         self.db.evasion = 1.0       # Base chance to dodge enemy attacks
@@ -80,8 +80,8 @@ class Character(DefaultCharacter):
             self.buffs.trigger('injury', context=context)
 
         # Apply damage
-        self.db.health = max(self.db.health - damage, 0)
-        self.msg(' %i damage!' % damage)
+        self.db.hp = max(self.db.hp - damage, 0)
+        self.msg('You take %i damage!' % damage)
 
         # If you are out of life, you are out of luck
         self.die()
@@ -95,7 +95,7 @@ class Character(DefaultCharacter):
         pass
     
     def heal(self, heal: int, msg=None) -> int:
-        self.db.health = min(self.db.health + heal, self.db.maxHealth)
+        self.db.hp = min(self.db.hp + heal, self.db.maxHP)
         self.msg('You healed by %i!' % heal)
 
     def shoot(
@@ -202,8 +202,8 @@ class Character(DefaultCharacter):
         return _ev
 
     @property
-    def maxHealth(self):
-        _mh = self.buffs.check(self.db.maxHealth, 'maxhealth')
+    def maxHP(self):
+        _mh = self.buffs.check(self.db.maxHP, 'maxHP')
         return _mh
 
     @property
@@ -276,9 +276,11 @@ class PlayerCharacter(Character):
         self.db.xp = 0
         self.db.xpCap = 1000
         self.db.xpGain = 10
-        self.db.level = 1    
-    
-    def basic_attack(self, defender, auto=False, sim=False):
+        self.db.level = 1   
+
+        super().at_object_creation() 
+
+    def basic_attack(self, defender, auto=True, sim=False):
         '''The most basic ranged attack a player can perform. 
         
         Attacker must have a weapon in db.held, otherwise 
@@ -313,7 +315,7 @@ class PlayerCharacter(Character):
         # If it has been too soon since your last attack, figure out when you can attack next, and delay to then
         if self.cooldowns.find('attack'): 
             _tl = self.cooldowns.time_left('attack')
-            utils.delay(_tl, self.shoot, defender=defender)
+            utils.delay(_tl, self.basic_attack, defender=defender)
             return
         
         self.msg( combat.weapon.db.msg['self'] % ( combat.weapon, _defender.named ) )
@@ -338,7 +340,7 @@ class PlayerCharacter(Character):
         weapon.db.ammo -= 1
         self.cooldowns.start('attack', _rpm)
         
-        if auto: utils.delay(_rpm, self.shoot, defender=defender)
+        if auto: utils.delay(_rpm, self.basic_attack, defender=defender)
     
     @property
     def weight(self):

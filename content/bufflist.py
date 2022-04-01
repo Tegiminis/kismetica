@@ -119,7 +119,8 @@ class Poison(Buff):
     def on_tick(self, context: Context) -> Context:
         _dmg = self.dmg * context.buffStacks
         context.target.location.msg_contents("Poison courses through %s's body, dealing %i damage." % (context.target.named,_dmg))
-        context.target.damage_health(_dmg)
+        context.target.damage(_dmg, context)
+        return context
 
 class BuffList():
     '''Initialization of buff and effect typeclasses used to apply buffs to players.

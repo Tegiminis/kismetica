@@ -24,7 +24,7 @@ class CmdAttack(BaseCommand):
     continue to attack the target until you stop via disengage.    
     """
     key = "attack"
-    aliases = ["shoot"]
+    aliases = []
 
     def parse(self):
         self.args = self.args.strip()
@@ -54,7 +54,7 @@ class CmdAttack(BaseCommand):
 
         if target:
             caller.tags.add('attacking', category='combat')
-            caller.shoot(target)    
+            caller.basic_attack(target)    
         else:
             caller.msg("You must select a valid target to attack!")
             return
@@ -141,7 +141,6 @@ class CmdEquip(BaseCommand):
     
     """
     key = "equip"
-    locks = "cmd:holds(self)"
 
     def parse(self):
         self.args = self.args.strip()
@@ -152,8 +151,8 @@ class CmdEquip(BaseCommand):
         caller = self.caller
            
         if not self.args:
-                caller.msg("You must pick a weapon to equip!")
-                return
+            caller.msg("You must pick a weapon to equip!")
+            return
 
         target = caller.search(self.args)
         name = ""
@@ -241,7 +240,7 @@ class CmdCheck(BaseCommand):
         if not self.args:
             buffs = caller.buffs.view()
             if buffs:
-                msg = 'You are currently buffed by: \n|n\n|n'
+                msg = 'You are currently buffed by: \n|n'
                 for x in buffs:
                     msg += x + "\n|n"
                 caller.msg(msg)
@@ -250,7 +249,7 @@ class CmdCheck(BaseCommand):
         target = caller.search(self.args)
         buffs = target.buffs.view()
         if buffs:
-            msg = target.name.capitalize() + ' is currently buffed by: \n|n\n|n'
+            msg = target.name.capitalize() + ' is currently buffed by: \n|n'
             for x in buffs:
                 msg += x + "\n|n"
             caller.msg(msg)

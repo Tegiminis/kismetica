@@ -1,9 +1,55 @@
 import random
+import time
+from typing import TYPE_CHECKING
+
+from typeclasses.context import Context
+from typeclasses.components.cooldowns import CooldownHandler
 from typeclasses.objects import Object
-from typeclasses.components.buff import BuffHandler, PerkHandler
+from typeclasses.components.buff import Buff, BuffHandler, PerkHandler
 from evennia.utils import lazy_property
 from evennia import Command as BaseCommand
 from evennia import CmdSet
+
+if TYPE_CHECKING:
+    from typeclasses.characters import Character
+
+class FusionCharging(Buff):
+    key = 'fusioncharging'
+    isVisible = False
+    unique = True
+    duration = 5
+    
+    def on_expire(self, context: Context) -> Context:
+        self.owner.buffs.add(FusionCharged)
+        pass
+        
+
+class FusionCharged(Buff):
+    key = 'fusioncharged'
+    
+    isVisible = False
+    duration = 30
+    unique = True
+
+    ticking = True
+    tickrate = 5
+
+    tick_msg = {
+        1:"Your %s vibrates in your hands, ready to unleash.",
+        3:"The barrel of your %s begins to glow, and the vibrating grows stronger.",
+        5:"You hear a low whine as heat radiates from the chamber of your %s, scalding your hands."
+    }
+
+    def on_expire(self, context: Context) -> Context:
+        player: Character = self.owner.location
+        _dmg = round(player.db.maxHP * 0.75)
+        player.msg("Your %s explodes, mangling your hands and filling your lungs with searing plasma!" % self.owner)
+        player.damage(_dmg)
+
+    def on_tick(self, context: Context) -> Context:
+        _tn = self.ticknum(context.buffStart)
+        if _tn in self.tick_msg.keys():
+            self.owner.location.msg(self.tick_msg[_tn] % self.owner)
 
 class CmdReload(BaseCommand):
     """
@@ -14,6 +60,7 @@ class CmdReload(BaseCommand):
 
     """
     key = "rel"
+    locks = ""
 
     def parse(self):
         pass
@@ -26,12 +73,39 @@ class CmdReload(BaseCommand):
         _caller.location.msg_contents("%s reloads their %s." % (_caller, _obj), exclude=_caller)
         return
 
+class CmdCharge(BaseCommand):
+    """
+    Charges this weapon. Used on fusion rifles only
+
+    Usage:
+      charge
+
+    """
+    key = "charge"
+    locks = "cmd:tagged(fusion)"
+
+    def parse(self):
+        pass
+
+    def func(self):
+        _caller = self.caller
+        _obj = self.obj
+
+        if not _obj.tags.has('fusion'): 
+            _caller.msg("You attempt to charge your %s, and it doesn't work! Perhaps it needs to be a fusion weapon." % _obj)
+            return 
+        _obj.buffs.add(FusionCharging)
+        _caller.msg("You begin to charge your %s." % _obj)
+        _caller.location.msg_contents("%s charges their %s." % (_caller, _obj), exclude=_caller)
+        return
+
 class WeaponCmdSet(CmdSet):
         
     key = "WeaponCmds"
 
     def at_cmdset_creation(self):     
         self.add(CmdReload())
+        self.add(CmdCharge())
 
 class Weapon(Object):
     """
@@ -77,7 +151,7 @@ class Weapon(Object):
         "Called when object is first created"
 
         self.cmdset.add(WeaponCmdSet, permanent=True)
-        
+        self.locks.add('call:equipped()')
         self.tags.add("primary", category="ammo")
         
         self.db.buffs = {}
