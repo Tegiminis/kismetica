@@ -10,15 +10,14 @@ class NPCWeapon():
 
     accuracy=1.0
     damage=10
-    cooldown=6
-    falloff=4
-    cqc=1
-
     crit=2.0
     mult=2.0
+    spread=1.0
+    mult=1.0
 
     element='neutral'
     msg='%s shoots %s with %s.'
+    cooldown=6
     
     def __init__(
         self,
@@ -27,11 +26,11 @@ class NPCWeapon():
         damage,
         crit,
         mult,
+        spread,
+        combo,
         element,
         msg,
-        cooldown,
-        falloff,
-        cqc
+        cooldown
         ) -> None:
         
         self.name = name
@@ -39,11 +38,22 @@ class NPCWeapon():
         self.damage = damage
         self.crit = crit
         self.mult = mult
+        self.spread = spread
+        self.combo = combo
         self.element = element
         self.msg = msg
         self.cooldown = cooldown
-        self.falloff = falloff
-        self.cqc = cqc
+
+    @property
+    def WeaponData(self):
+        dict = {
+            'damage': random.randint(self.damage * 0.5, self.damage * 1.5),
+            "critChance": self.crit,
+            "critMult": self.mult,
+            "accuracy": self.accuracy,
+            "spread": self.spread,
+            "shots": self.shots
+        }
 
 class NPC(Character):
 
@@ -150,17 +160,13 @@ class NPC(Character):
         Attacks the specified target with the NPC's default weapon
         The most basic form of attack an NPC can do.
         """
-        # self.location.msg_contents("Debug: Finding NPC weapon")
         weapon : NPCWeapon = self.db.weapon
-        # self.location.msg_contents("Debug: Setting initial combat context")
-        combat = Context(self, defender)
-        # self.location.msg_contents(f"Attacker: {self} | Defender: {defender}")
-        # self.location.msg_contents(f"Damage: {weapon.damage} | Accuracy: {weapon.accuracy} | Crit: {weapon.crit} | Mult: {weapon.mult}")
+        combat = {'attacker': self, 'defender': defender}
 
         self.location.msg_contents('Debug: Attacking a target in this room.')
         
-        weapon_stats = (weapon.damage, weapon.crit, weapon.mult, weapon.accuracy, weapon.falloff, weapon.cqc)
-        combat = self.shoot(defender, *weapon_stats, context=combat)
+        weapon_stats = weapon.WeaponData
+        combat = self.single_attack(defender, *weapon_stats, context=combat)
         
         self.location.msg_contents(f"Hit: {combat.hit} | Crit: {combat.crit} | Damage: {combat.damage}")
 

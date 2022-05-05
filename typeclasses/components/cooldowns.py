@@ -33,9 +33,9 @@ class CooldownHandler(object):
             False:  Cooldown time is up, cooldown not found'''
         return not self.check(key)
     
-    def start(self, key: str, duration):
+    def start(self, key: str, duration, msg=None):
         '''Sets the initial cooldown time and duration'''
-        _cd = {'start': time.time(), 'duration': duration}
+        _cd = {'start': time.time(), 'duration': duration, 'msg': msg}
         self.db[key] = _cd
         _msg = "%s Cooldown: %i seconds" % (key.capitalize(), int(duration))
         self.obj.msg(_msg)
@@ -53,7 +53,12 @@ class CooldownHandler(object):
         self.db[key]['start'] = time.time()
     
     def remove(self, key):
-        '''Removes a cooldown from the dictionary'''
+        '''Removes a cooldown from the dictionary. Echoes a "finished cooldown" message
+        if echo is true.'''
+        # Message the object the cooldown is being removed from, if it is puppeted
+        if self.db[key]['msg'] is not None:
+            if self.obj.has_account: self.obj.msg(self.db[key]['msg'])
+            else: self.obj.location.msg(self.db[key]['msg'])
         del self.db[key]
     
     def time_left(self, key) -> float:

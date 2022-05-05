@@ -85,6 +85,24 @@ def roll_on_table(table: list, context: Context = None):
         if roll(x[1] / _total): return x[0]
         else: _total -= x[1]
 
+def skewed_roll_on_table(table: list, skew: float):
+    '''Takes a list of tuples with the format (value, chance) and rolls to find which one to return. Guaranteed to return a value.
+    Skews the result towards the table's mean weight by a percentage (0 to 1.0).'''  
+    # Setting up collected values beforehand
+    total = 0
+    for x in table: total += x[1]
+    avg = total / len(table)
+            
+    for x in table:
+        # Separating out probability calculations for clarity
+        weight = x[1]                   # The unmodified weight of the loot roll
+        dist = avg - weight             # The distance from the unmodified weight to the mean
+        devi = weight + (dist * skew)   # The deviation towards the mean to modify the weight by
+        chance = devi / total           # The new, modified chance to roll
+        
+        if roll(chance): return x[0]
+        else: total -= x[1]
+
 def parse_result(obj, context: Context):
     '''Parses the result of a loot drop. This means creating objects, adding currency, and so on.'''
     if inherits_from(obj, Weapon):

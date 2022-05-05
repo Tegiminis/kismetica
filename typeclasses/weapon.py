@@ -23,7 +23,6 @@ class FusionCharging(Buff):
         self.owner.buffs.add(FusionCharged)
         pass
         
-
 class FusionCharged(Buff):
     key = 'fusioncharged'
     
@@ -107,6 +106,10 @@ class WeaponCmdSet(CmdSet):
         self.add(CmdReload())
         self.add(CmdCharge())
 
+class WeaponData():
+    """An object to hold weapon data while passing it between the weapon and character functions. Condenses the game weapon object into simpler form!"""
+
+
 class Weapon(Object):
     """
     A weapon that can be used by player characters.
@@ -121,21 +124,25 @@ class Weapon(Object):
         return PerkHandler(self)
     
     def _reload(self) -> int:
-        """Reloads this weapon and returns the amount of ammo left."""
+        """Reloads this weapon and returns the amount of ammo that was reloaded."""
         _return = 0
 
-        _ammo = self.db.ammo
-        _mag = self.db.mag
+        # Get the weapon's ammo, mag (max ammo), and figure out how much you are reloading
+        _ammo = self.ammo
+        _mag = self.mag
         _toreload = _mag - _ammo
 
+        # Primary weapons don't use reserves, so if this is a primary ammo weapon, skip all the reserves stuff!
         if ('primary', 'ammo') in self.tags.all(True): 
             _return = _toreload
             self.db.ammo = _mag
             return _return
 
+        # Find and check reserve count
         _reserves = self.db.reserves
         if _reserves <= 0: return 0
         
+        # If you have to reload more than you have in reserves, then only reload what you can. Otherwise, top off.
         if _toreload > _reserves: 
             _return = _reserves
             self.db.ammo += _reserves
@@ -158,28 +165,26 @@ class Weapon(Object):
         self.db.perks = {}
 
         # Ammo stats
-        self.db.ammo = 5   # Amount of shots you can make
-        self.db.mag = 5    # Mag size; what you reload to
-        self.db.reserves = 0
-        self.db.inventory = 0
+        self.db.ammo = 5        # Amount of shots you can make
+        self.db.mag = 5         # Mag size; what you reload to
+        self.db.reserves = 0    # Amount of ammo you have in reserve
+        self.db.inventory = 0   # Amount of ammo you can hold in reserve
         
         # Damage stats
-        self.db.damage = 10
-        self.db.stability = 10
+        self.db.damage = 10         # Base damage
+        self.db.stability = 10      # Increases low damage bracket
+        self.db.range = 10          # Increases upper damage bracket
+        self.db.penetration = 1     # Flat armor penetration value
 
         # Hit/shot stats
-        self.db.shots = 1
-        self.db.accuracy = 1.0
+        self.db.accuracy = 1.0      # Percent of weapon proficiency used for accuracy
+        self.db.spread = 1.0        # Chance to attack multiple targets
+        self.db.combo = 1.0         # Chance to attack the first target multiple times
 
         # Speed stats for doing particular actions (forces cooldown)
         self.db.equip = 20
         self.db.reload = 15
         self.db.rpm = 5
-
-        # Range stats. 
-        self.db.range = 10      # Increases upper damage bracket
-        self.db.cqc = 1         # Decrease accuracy when enemy range is lower
-        self.db.falloff = 3     # Decrease damage when enemy range is higher
 
         # Crit chance and multiplier
         self.db.critChance = 2.0
@@ -203,6 +208,7 @@ class Weapon(Object):
 
     @property
     def magcheck(self):
+        '''Gives you an adjective string determined by the magazine fill percentage.'''
 
         _str = ""
         _perc = self.db.ammo / self.db.mag
@@ -217,107 +223,142 @@ class Weapon(Object):
         elif _perc <= 0: _str = "concerningly empty"
 
         return _str
-        pass
 
     #region properties
+ 
     @property
-    def ammo(self):
-        # self.db.ammo = min(self.db.ammo, self.maxAmmo)
-        return self.db.ammo
-    
+    def WeaponData(self):
+        """Returns a dictionary consisting of a randomized damage value and common attributes used for character attack functions.
+        Passed to character attack functions as kwargs usually."""
+        _dict = {
+            "damage": self.randomized_damage,
+            "critChance": self.critChance,
+            "critMult": self.critMult,
+            "accuracy": self.accuracy,
+        }
+        return _dict
+
+    #region damage
     @property
     def damage(self):
-        _dmg = random.randint(self.damageMin, self.damageMax)
-        # self.location.msg('Debug Randomized Damage: ' + str(_dmg))
-        _modifiedDmg = self.buffs.check(_dmg, 'damage')
-        # self.location.msg('Debug Modified Damage: ' + str(_modifiedDmg - _dmg))
+        '''Returns a base damage value, buffed by mods.'''
+        _modifiedDmg = self.buffs.check(self.db.damage, 'damage')
         return _modifiedDmg
 
     @property
+    def randomized_damage(self):
+        '''Returns a randomized damage value.'''
+        _dmg = random.randint(self.damageMin, self.damageMax)
+        return _dmg
+
+    @property
     def damageMin(self):
-        _min = self.db.damage / 2
-        return int( _min + ( _min * (self.stability / 100) ) )
+        '''Ranges from 50% base damage to 100% base damage, depending on stability'''
+        _dmg = self.damage
+        return int( _dmg * (0.5 + (0.5 * (self.stability / 100))) )
 
     @property
     def damageMax(self):
-        _dmg = self.db.damage
-        _max = _dmg / 2
-        return int( _dmg + _max + (_max * (self.range / 100)) )
+        '''Ranges from 150% base damage to 200% base damage, depending on range.'''
+        _dmg = self.damage
+        return int( _dmg * (1.5 + (0.5 * (self.range / 100))) )
 
     @property
     def accuracy(self):
+        '''Base accuracy modified by buffs.'''
         _acc = self.buffs.check(self.db.accuracy, 'accuracy')
         return _acc
 
     @property
     def range(self):
+        '''Base range modified by buffs.'''
         _rng = self.buffs.check(self.db.range, 'range')
         return _rng
 
     @property
     def stability(self):
+        '''Base stability modified by buffs.'''
         _stab = self.buffs.check(self.db.stability, 'stability')
         return _stab
 
     @property
-    def maxAmmo(self):
-        _mag = self.buffs.check(self.db.mag, 'mag')
-        return _mag
-
-    @property
-    def equip(self):
-        _eq = self.buffs.check(self.db.equip, 'equip')
-        return _eq
-
-    @property
-    def reload(self):
-        _rl = self.buffs.check(self.db.reload, 'reload')
-        return _rl
-
-    @property
-    def rpm(self):
-        _rpm = self.buffs.check(self.db.rpm, 'rpm')
-        return _rpm
-
-    @property
-    def cqc(self):
-        _cqc = self.buffs.check(self.db.cqc, 'cqc')
-        return _cqc
-
-    @property
-    def falloff(self):
-        '''The range at which you see a 20% damage penalty. This must be higher
-        than a defender's range in order to avoid damage penalty. Having a
-        high range stat can buff this by one tier.'''
-        _fo = self.db.falloff
-        _fo += int(self.range / 90)
-        _fo = self.buffs.check(self.db.falloff, 'falloff')
-        return _fo
-
-    @property
     def critChance(self):
+        '''Base critical chance modified by buffs.'''
         _prec = self.buffs.check(self.db.critChance, 'critchance')
         return _prec
 
     @property
     def critMult(self):
+        '''Base critical damage multiplier modified by buffs.'''
         _hs = self.buffs.check(self.db.critMult, 'critmult')
         return _hs
 
     @property
     def shots(self):
-        _shots = self.buffs.check(self.db.shots, 'shots')
+        '''Returns the number of shots this weapon will fire. Based on combo stat.'''
+        _combo = self.buffs.check(self.db.combo, 'combo')
+        _shots = round(random.random() * _combo)
         return _shots
-    
+
+    @property
+    def penetration(self):
+        '''Returns the number of shots this weapon will fire.'''
+        _pen = self.buffs.check(self.db.penetration, 'penetration')
+        return _pen
+
+    @property
+    def spread(self):
+        '''Returns the number of shots this weapon will fire.'''
+        _sprd = self.buffs.check(self.db.spread, 'spread')
+        return _sprd
+    #endregion
+    #region ammo
+    @property
+    def ammo(self):
+        '''This weapon's current ammo.'''
+        return self.db.ammo
+    @ammo.setter
+    def ammo(self, amount):
+        self.db.ammo = amount
+
+    @property
+    def mag(self):
+        '''The ammo count you reload to, modified by buffs. Only applies at time of reload.'''
+        _mag = self.buffs.check(self.db.mag, 'mag')
+        return _mag
+    #endregion
+    #region action times
+    @property
+    def reload(self):
+        '''Base reload round time modified by buffs.'''
+        _rl = self.buffs.check(self.db.reload, 'reload')
+        return _rl
+
+    @property
+    def equip(self):
+        '''Base equip round time modified by buffs. Applies to stowing and equipping.'''
+        _eq = self.buffs.check(self.db.equip, 'equip')
+        return _eq
+
+    @property
+    def rpm(self):
+        '''Base round time modified by buffs.'''
+        _rpm = self.buffs.check(self.db.rpm, 'rpm')
+        return _rpm    
+    #endregion
+    #region handler returns
     @property
     def traits(self):
+        '''All traits on the object, both perks and buffs.'''
         _buffs = self.buffs.traits
         _perks = self.perks.traits
         return _perks + _buffs
 
     @property
     def effects(self):
+        '''All effects on the object, both perks and buffs.'''
         _perks = self.perks.effects
         _buffs = self.buffs.effects
         return _perks + _buffs
+    #endregion
     #endregion

@@ -58,8 +58,6 @@ class Character(DefaultCharacter):
 
         self.db.hp = 100        # Current hp
         self.db.maxHP = 100     # Max hp
-
-        self.db.range = 0           # What range the character starts at in a room
         self.db.evasion = 1.0       # Base chance to dodge enemy attacks
 
         super().at_object_creation()
@@ -98,10 +96,10 @@ class Character(DefaultCharacter):
         self.db.hp = min(self.db.hp + heal, self.db.maxHP)
         self.msg('You healed by %i!' % heal)
 
-    def shoot(
+    def single_attack(
         self, defender, 
-        damage, crit, mult, acc, falloff=4, cqc=1, 
-        context=None
+        damage, critChance, critMult, accuracy, 
+        context: dict = None
         ) -> Context:
         '''The most basic attack a character can perform.
         
@@ -116,35 +114,27 @@ class Character(DefaultCharacter):
 
         # The context for our combat. 
         # This holds all sorts of useful info we pass around.
-        if context is None: combat = Context(self, defender)
+        if context is None: combat = {'attacker': self, 'defender': defender}
         else: combat = context
 
-        _defender : Character = defender
         evasion = defender.evasion
 
         # Hit calculation and context update
-        hit = self._roll_hit(accuracy=acc, crit=crit, evasion=evasion)
-        combat.hit = hit[0]
-        combat.crit = hit[1]
-        # self.location.msg_contents(f"Hit: {combat.hit} | Crit: {combat.crit}")
+        combat = self._roll_hit(accuracy=accuracy, crit=critChance, evasion=evasion, context=combat)
 
-        # Damage calculation and buff triggers
-        if combat.hit:
-            combat.damage = self._calculate_damage(damage, combat.crit, mult, False)
+        # Damage calc and buff triggers
+        if combat['isHit'] is True:
+            combat['damage'] = self._calculate_damage(damage, combat['isCrit'], critMult, False)
             
-            # self.location.msg_contents("Debug: Trigger hit buffs")
             self.buffs.trigger('hit', context=combat)
-            
-            if combat.crit: 
-                # self.location.msg_contents("Debug: Trigger crit buffs")
-                self.buffs.trigger('crit', context=combat)
+            if combat['isCrit'] is True: self.buffs.trigger('crit', context=combat)
 
-        # self.location.msg_contents("Debug: Returning combat context")
         return combat
 
     def _roll_hit(
         self,
-        accuracy=1.0, crit=2.0, evasion=1.0, cqc=1
+        accuracy=1.0, crit=2.0, evasion=1.0,
+        context:dict=None
         ) -> tuple:
         '''
         Rolls to hit a defender, based on arbitrary accuracy and evasion values.
@@ -169,19 +159,19 @@ class Character(DefaultCharacter):
         hit += accuracy * random.random()
         dodge += evasion * random.random()
 
-        self.msg(f"  HIT: +{int(hit)} vs EVA: +{int(dodge)}")
+        context['isHit'] = hit > dodge
+        context['isCrit'] = hit > dodge * crit
+        context['hit'] = hit
+        context['dodge'] = dodge
 
         # Return a tuple of booleans corresponding to (isHit, isCrit)
-        return (hit > dodge, hit > dodge * crit)
+        return context
 
     def _calculate_damage(
         self, damage,
         crit=False, critMult=2.0, falloff=False
         ) -> float:
         '''Calculates damage output, unmodified by defender armor.'''
-
-        # Apply falloff, if relevant. Falloff is a flat 20% damage penalty
-        # if falloff: damage *= 0.8
 
         # All damage is multiplied by crit
         if crit is True: damage = round(damage * critMult)
@@ -290,23 +280,21 @@ class PlayerCharacter(Character):
         '''
         if not self.tags.has('attacking', 'combat'): return
         
-        _defender: NPC = defender
-        if not _defender.is_typeclass('typeclasses.npc.NPC'): 
+        defender: NPC = defender
+
+        # Can't attack something that isn't an NPC (for now)
+        if not defender.is_typeclass('typeclasses.npc.NPC'): 
             self.msg("You can only attack NPCs!")
             return
 
-        if _defender.location != self.location:
+        # Your target changed rooms; gave you the slip
+        if defender.location != self.location:
             self.msg("Your target has slipped away from you!")
             return
 
-        # The context for our combat. 
-        # This holds all sorts of useful info we pass around.
-        combat = Context(self, _defender)
-        damage_message = ''
+        weapon: Weapon = self.db.held
 
-        combat.weapon = self.db.held
-        weapon : Weapon = combat.weapon
-
+        # Can't fire an empty gun!
         if weapon.ammo <= 0:
             self.msg("Your weapon is out of ammo!")
             return
@@ -324,8 +312,8 @@ class PlayerCharacter(Character):
         # (bullet, plasma, slashing, blunt)
         default_msg = {
             "bullet": {
-                "hit": ["%s staggers under the flurry of bullets."],
-                "crit": ["Blood spurts uncontrollably from %s's newly-apportioned wounds!"]
+                "hit": ["%s staggers under the flurry of bullets.", None],
+                "crit": ["Blood spurts uncontrollably from newly-apportioned wounds!", None]
             },
             "fusion": {
                 "hit": ["Bolts of multicolored plasma singe %s's armor."],
@@ -334,29 +322,44 @@ class PlayerCharacter(Character):
 
         }
 
+        # The context dictionary for combat, used to pass combat data around to other functions
+        combat = {
+            'attacker': self,
+            'defender': defender
+        }
+
         # Messaging for yourself and the room
-        self.msg( combat.weapon.db.msg['self'] % ( combat.weapon, _defender.named ) )
-        self.location.msg_contents( combat.weapon.db.msg['attack'] % (self.named, combat.weapon, _defender.named), exclude=self)
+        self.msg( weapon.db.msg['self'] % ( weapon.named, defender.named ) )
+        self.location.msg_contents( weapon.db.msg['attack'] % (self.named, weapon.named, defender.named), exclude=self)
 
-        weapon_stats = (weapon.damage, weapon.critChance, weapon.critMult, weapon.accuracy, weapon.falloff, weapon.cqc)
-        combat = super().shoot(_defender, *weapon_stats, combat)
+        # Multishot loop
+        for x in range(max(1, weapon.shots)):
+            
+            # Bundle weapon stats and pass them to the "single shot" attack method
+            weapon_stats = weapon.WeaponData
+            combat = self.single_attack(defender, **weapon_stats, context=combat)
 
-        if combat.hit: 
-            combat.damage = _defender.damage(combat.damage, context=combat)
-            hit_msg = random.choice(default_msg['bullet']['hit']) % _defender.named
-            crit_msg = random.choice(default_msg['bullet']['crit']) % _defender.named
-            self.msg( "    ... %i damage! |n\n" % combat.damage )
-            self.msg("    " +  hit_msg.capitalize() + "|n\n")
+            if x <= 0: self.msg(f"  HIT: +{int(combat['hit'])} vs EVA: +{int(combat['dodge'])}")
 
-            weapon.buffs.trigger('hit', context=combat)
-            if combat.crit: 
-                self.msg("    " +  crit_msg.capitalize() + "|n\n")
-                weapon.buffs.trigger('crit', context=combat)
+            if combat['isHit'] is True: 
+                combat['damage'] = defender.damage(combat['damage'], context=combat)
 
-            _defender.buffs.trigger('thorns', context=combat)
-            _defender.buffs.trigger('injury', context=combat)
-        else:
-            self.msg('    ... Miss!')
+                weapon.buffs.trigger('hit', context=combat)
+                if combat['isCrit'] is True: weapon.buffs.trigger('crit', context=combat)
+
+                defender.buffs.trigger('thorns', context=combat)
+                defender.buffs.trigger('injury', context=combat)
+
+                if combat['isHit'] is True: self.msg( "    ... %i damage! |n\n" % combat['damage'] )
+
+                msgHit = random.choice(default_msg['bullet']['hit'])
+                msgCrit = random.choice(default_msg['bullet']['crit'])
+            else:
+                if x <= 0: self.msg('    ... Miss!')
+                break
+    
+        if msgHit: self.msg("    " +  (msgHit % defender.named).capitalize() + "|n\n")
+        if msgCrit: self.msg("    " +  msgCrit.capitalize() + "|n\n")
 
         weapon.db.ammo -= 1
         self.cooldowns.start('attack', _rpm)
