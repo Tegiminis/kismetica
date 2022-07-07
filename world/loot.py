@@ -76,7 +76,7 @@ def roll(chance: float):
     if (roll <= chance): return True
     else: return False
 
-def roll_on_table(table: list, context: Context = None):
+def roll_on_table(table: list):
     '''Takes a list of tuples with the format (value, chance) and rolls to find which one to return. Guaranteed to return a value.'''
     _total = 0
     for x in table: _total += x[1]

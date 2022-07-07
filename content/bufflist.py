@@ -2,6 +2,17 @@ import random
 from typeclasses.components.buff import Buff, Perk, Mod
 from typeclasses.context import Context
     
+class TestBuff(Buff):
+    key = 'testbuff'
+    name = 'Testbuff'
+    flavor = 'Buff for testing!'
+
+    duration = 0
+
+    stacking = True
+    unique = False
+    maxstacks = 3
+
 class RampageBuff(Buff):
     key = 'rampage'
     name = 'Rampage'
@@ -14,10 +25,19 @@ class RampageBuff(Buff):
     unique = True
     maxstacks = 3
 
+    stack_msg = {
+        1: '    You feel a bloodlust welling up inside you.',
+        2: '    Your bloodlust calls to you.',
+        3: '    All must die.'
+    } 
+
     mods = [ Mod('damage', 'mult', 0.15, 0.15) ]
 
-    def on_expire(self, context: Context):
-        context.origin.location.msg('The bloodlust fades.')
+    def on_apply(self, *args, **kwargs):
+        if self.stacks in self.stack_msg.keys(): self.owner.msg(self.stack_msg[self.stacks])
+
+    def on_expire(self, *args, **kwargs):
+        self.owner.location.msg('The bloodlust fades.')
 
 class Exploit(Buff):
     key = 'exploit'
@@ -33,19 +53,17 @@ class Exploit(Buff):
     unique = True
     maxstacks = 20
 
-    def on_trigger(self, context: Context) -> Context:
-        chance = context.buffStacks / 20
+    def on_trigger(self, *args, **kwargs):
+        chance = self.stacks / 20
         roll = random.random()
 
         if chance > roll:
-            context.origin.buffs.add(Exploited)
-            context.origin.location.msg("   An opportunity presents itself!")
-            context.origin.buffs.remove('exploit')
-        
-        return context
+            self.owner.buffs.add(Exploited)
+            self.owner.location.msg("   An opportunity presents itself!")
+            self.owner.buffs.remove('exploit')
 
-    def on_expire(self, context: Context) -> str:
-        context.origin.location.msg("The opportunity passes.")
+    def on_expire(self, *args, **kwargs):
+        self.owner.location.msg("The opportunity passes.")
 
 class Exploited(Buff):
     key = 'exploited'
@@ -60,12 +78,12 @@ class Exploited(Buff):
 
     mods = [ Mod('damage', 'add', 100) ]
 
-    def after_check(self, context: Context):
-        context.origin.msg( "   You exploit your target's weakness!" )
-        context.origin.buffs.remove('exploited', delay=0.01)
+    def after_check(self, *args, **kwargs):
+        self.owner.location.msg( "   You exploit your target's weakness!" )
+        self.owner.buffs.remove('exploited', delay=0.01)
 
-    def on_remove(self, context: Context):
-        context.origin.msg( "\n|nYou cannot sense your target's weakness anymore." )
+    def on_remove(self, *args, **kwargs):
+        self.owner.location.msg( "You cannot sense your target's weakness anymore." )
 
 class Weakened(Buff):
     key = 'weakened'
@@ -91,13 +109,12 @@ class Leeching(Buff):
     stacking = False
     unique = True
 
-    trigger = 'thorns'
+    trigger = 'injury'
 
-    def on_trigger(self, context: Context) -> Context:
-        target = context.target
-        target.msg('Debug: Attempting leech.')
-        heal = context.damage * 0.1
-        target.heal(heal)
+    def on_trigger(self, attacker, damage, *args, **kwargs) -> Context:
+        attacker.msg('Debug: Attempting leech.')
+        heal = damage * 0.1
+        attacker.heal(heal)
 
 class Poison(Buff):
     key = 'poison'
@@ -116,19 +133,28 @@ class Poison(Buff):
 
     dmg = 5
 
-    def on_tick(self, context: Context) -> Context:
-        _dmg = self.dmg * context.buffStacks
-        context.target.location.msg_contents("Poison courses through %s's body, dealing %i damage." % (context.target.named,_dmg))
-        context.target.damage(_dmg, context)
-        return context
+    def on_tick(self, *args, **kwargs):
+        _dmg = self.dmg * self.stacks
+        self.owner.location.msg_contents("Poison courses through %s's body, dealing %i damage." % (self.owner.named,_dmg))
+        self.owner.damage(_dmg)
+
+class PropertyBuffTest(Buff):
+    key = 'pTest'
+    name = 'ptest'
+    flavor = 'This person is invigorated.'
+
+    duration = 0
+
+    refresh = True
+    stacking = True
+    maxStacks = 5
+    unique = True
+
+    mods = [Mod('maxhp', 'add', 100, 50)]
 
 class BuffList():
     '''Initialization of buff and effect typeclasses used to apply buffs to players.
 
     If it's not in this list, it won't be applicable in-game without python access.'''
     # Buffs
-    rampage = RampageBuff
-    exploited = Exploited
-    exploit = Exploit
-    leeching = Leeching
-    poison = Poison
+    

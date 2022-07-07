@@ -6,13 +6,7 @@ class DestinyBasicCmdSet(CmdSet):
         
     key = "DestinyBasicCmdSet"
 
-    def at_cmdset_creation(self):     
-        self.add(basic.CmdAttack())
-        self.add(basic.CmdDisengage())
-        self.add(basic.CmdMag())
-        self.add(basic.CmdTarget())
-        self.add(basic.CmdEquip())
-        self.add(basic.CmdDraw())
+    def at_cmdset_creation(self):
         self.add(basic.CmdPTest())
         self.add(basic.CmdLootTest())
         self.add(basic.CmdCheck())

@@ -1,0 +1,444 @@
+20-08-02 21:16:32-07  |Portal| Loading c:\muddev\evennia\evennia\server\portal\portal.py...
+20-08-02 21:16:32-07  |Portal| Loaded.
+20-08-02 21:16:32-07  |Portal| twistd 19.10.0 (c:\muddev\evenv\scripts\python.exe 3.7.0) starting up.
+20-08-02 21:16:32-07  |Portal| reactor class: twisted.internet.selectreactor.SelectReactor.
+20-08-02 21:16:32-07  |Portal| AMP starting on 4006
+20-08-02 21:16:32-07  |Portal| Telnet starting on 4000
+20-08-02 21:16:32-07  |Portal| Websocket starting on 4002
+20-08-02 21:16:32-07  |Portal| Webserver-proxy starting on 4001
+20-08-02 21:16:33-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 21:16:56-07  |Portal| dropping connection to peer tcp4:127.0.0.1:64762 with abort=True: WebSocket opening handshake timeout (peer did not finish the opening handshake in time)
+20-08-02 21:17:41-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=64666)
+20-08-02 21:17:41-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=64674)
+20-08-02 21:17:41-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=64681)
+20-08-02 21:17:41-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=64680)
+20-08-02 21:17:41-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=64682)
+20-08-02 21:17:42-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=64660)
+20-08-02 21:17:48-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=64720)
+20-08-02 21:17:48-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=64722)
+20-08-02 21:17:48-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=64717)
+20-08-02 21:17:48-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=64724)
+20-08-02 21:17:48-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=64723)
+20-08-02 21:17:50-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=64713)
+20-08-02 21:41:16-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 21:42:43-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 21:47:45-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 21:51:49-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 21:57:00-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:06:21-07  |Portal| [::] NoneType: None
+20-08-02 22:06:21-07  |Portal| [EE] [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+20-08-02 22:06:21-07  |Portal| [EE] ]
+20-08-02 22:06:21-07  |Portal| [EE] Caught errback in webserver.py:75.
+20-08-02 22:06:21-07  |Portal| [::] NoneType: None
+20-08-02 22:06:21-07  |Portal| [EE] [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+20-08-02 22:06:21-07  |Portal| [EE] ]
+20-08-02 22:06:21-07  |Portal| [EE] Caught errback in webserver.py:75.
+20-08-02 22:06:21-07  |Portal| [::] NoneType: None
+20-08-02 22:06:21-07  |Portal| [EE] [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+20-08-02 22:06:21-07  |Portal| [EE] ]
+20-08-02 22:06:21-07  |Portal| [EE] Caught errback in webserver.py:75.
+20-08-02 22:06:21-07  |Portal| [::] NoneType: None
+20-08-02 22:06:21-07  |Portal| [EE] [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+20-08-02 22:06:21-07  |Portal| [EE] ]
+20-08-02 22:06:21-07  |Portal| [EE] Caught errback in webserver.py:75.
+20-08-02 22:06:21-07  |Portal| [::] NoneType: None
+20-08-02 22:06:21-07  |Portal| [EE] [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+20-08-02 22:06:21-07  |Portal| [EE] ]
+20-08-02 22:06:21-07  |Portal| [EE] Caught errback in webserver.py:75.
+20-08-02 22:06:21-07  |Portal| Unhandled Error
+	Traceback (most recent call last):
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 103, in callWithLogger
+	    return callWithContext({"system": lp}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 86, in callWithContext
+	    return context.call({ILogContext: newCtx}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 122, in callWithContext
+	    return self.currentContext().callWithContext(ctx, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 85, in callWithContext
+	    return func(*args,**kw)
+	--- <exception caught here> ---
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\selectreactor.py", line 149, in _doReadOrWrite
+	    why = getattr(selectable, method)()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 243, in doRead
+	    return self._dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 249, in _dataReceived
+	    rval = self.protocol.dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\protocols\basic.py", line 579, in dataReceived
+	    why = self.rawDataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 649, in rawDataReceived
+	    self.handleResponseEnd()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\proxy.py", line 87, in handleResponseEnd
+	    self.father.finish()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\server.py", line 286, in finish
+	    return http.Request.finish(self)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 1079, in finish
+	    "Request.finish called on a request after its connection was lost; "
+	builtins.RuntimeError: Request.finish called on a request after its connection was lost; use Request.notifyFinish to keep track of this.
+	
+20-08-02 22:06:22-07  |Portal| [::] NoneType: None
+20-08-02 22:06:22-07  |Portal| [EE] [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+20-08-02 22:06:22-07  |Portal| [EE] ]
+20-08-02 22:06:22-07  |Portal| [EE] Caught errback in webserver.py:75.
+20-08-02 22:06:22-07  |Portal| [::] NoneType: None
+20-08-02 22:06:22-07  |Portal| [EE] [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+20-08-02 22:06:22-07  |Portal| [EE] ]
+20-08-02 22:06:22-07  |Portal| [EE] Caught errback in webserver.py:75.
+20-08-02 22:06:22-07  |Portal| [::] NoneType: None
+20-08-02 22:06:22-07  |Portal| [EE] [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+20-08-02 22:06:22-07  |Portal| [EE] ]
+20-08-02 22:06:22-07  |Portal| [EE] Caught errback in webserver.py:75.
+20-08-02 22:06:22-07  |Portal| [::] NoneType: None
+20-08-02 22:06:22-07  |Portal| [EE] [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+20-08-02 22:06:22-07  |Portal| [EE] ]
+20-08-02 22:06:22-07  |Portal| [EE] Caught errback in webserver.py:75.
+20-08-02 22:06:22-07  |Portal| [::] NoneType: None
+20-08-02 22:06:22-07  |Portal| [EE] [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+20-08-02 22:06:22-07  |Portal| [EE] ]
+20-08-02 22:06:22-07  |Portal| [EE] Caught errback in webserver.py:75.
+20-08-02 22:06:22-07  |Portal| [::] NoneType: None
+20-08-02 22:06:22-07  |Portal| [EE] [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+20-08-02 22:06:22-07  |Portal| [EE] ]
+20-08-02 22:06:22-07  |Portal| [EE] Caught errback in webserver.py:75.
+20-08-02 22:06:22-07  |Portal| [::] NoneType: None
+20-08-02 22:06:22-07  |Portal| [EE] [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+20-08-02 22:06:22-07  |Portal| [EE] ]
+20-08-02 22:06:22-07  |Portal| [EE] Caught errback in webserver.py:75.
+20-08-02 22:06:22-07  |Portal| [::] NoneType: None
+20-08-02 22:06:22-07  |Portal| [EE] [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+20-08-02 22:06:22-07  |Portal| [EE] ]
+20-08-02 22:06:22-07  |Portal| [EE] Caught errback in webserver.py:75.
+20-08-02 22:06:22-07  |Portal| [::] NoneType: None
+20-08-02 22:06:22-07  |Portal| [EE] [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+20-08-02 22:06:22-07  |Portal| [EE] ]
+20-08-02 22:06:22-07  |Portal| [EE] Caught errback in webserver.py:75.
+20-08-02 22:06:22-07  |Portal| [::] NoneType: None
+20-08-02 22:06:22-07  |Portal| [EE] [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+20-08-02 22:06:22-07  |Portal| [EE] ]
+20-08-02 22:06:22-07  |Portal| [EE] Caught errback in webserver.py:75.
+20-08-02 22:06:22-07  |Portal| Unhandled Error
+	Traceback (most recent call last):
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 103, in callWithLogger
+	    return callWithContext({"system": lp}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 86, in callWithContext
+	    return context.call({ILogContext: newCtx}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 122, in callWithContext
+	    return self.currentContext().callWithContext(ctx, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 85, in callWithContext
+	    return func(*args,**kw)
+	--- <exception caught here> ---
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\selectreactor.py", line 149, in _doReadOrWrite
+	    why = getattr(selectable, method)()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 243, in doRead
+	    return self._dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 249, in _dataReceived
+	    rval = self.protocol.dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\protocols\basic.py", line 579, in dataReceived
+	    why = self.rawDataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 649, in rawDataReceived
+	    self.handleResponseEnd()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\proxy.py", line 87, in handleResponseEnd
+	    self.father.finish()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\server.py", line 286, in finish
+	    return http.Request.finish(self)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 1079, in finish
+	    "Request.finish called on a request after its connection was lost; "
+	builtins.RuntimeError: Request.finish called on a request after its connection was lost; use Request.notifyFinish to keep track of this.
+	
+20-08-02 22:06:22-07  |Portal| Unhandled Error
+	Traceback (most recent call last):
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 103, in callWithLogger
+	    return callWithContext({"system": lp}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 86, in callWithContext
+	    return context.call({ILogContext: newCtx}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 122, in callWithContext
+	    return self.currentContext().callWithContext(ctx, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 85, in callWithContext
+	    return func(*args,**kw)
+	--- <exception caught here> ---
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\selectreactor.py", line 149, in _doReadOrWrite
+	    why = getattr(selectable, method)()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 243, in doRead
+	    return self._dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 249, in _dataReceived
+	    rval = self.protocol.dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\protocols\basic.py", line 579, in dataReceived
+	    why = self.rawDataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 649, in rawDataReceived
+	    self.handleResponseEnd()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\proxy.py", line 87, in handleResponseEnd
+	    self.father.finish()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\server.py", line 286, in finish
+	    return http.Request.finish(self)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 1079, in finish
+	    "Request.finish called on a request after its connection was lost; "
+	builtins.RuntimeError: Request.finish called on a request after its connection was lost; use Request.notifyFinish to keep track of this.
+	
+20-08-02 22:06:59-07  |Portal| dropping connection to peer tcp4:127.0.0.1:50103 with abort=True: WebSocket opening handshake timeout (peer did not finish the opening handshake in time)
+20-08-02 22:07:51-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=50065)
+20-08-02 22:07:51-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=50060)
+20-08-02 22:07:51-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=50062)
+20-08-02 22:07:51-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=50063)
+20-08-02 22:07:51-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=50064)
+20-08-02 22:07:52-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=50057)
+20-08-02 22:09:30-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:11:22-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:16:05-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:18:32-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:20:08-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:21:22-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:24:05-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:24:50-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:25:17-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:27:26-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:29:44-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:32:08-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:32:50-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:34:28-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:35:30-07  |Portal| (TCP Port 4001 Closed)
+20-08-02 22:35:30-07  |Portal| (TCP Port 4000 Closed)
+20-08-02 22:35:30-07  |Portal| (TCP Port 4006 Closed)
+20-08-02 22:35:30-07  |Portal| (TCP Port 4002 Closed)
+20-08-02 22:35:30-07  |Portal| Main loop terminated.
+20-08-02 22:35:30-07  |Portal| Server Shut Down.
+20-08-02 22:35:30-07  |Portal| Server Shut Down.
+20-08-02 22:35:37-07  |Portal| Loading c:\muddev\evennia\evennia\server\portal\portal.py...
+20-08-02 22:35:38-07  |Portal| Loaded.
+20-08-02 22:35:38-07  |Portal| twistd 19.10.0 (c:\muddev\evenv\scripts\python.exe 3.7.0) starting up.
+20-08-02 22:35:38-07  |Portal| reactor class: twisted.internet.selectreactor.SelectReactor.
+20-08-02 22:35:38-07  |Portal| AMP starting on 4006
+20-08-02 22:35:38-07  |Portal| Telnet starting on 4000
+20-08-02 22:35:38-07  |Portal| Websocket starting on 4002
+20-08-02 22:35:38-07  |Portal| Webserver-proxy starting on 4001
+20-08-02 22:35:38-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:36:11-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:40:23-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:41:21-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:43:57-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:45:51-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:47:14-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:49:00-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:54:25-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:55:34-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:58:34-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:59:31-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 22:59:46-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:01:01-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:02:14-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:04:55-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:06:57-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:11:26-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:14:11-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:14:47-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:17:00-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:18:17-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:20:10-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:20:49-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:21:04-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:21:43-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:24:48-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:30:16-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:30:49-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:34:17-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:34:35-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:35:18-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:36:03-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:41:48-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:43:45-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:44:18-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:44:38-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:46:01-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:48:14-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:52:15-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:55:16-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:58:39-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-02 23:59:15-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 00:08:12-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 00:09:57-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 00:10:23-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 00:11:24-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 00:12:23-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 00:12:59-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 00:13:43-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 00:15:48-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 00:16:04-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 00:16:43-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 00:19:11-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 00:19:59-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 00:20:52-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 00:22:50-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 00:24:35-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 00:25:10-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 00:26:03-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 00:26:55-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 00:32:36-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 00:33:19-07  |Portal| (TCP Port 4001 Closed)
+20-08-03 00:33:19-07  |Portal| (TCP Port 4000 Closed)
+20-08-03 00:33:19-07  |Portal| (TCP Port 4006 Closed)
+20-08-03 00:33:19-07  |Portal| (TCP Port 4002 Closed)
+20-08-03 00:33:19-07  |Portal| Main loop terminated.
+20-08-03 00:33:19-07  |Portal| Server Shut Down.
+20-08-03 00:33:19-07  |Portal| Server Shut Down.
+20-08-03 11:24:09-07  |Portal| Loading c:\muddev\evennia\evennia\server\portal\portal.py...
+20-08-03 11:24:10-07  |Portal| Loaded.
+20-08-03 11:24:10-07  |Portal| twistd 19.10.0 (c:\muddev\evenv\scripts\python.exe 3.7.0) starting up.
+20-08-03 11:24:10-07  |Portal| reactor class: twisted.internet.selectreactor.SelectReactor.
+20-08-03 11:24:10-07  |Portal| AMP starting on 4006
+20-08-03 11:24:10-07  |Portal| Telnet starting on 4000
+20-08-03 11:24:10-07  |Portal| Websocket starting on 4002
+20-08-03 11:24:10-07  |Portal| Webserver-proxy starting on 4001
+20-08-03 11:24:11-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 11:24:13-07  |Portal| [::] NoneType: None
+20-08-03 11:24:13-07  |Portal| [EE] [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+20-08-03 11:24:13-07  |Portal| [EE] ]
+20-08-03 11:24:13-07  |Portal| [EE] Caught errback in webserver.py:75.
+20-08-03 11:24:13-07  |Portal| [::] NoneType: None
+20-08-03 11:24:13-07  |Portal| [EE] [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+20-08-03 11:24:13-07  |Portal| [EE] ]
+20-08-03 11:24:13-07  |Portal| [EE] Caught errback in webserver.py:75.
+20-08-03 11:24:13-07  |Portal| [::] NoneType: None
+20-08-03 11:24:13-07  |Portal| [EE] [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+20-08-03 11:24:13-07  |Portal| [EE] ]
+20-08-03 11:24:13-07  |Portal| [EE] Caught errback in webserver.py:75.
+20-08-03 11:24:13-07  |Portal| [::] NoneType: None
+20-08-03 11:24:13-07  |Portal| [EE] [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+20-08-03 11:24:13-07  |Portal| [EE] ]
+20-08-03 11:24:13-07  |Portal| [EE] Caught errback in webserver.py:75.
+20-08-03 11:24:13-07  |Portal| [::] NoneType: None
+20-08-03 11:24:13-07  |Portal| [EE] [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+20-08-03 11:24:13-07  |Portal| [EE] ]
+20-08-03 11:24:13-07  |Portal| [EE] Caught errback in webserver.py:75.
+20-08-03 11:24:13-07  |Portal| Unhandled Error
+	Traceback (most recent call last):
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 103, in callWithLogger
+	    return callWithContext({"system": lp}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 86, in callWithContext
+	    return context.call({ILogContext: newCtx}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 122, in callWithContext
+	    return self.currentContext().callWithContext(ctx, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 85, in callWithContext
+	    return func(*args,**kw)
+	--- <exception caught here> ---
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\selectreactor.py", line 149, in _doReadOrWrite
+	    why = getattr(selectable, method)()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 243, in doRead
+	    return self._dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 249, in _dataReceived
+	    rval = self.protocol.dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\protocols\basic.py", line 579, in dataReceived
+	    why = self.rawDataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 649, in rawDataReceived
+	    self.handleResponseEnd()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\proxy.py", line 87, in handleResponseEnd
+	    self.father.finish()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\server.py", line 286, in finish
+	    return http.Request.finish(self)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 1079, in finish
+	    "Request.finish called on a request after its connection was lost; "
+	builtins.RuntimeError: Request.finish called on a request after its connection was lost; use Request.notifyFinish to keep track of this.
+	
+20-08-03 11:24:13-07  |Portal| [::] NoneType: None
+20-08-03 11:24:13-07  |Portal| [EE] [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+20-08-03 11:24:13-07  |Portal| [EE] ]
+20-08-03 11:24:13-07  |Portal| [EE] Caught errback in webserver.py:75.
+20-08-03 11:24:13-07  |Portal| [::] NoneType: None
+20-08-03 11:24:13-07  |Portal| [EE] [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+20-08-03 11:24:13-07  |Portal| [EE] ]
+20-08-03 11:24:13-07  |Portal| [EE] Caught errback in webserver.py:75.
+20-08-03 11:24:13-07  |Portal| [::] NoneType: None
+20-08-03 11:24:13-07  |Portal| [EE] [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+20-08-03 11:24:13-07  |Portal| [EE] ]
+20-08-03 11:24:13-07  |Portal| [EE] Caught errback in webserver.py:75.
+20-08-03 11:24:13-07  |Portal| [::] NoneType: None
+20-08-03 11:24:13-07  |Portal| [EE] [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+20-08-03 11:24:13-07  |Portal| [EE] ]
+20-08-03 11:24:13-07  |Portal| [EE] Caught errback in webserver.py:75.
+20-08-03 11:24:13-07  |Portal| [::] NoneType: None
+20-08-03 11:24:13-07  |Portal| [EE] [Failure instance: Traceback (failure with no frames): <class 'twisted.internet.error.ConnectionDone'>: Connection was closed cleanly.
+20-08-03 11:24:13-07  |Portal| [EE] ]
+20-08-03 11:24:13-07  |Portal| [EE] Caught errback in webserver.py:75.
+20-08-03 11:24:13-07  |Portal| Unhandled Error
+	Traceback (most recent call last):
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 103, in callWithLogger
+	    return callWithContext({"system": lp}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 86, in callWithContext
+	    return context.call({ILogContext: newCtx}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 122, in callWithContext
+	    return self.currentContext().callWithContext(ctx, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 85, in callWithContext
+	    return func(*args,**kw)
+	--- <exception caught here> ---
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\selectreactor.py", line 149, in _doReadOrWrite
+	    why = getattr(selectable, method)()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 243, in doRead
+	    return self._dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 249, in _dataReceived
+	    rval = self.protocol.dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\protocols\basic.py", line 579, in dataReceived
+	    why = self.rawDataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 649, in rawDataReceived
+	    self.handleResponseEnd()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\proxy.py", line 87, in handleResponseEnd
+	    self.father.finish()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\server.py", line 286, in finish
+	    return http.Request.finish(self)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 1079, in finish
+	    "Request.finish called on a request after its connection was lost; "
+	builtins.RuntimeError: Request.finish called on a request after its connection was lost; use Request.notifyFinish to keep track of this.
+	
+20-08-03 11:24:21-07  |Portal| dropping connection to peer tcp4:127.0.0.1:53419 with abort=True: WebSocket opening handshake timeout (peer did not finish the opening handshake in time)
+20-08-03 11:27:32-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 11:39:00-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 11:42:08-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=53986)
+20-08-03 11:42:08-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=53999)
+20-08-03 11:42:08-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=53992)
+20-08-03 11:42:08-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=53997)
+20-08-03 11:42:08-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=53998)
+20-08-03 11:42:08-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=53983)
+20-08-03 11:46:32-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 11:50:15-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 11:51:26-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 11:52:41-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 11:53:15-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 11:53:33-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 11:55:40-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 11:56:16-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 11:56:43-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 11:57:21-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 11:58:28-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 11:59:56-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 12:02:37-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 12:03:02-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 12:03:41-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 12:04:19-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 12:05:08-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 12:06:47-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 12:07:31-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 12:16:27-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-03 13:30:32-07  |Portal| (TCP Port 4001 Closed)
+20-08-03 13:30:32-07  |Portal| (TCP Port 4000 Closed)
+20-08-03 13:30:32-07  |Portal| (TCP Port 4006 Closed)
+20-08-03 13:30:32-07  |Portal| (TCP Port 4002 Closed)
+20-08-03 13:30:32-07  |Portal| Main loop terminated.
+20-08-03 13:30:32-07  |Portal| Server Shut Down.
+20-08-03 13:30:32-07  |Portal| Server Shut Down.
+20-08-05 15:54:33-07  |Portal| Loading c:\muddev\evennia\evennia\server\portal\portal.py...
+20-08-05 15:54:34-07  |Portal| Loaded.
+20-08-05 15:54:34-07  |Portal| twistd 19.10.0 (c:\muddev\evenv\scripts\python.exe 3.7.0) starting up.
+20-08-05 15:54:34-07  |Portal| reactor class: twisted.internet.selectreactor.SelectReactor.
+20-08-05 15:54:34-07  |Portal| AMP starting on 4006
+20-08-05 15:54:34-07  |Portal| Telnet starting on 4000
+20-08-05 15:54:34-07  |Portal| Websocket starting on 4002
+20-08-05 15:54:34-07  |Portal| Webserver-proxy starting on 4001
+20-08-05 15:54:35-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-08-05 15:55:36-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=62382)
+20-08-05 15:55:36-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=62390)
+20-08-05 15:55:36-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=62391)
+20-08-05 15:55:36-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=62392)
+20-08-05 15:55:36-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=62393)
+20-08-05 15:55:37-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=62377)
+20-08-05 16:11:32-07  |Portal| (TCP Port 4001 Closed)
+20-08-05 16:11:32-07  |Portal| (TCP Port 4000 Closed)
+20-08-05 16:11:32-07  |Portal| (TCP Port 4006 Closed)
+20-08-05 16:11:32-07  |Portal| (TCP Port 4002 Closed)
+20-08-05 16:11:32-07  |Portal| Main loop terminated.
+20-08-05 16:11:32-07  |Portal| Server Shut Down.
+20-08-05 16:11:32-07  |Portal| Server Shut Down.

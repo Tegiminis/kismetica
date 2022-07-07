@@ -1,0 +1,63 @@
+20-10-28 00:21:20-07  |Portal| Loading c:\muddev\evennia\evennia\server\portal\portal.py...
+20-10-28 00:21:21-07  |Portal| Loaded.
+20-10-28 00:21:21-07  |Portal| twistd 19.10.0 (c:\muddev\evenv\scripts\python.exe 3.7.0) starting up.
+20-10-28 00:21:21-07  |Portal| reactor class: twisted.internet.selectreactor.SelectReactor.
+20-10-28 00:21:21-07  |Portal| AMP starting on 4006
+20-10-28 00:21:21-07  |Portal| Telnet starting on 4000
+20-10-28 00:21:21-07  |Portal| Websocket starting on 4002
+20-10-28 00:21:21-07  |Portal| Webserver-proxy starting on 4001
+20-10-28 00:21:21-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 00:21:36-07  |Portal| dropping connection to peer tcp4:127.0.0.1:55853 with abort=True: WebSocket opening handshake timeout (peer did not finish the opening handshake in time)
+20-10-28 00:22:29-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=55812)
+20-10-28 00:22:29-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=55815)
+20-10-28 00:22:29-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=55816)
+20-10-28 00:22:29-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=55817)
+20-10-28 00:22:29-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=55808)
+20-10-28 00:22:29-07  |Portal| Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=55814)
+20-10-28 00:30:20-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 00:32:04-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 00:32:30-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 00:33:23-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 00:34:08-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 00:34:37-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 00:39:17-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 00:50:52-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 00:52:29-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 00:55:36-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 00:57:07-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 00:59:53-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 01:09:26-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 01:12:17-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 01:16:16-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 01:21:24-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 01:22:47-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 01:32:00-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 01:40:51-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 01:41:04-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 01:43:55-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 01:45:53-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 01:47:10-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 01:47:57-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 01:49:44-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 01:52:37-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 01:58:02-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 02:01:43-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 02:17:26-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 02:20:21-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 02:30:37-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 02:31:48-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 02:40:23-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 02:40:50-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 02:42:17-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 02:43:31-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 02:43:50-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 02:44:14-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 02:45:05-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 02:46:38-07  |Portal| Portal starting server ... ['c:\\muddev\\evennia\\evennia\\server\\twistd.bat', '--python=c:\\muddev\\evennia\\evennia\\server\\server.py']
+20-10-28 03:04:57-07  |Portal| (TCP Port 4001 Closed)
+20-10-28 03:04:57-07  |Portal| (TCP Port 4002 Closed)
+20-10-28 03:04:57-07  |Portal| (TCP Port 4000 Closed)
+20-10-28 03:04:57-07  |Portal| (TCP Port 4006 Closed)
+20-10-28 03:04:57-07  |Portal| Main loop terminated.
+20-10-28 03:04:57-07  |Portal| Server Shut Down.
+20-10-28 03:04:57-07  |Portal| Server Shut Down.

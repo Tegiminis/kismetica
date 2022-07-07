@@ -9,16 +9,8 @@ class RampagePerk(Perk):
 
     trigger = 'hit'
 
-    stack_msg = {
-        1: '    You feel a bloodlust welling up inside you.',
-        2: '    Your bloodlust calls to you.',
-        3: '    All must die.'
-    } 
-
-    def on_trigger(self):
-        bc: Context = context.weapon.buffs.add(bl.RampageBuff)
-        if bc.buffStacks in self.stack_msg: context.weaponOwner.msg( self.stack_msg[bc.buffStacks] )
-        return bc
+    def on_trigger(self, *args, **kwargs):
+        self.owner.buffs.add(bl.RampageBuff)
 
 class ExploitPerk(Perk):
 
@@ -36,7 +28,7 @@ class ExploitPerk(Perk):
 
     trigger_msg = ''
 
-    def on_trigger(self):
+    def on_trigger(self, *args, **kwargs):
         if self.owner.buffs.find(bl.Exploited): return None
         self.owner.buffs.add(bl.Exploit)
         if self.stacks in self.stack_msg: self.owner.location.msg( self.stack_msg[self.stacks] )
@@ -48,7 +40,7 @@ class WeakenPerk(Perk):
 
     trigger = 'hit'
 
-    def on_trigger(self):
+    def on_trigger(self, *args, **kwargs):
         self.context['target'].buffs.add(bl.Poison)
 
 class LeechRoundPerk(Perk):
@@ -58,18 +50,18 @@ class LeechRoundPerk(Perk):
 
     trigger = 'hit'
 
-    def on_trigger(self):
-        context.origin.buffs.add(bl.Leeching)
+    def on_trigger(self, *args, **kwargs):
+        self.context['defender'].buffs.add(bl.Leeching)
 
 class ThornsPerk(Perk):
     key = 'thorns'
     name = 'Thorns'
     flavor = 'Damages attackers'
 
-    trigger = 'thorns'
+    trigger = 'injury'
 
-    def on_trigger(self):
-        context.origin.damage_health(context.damage * 0.1)
+    def on_trigger(self, attacker, damage, *args, **kwargs):
+        attacker.damage(damage * 0.1)
 
 class PerkList():
     rampage = RampagePerk

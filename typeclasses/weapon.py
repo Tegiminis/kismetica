@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from typeclasses.context import Context
 from typeclasses.components.cooldowns import CooldownHandler
 from typeclasses.objects import Object
-from typeclasses.components.buff import Buff, BuffHandler, PerkHandler
+from typeclasses.components.buff import Buff, BuffHandler, BuffableProperty, PerkHandler
 from evennia.utils import lazy_property
 from evennia import Command as BaseCommand
 from evennia import CmdSet
@@ -39,14 +39,14 @@ class FusionCharged(Buff):
         5:"You hear a low whine as heat radiates from the chamber of your %s, scalding your hands."
     }
 
-    def on_expire(self, context: Context) -> Context:
+    def on_expire(self, *args, **kwargs):
         player: Character = self.owner.location
         _dmg = round(player.db.maxHP * 0.75)
         player.msg("Your %s explodes, mangling your hands and filling your lungs with searing plasma!" % self.owner)
         player.damage(_dmg)
 
-    def on_tick(self, context: Context) -> Context:
-        _tn = self.ticknum(context.buffStart)
+    def on_tick(self, *args, **kwargs):
+        _tn = self.ticknum(self.start)
         if _tn in self.tick_msg.keys():
             self.owner.location.msg(self.tick_msg[_tn] % self.owner)
 
@@ -154,6 +154,25 @@ class Weapon(Object):
 
         return _return
 
+    mag = BuffableProperty(10)
+    inventory = BuffableProperty(0)
+
+    damage = BuffableProperty(10)
+    stability = BuffableProperty(10)
+    range = BuffableProperty(10)
+    penetration = BuffableProperty(1)
+
+    accuracy = BuffableProperty(50)
+    spread = BuffableProperty(1.0)
+    combo = BuffableProperty(1.0)
+
+    equip = BuffableProperty(20)
+    reload = BuffableProperty(15)
+    rpm = BuffableProperty(5)
+
+    critchance = BuffableProperty(2)
+    critmult = BuffableProperty(2)
+
     def at_object_creation(self):
         "Called when object is first created"
 
@@ -166,29 +185,29 @@ class Weapon(Object):
 
         # Ammo stats
         self.db.ammo = 5        # Amount of shots you can make
-        self.db.mag = 5         # Mag size; what you reload to
+        self.mag         # Mag size; what you reload to
         self.db.reserves = 0    # Amount of ammo you have in reserve
-        self.db.inventory = 0   # Amount of ammo you can hold in reserve
+        self.inventory   # Amount of ammo you can hold in reserve
         
         # Damage stats
-        self.db.damage = 10         # Base damage
-        self.db.stability = 10      # Increases low damage bracket
-        self.db.range = 10          # Increases upper damage bracket
-        self.db.penetration = 1     # Flat armor penetration value
+        self.damage         # Base damage
+        self.stability      # Increases low damage bracket
+        self.range          # Increases upper damage bracket
+        self.penetration     # Flat armor penetration value
 
         # Hit/shot stats
-        self.db.accuracy = 1.0      # Percent of weapon proficiency used for accuracy
-        self.db.spread = 1.0        # Chance to attack multiple targets
-        self.db.combo = 1.0         # Chance to attack the first target multiple times
+        self.accuracy    # Percent of weapon proficiency used for accuracy
+        self.spread      # Chance to attack multiple targets
+        self.combo       # Chance to attack the first target multiple times
 
         # Speed stats for doing particular actions (forces cooldown)
-        self.db.equip = 20
-        self.db.reload = 15
-        self.db.rpm = 5
+        self.equip
+        self.reload
+        self.rpm
 
         # Crit chance and multiplier
-        self.db.critChance = 2.0
-        self.db.critMult = 2.0
+        self.critchance
+        self.critmult
 
         # Messages for your weapon.
         # Most weapons only have self (what you see when you attack) and attack (what the room sees when you attack)
@@ -232,18 +251,11 @@ class Weapon(Object):
         Passed to character attack functions as kwargs usually."""
         _dict = {
             "damage": self.randomized_damage,
-            "critChance": self.critChance,
-            "critMult": self.critMult,
+            "critChance": self.critchance,
+            "critMult": self.critmult,
             "accuracy": self.accuracy,
         }
         return _dict
-
-    #region damage
-    @property
-    def damage(self):
-        '''Returns a base damage value, buffed by mods.'''
-        _modifiedDmg = self.buffs.check(self.db.damage, 'damage')
-        return _modifiedDmg
 
     @property
     def randomized_damage(self):
@@ -264,55 +276,12 @@ class Weapon(Object):
         return int( _dmg * (1.5 + (0.5 * (self.range / 100))) )
 
     @property
-    def accuracy(self):
-        '''Base accuracy modified by buffs.'''
-        _acc = self.buffs.check(self.db.accuracy, 'accuracy')
-        return _acc
-
-    @property
-    def range(self):
-        '''Base range modified by buffs.'''
-        _rng = self.buffs.check(self.db.range, 'range')
-        return _rng
-
-    @property
-    def stability(self):
-        '''Base stability modified by buffs.'''
-        _stab = self.buffs.check(self.db.stability, 'stability')
-        return _stab
-
-    @property
-    def critChance(self):
-        '''Base critical chance modified by buffs.'''
-        _prec = self.buffs.check(self.db.critChance, 'critchance')
-        return _prec
-
-    @property
-    def critMult(self):
-        '''Base critical damage multiplier modified by buffs.'''
-        _hs = self.buffs.check(self.db.critMult, 'critmult')
-        return _hs
-
-    @property
     def shots(self):
         '''Returns the number of shots this weapon will fire. Based on combo stat.'''
-        _combo = self.buffs.check(self.db.combo, 'combo')
+        _combo = self.combo
         _shots = round(random.random() * _combo)
         return _shots
 
-    @property
-    def penetration(self):
-        '''Returns the number of shots this weapon will fire.'''
-        _pen = self.buffs.check(self.db.penetration, 'penetration')
-        return _pen
-
-    @property
-    def spread(self):
-        '''Returns the number of shots this weapon will fire.'''
-        _sprd = self.buffs.check(self.db.spread, 'spread')
-        return _sprd
-    #endregion
-    #region ammo
     @property
     def ammo(self):
         '''This weapon's current ammo.'''
@@ -321,32 +290,6 @@ class Weapon(Object):
     def ammo(self, amount):
         self.db.ammo = amount
 
-    @property
-    def mag(self):
-        '''The ammo count you reload to, modified by buffs. Only applies at time of reload.'''
-        _mag = self.buffs.check(self.db.mag, 'mag')
-        return _mag
-    #endregion
-    #region action times
-    @property
-    def reload(self):
-        '''Base reload round time modified by buffs.'''
-        _rl = self.buffs.check(self.db.reload, 'reload')
-        return _rl
-
-    @property
-    def equip(self):
-        '''Base equip round time modified by buffs. Applies to stowing and equipping.'''
-        _eq = self.buffs.check(self.db.equip, 'equip')
-        return _eq
-
-    @property
-    def rpm(self):
-        '''Base round time modified by buffs.'''
-        _rpm = self.buffs.check(self.db.rpm, 'rpm')
-        return _rpm    
-    #endregion
-    #region handler returns
     @property
     def traits(self):
         '''All traits on the object, both perks and buffs.'''
@@ -360,5 +303,3 @@ class Weapon(Object):
         _perks = self.perks.effects
         _buffs = self.buffs.effects
         return _perks + _buffs
-    #endregion
-    #endregion

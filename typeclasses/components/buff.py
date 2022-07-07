@@ -2,7 +2,7 @@ import time
 import random
 from evennia import utils, TICKER_HANDLER
 from typeclasses.objects import DefaultObject as Object
-from typeclasses.context import Context
+from evennia.typeclasses.attributes import AttributeProperty
 
 class BaseBuff():
     '''Base class for all "buffs" in the game. Buffs are permanent and temporary modifications to stats, and trigger conditions that run arbitrary code.
@@ -33,54 +33,59 @@ class BaseBuff():
 
     @property
     def owner(self):
+        '''Returns the object this buff is applied to.'''
         return self._owner
 
-    def __init__(self, owner, data: dict, context: dict = None) -> None:
+    def __init__(self, owner, pid, data: dict) -> None:
         self._owner = owner
-        self.data = data
-        _keys = data.keys()
-        self.pid = self.key + data['uid'] if 'uid' in _keys and data['uid'] is not None else self.key
-        if 'start' in _keys: self.start = self.data['start']
-        if 'stacks' in _keys: self.stacks = self.data['stacks']
-        if 'duration' in _keys: self.duration = self.data['duration']
-        if 'prevtick' in _keys: self.prevTick = self.data['prevtick']
-        if 'source' in _keys: self.source = self.data['prevtick']
+        self.pid = pid
+        self.start = data.get('start')
+        self.stacks = data.get('stacks')
+        self.duration = data.get('duration')
+        self.prevTick = data.get('prevtick')
+        self.source = data.get('source')
 
-        self.context = context
+    def remove(self, source=None, dispel=False, expire=False, quiet=False, delay=0, context={}):
+        '''Helper method which removes this buff from its handler.'''
+        self.owner.buffs.remove(self.pid, source, dispel, expire, quiet, delay, context)
 
-    def on_apply(self):
+    def conditional(self, *args, **kwargs):
+        '''Hook function for conditional stat mods. This must return True in order for a mod to be applied.'''
+        return True
+
+    def on_apply(self, *args, **kwargs):
         '''Hook function to run when this buff is applied to an object.'''
         pass
     
-    def on_remove(self):
+    def on_remove(self, *args, **kwargs):
         '''Hook function to run when this buff is removed from an object.'''
         pass
 
-    def on_remove_stack(self):
+    def on_remove_stack(self, *args, **kwargs):
         '''Hook function to run when this buff loses stacks.'''
         pass
 
-    def on_dispel(self):
+    def on_dispel(self, *args, **kwargs):
         '''Hook function to run when this buff is dispelled from an object (removed by someone other than the buff holder).'''
         pass
 
-    def on_expire(self):
+    def on_expire(self, *args, **kwargs):
         '''Hook function to run when this buff expires from an object.'''
         pass
 
-    def after_check(self):
+    def after_check(self, *args, **kwargs):
         '''Hook function to run after this buff's mods are checked.'''
         pass
 
-    def on_trigger(self):
+    def on_trigger(self, *args, **kwargs):
         '''Hook for the code you want to run whenever the effect is triggered. Required.'''
         pass
 
-    def on_release(self):
+    def on_release(self, *args, **kwargs):
         '''Hook for the code you want to run whenever the effect is released (reverse of trigger). Optional.'''
         pass
 
-    def on_tick(self):
+    def on_tick(self, *args, **kwargs):
         '''Hook for actions that occur per-tick, a designer-set sub-duration.'''
         pass
 
@@ -132,15 +137,19 @@ class Perk(BaseBuff):
 
     slot = None
 
+    def remove(self, source=None, context={}):
+        '''Helper method which removes this buff from its handler.'''
+        self.owner.perks.remove(self.key, source, context)
+
 class Mod():
     '''A single stat modification. One buff or trait can hold multiple mods, for the same or different stats.'''
     
-    stat = 'damage'             # The stat the buff affects. Essentially a tag used to find the buff for coding purposes  
+    stat = 'null'             # The stat the buff affects. Essentially a tag used to find the buff for coding purposes  
     base = 0                    # Buff's value
     perstack = 0                # How much additional value is added to the buff per stack
     modifier = 'add'            # The modifier the buff applies. 'add' or 'mult' 
 
-    def __init__(self, stat: str, modifier: str, base, perstack = 0) -> None:
+    def __init__(self, stat: str, modifier: str, base, perstack=0) -> None:
         '''
         Args:
             stat:       The stat the buff affects. Essentially a tag used to find the buff for coding purposes
@@ -177,6 +186,9 @@ class BuffHandler(object):
         self.obj = obj
         if not self.obj.attributes.has('buffs'): self.obj.db.buffs = {}
 
+    def __getattr__(self, __name: str) -> BaseBuff:
+       return self.get(__name)
+
     #region properties
     @property
     def db(self):
@@ -185,17 +197,17 @@ class BuffHandler(object):
 
     @property
     def traits(self):
-        _buffs = [x for x in self.db.values() if x['ref'].mods]
+        _buffs = {k:v for k,v in self.db.items() if v['ref'].mods}
         return _buffs
 
     @property
     def effects(self):
-        _buffs = [x for x in self.db.values() if x['ref'].trigger]
+        _buffs = {k:v for k,v in self.db.items() if v['ref'].trigger}
         return _buffs
 
     @property
     def playtime_buffs(self):
-        _buffs = [x for x in self.db.values() if x['ref'].playtime]
+        _buffs = {k:v for k,v in self.db.items() if v['ref'].playtime}
         return _buffs
     #endregion
     
@@ -203,10 +215,11 @@ class BuffHandler(object):
     def add(
         self,
         buff: Buff,
+        key: str = None,
         source = None, 
         stacks = 1, 
         duration = None, 
-        context: dict = None
+        context: dict = {}
         ):
         
         '''Add a buff or effect instance to this object, respecting all stacking/refresh/reapplication rules.
@@ -220,15 +233,13 @@ class BuffHandler(object):
         
         Returns the buff context for the action.
         '''
-
         
-        _ref: Buff = buff  
-        _context = context if context else None
+        _context = context
 
         # Create the buff dict that holds a reference and all runtime information.
         b = { 
-            'ref': _ref,
-            'uid': None, 
+            'ref': buff,
+            'pid': None, 
             'start': time.time(),
             'duration': duration, 
             'prevtick': None, 
@@ -237,34 +248,34 @@ class BuffHandler(object):
 
         # Generate the pID (procedural ID) from the object name (uID) and buff key. 
         # This is the actual key the buff uses on the dictionary
-        uid = str(source)
-        pid = _ref.key if _ref.unique is True else _ref.key + uid
+        pid = key
+        if not pid:
+            uid = str(source.dbref).replace("#","") if source else str(source)
+            pid = buff.key if buff.unique is True else buff.key + uid
+        
 
         # If the buff is on the dictionary, we edit existing values for refreshing/stacking
         if pid in self.db.keys(): 
             b = dict( self.db[pid] )
-            if _ref.refresh: b['start'] = time.time()
-            if _ref.stacking: b['stacks'] = min( b['stacks'] + stacks, _ref.maxstacks )
+            if buff.refresh: b['start'] = time.time()
+            if buff.stacking: b['stacks'] = min( b['stacks'] + stacks, buff.maxstacks )
         
         # Setting duration, initial tick, and uid, if relevant
-        b['prevtick'] = time.time() if _ref.ticking else None
-        b['duration'] = duration if duration else _ref.duration
-        b['uid'] = uid if _ref.unique is False else None
+        b['prevtick'] = time.time() if buff.ticking else None
+        b['duration'] = duration if duration else buff.duration
+        b['pid'] = pid
 
         # Apply the buff!
         self.db[pid] = b
 
         # Create the buff instance and run the on-application hook method
-        instance: Buff = _ref(self.obj, b, _context)
-        instance.on_apply()
+        instance: Buff = buff(self.obj, pid, b)
+        instance.on_apply(**_context)
 
         # del instance
         # self.obj.location.msg("   |rBreakpoint: |nClean cache")
 
-        if _ref.ticking:
-            # utils.delay(_tr, tick_buff, persistent=True, buff=buff, context=context)
-            # self.obj.location.msg("   |rBreakpoint: |nStart ticking")
-            tick_buff(b, _context)
+        if buff.ticking: tick_buff(self.obj, pid, _context)
         
         # Clean up the buff at the end of its duration through a delayed cleanup call
         utils.delay( b['duration'] + 0.01, cleanup_buffs, self.obj, persistent=True )
@@ -279,7 +290,8 @@ class BuffHandler(object):
         dispel=False, 
         expire=False, 
         quiet=False, 
-        delay=0
+        delay=0,
+        context={}
         ):
         '''Remove a buff or effect with matching key from this object. Calls on_remove, on_dispel, or on_expire, depending on arguments.
         
@@ -292,29 +304,38 @@ class BuffHandler(object):
         if key not in self.db: return None
     
         buff: Buff = self.db[key]['ref']
-        instance : Buff = buff(self.obj)
+        instance : Buff = buff(self.obj, key, self.db[key])
         
         origin = source if source is not None else self.obj
-        context = Context(origin, self.obj, buff=self.db[key])
         
         if not quiet:
             if dispel: 
-                instance.on_dispel(context)
+                instance.on_dispel(**context)
             elif expire: 
-                instance.on_expire(context)
+                instance.on_expire(**context)
 
-            instance.on_remove(context)
-
+            instance.on_remove(**context)
 
         del instance
         del self.db[key]
-
-        return context
 
     def cleanup(self):
         '''Cleans up all old buffs on this object'''
         cleanup_buffs(self.obj)
 
+    def get(self, buff: str):
+        '''If the specified key is on this handler, return the instanced buff. Otherwise return None.
+        You should delete this when you're done with it, so that garbage collection doesn't have to.'''
+        cleanup_buffs(self.obj)
+        _return = None
+        _b = self.db.get(buff)
+        if _b: _return = _b["ref"](self.obj, buff, _b)
+        return _return
+
+    def get_by_type(self, buff:BaseBuff):
+        '''Returns a dictionary of instanced buffs of the specified type in the format {pid: instance}.'''
+        return {k: self.get(k) for k,v in self.db.items() if v['ref'] == buff}
+    
     def view(self) -> list:
         '''Gets the name and flavor of all buffs and effects on the object.'''
         self.cleanup()
@@ -329,7 +350,23 @@ class BuffHandler(object):
         
         return message
 
-    def check(self, base: float, stat: str, quiet = False):    
+    def get_by_stat(self, stat:str):
+        '''Returns a dictionary of instanced buffs which modify the specified stat in the format {pid: instance}.'''
+        _cache = self.obj.traits
+        if not _cache: return None
+
+        buffs = {}
+
+        for key, buff in _cache.items():
+            instance: BaseBuff = buff['ref'](self.obj, key, buff)
+            for m in instance.mods:
+                if buff.get('paused') is True: break
+                if not instance.conditional(): break
+                if m.stat == stat:
+                    buffs[key] = instance
+        return buffs
+
+    def check(self, base: float, stat: str, quiet = False, context={}):    
         '''Finds all buffs and perks related to a stat and applies their effects.
         
         Args:
@@ -337,38 +374,37 @@ class BuffHandler(object):
             stat: The string that designates which stat buffs you want
             
         Returns the base value modified by relevant buffs, and any messaging.'''
-
+        _start = time.time()
         # Buff cleanup to make sure all buffs are valid before processing
         self.cleanup()
 
         # Find all buffs and traits related to the specified stat.
-        _toApply: tuple = self._collect_mods(stat)
-        # if _toApply:  obj.location.msg('Mods collected: ' + str(_toApply))
-
-        if not _toApply: return base
+        applied = self.get_by_stat(stat)
+        if not applied: return base
 
         # The final result
-        final = self._calc_packed_mods(_toApply[1], base)
+        final = self._calculate_mods(base, stat, applied)
 
         # Run the "after check" functions on all relevant buffs
-        for buff in _toApply[0]:
+        for buff in applied.values():
             # if 'origin' in buff.keys(): buff['origin'].location.msg('Debug Checking buff of type: ' + stat)
-            instance = buff['ref'](self.obj)
-            _handler = self.db if isinstance(instance, Buff) else self.obj.db.perks 
-            context = Context(self.obj, self.obj, buff=buff)
-            if not quiet: instance.after_check(context)
-            del instance
-
+            buff: BaseBuff
+            if not quiet: buff.after_check(**context)
+            del buff
+        _end = time.time()
+        print(_end - _start)
         return final
-    
-    def find(self, buff: BaseBuff):
-        '''Finds the specified buff on this object, if it exists. Returns a boolean.'''
-        for b in self.db:
-            if b['ref'] == buff: return True
-        return False
  
+    def get_by_trigger(self, trigger:str):
+        '''Returns a dictionary of instanced buffs which fire off the designated trigger, in the format {pid: instance}'''
+        _cache = self.obj.effects
+        return {k: self.get(k) 
+            for k,v in _cache.items() 
+            if v['ref'].trigger == trigger 
+            if not v.get('paused')}
+    
     def trigger(self, trigger: str, 
-        source=None, target=None, context:dict = None
+        source=None, target=None, context:dict = {}
         ) -> str:
         '''Activates all perks and effects on the origin that have the same trigger string. Returns a list of all messaging for the perks/effects.
         Vars:
@@ -385,23 +421,16 @@ class BuffHandler(object):
 
         # Find all perks to trigger
         for x in _effects:
-            if x['ref'].trigger == trigger and x['paused'] is not True:
+            if x['ref'].trigger == trigger and x.get('paused') is not True:
                 toActivate.append(x)
         
         # Go through and trigger all relevant perks and effects, passing their trigger messages upwards.
         for x in toActivate:
             # target.location.msg("Debug Triggered Perk/Buff: " + str(x) )
             _eff : BaseBuff = x['ref']
-            instance : BaseBuff = _eff(self.obj)
-
-            if _context: _context.buff = x
-            else: 
-                origin = source if source is not None else self.obj
-                target = target if target is not None else self.obj
-
-                _context = Context(origin, target, buff=x)
+            instance : BaseBuff = _eff(self.obj, x)
             
-            instance.on_trigger(_context)
+            instance.on_trigger(**context)
             del instance
     
     def pause(self, key: str):
@@ -412,7 +441,7 @@ class BuffHandler(object):
             buff['paused'] = True
 
             # Figure out our new duration
-            t = time.time()         # Time
+            t = time.time()         # Current Time
             s = buff['start']       # Start
             d = buff['duration']    # Duration
             e = s + d               # End
@@ -426,7 +455,7 @@ class BuffHandler(object):
     def unpause(self, key: str):
         '''Unpauses a buff. This makes it visible to the various buff systems again.'''
         if key in self.db.values():
-            # Mark the buff as paused
+            # Mark the buff as unpaused
             buff = self.db[key]
             buff['paused'] = False
 
@@ -436,46 +465,20 @@ class BuffHandler(object):
         return
 
     #region private methods
-    def _collect_mods(self, stat: str):
-        '''Collects a list of all mods affecting the specified stat on buffs affect this object.
-        Vars:
-            stat:       The string to search for in the Mods on buffs'''
-        _cache = self.obj.traits
-        if not _cache: return None
-        
-        mods = []
-        buffs = []
-
-        for buff in _cache:
-            ref = buff['ref']
-
-            for m in ref.mods:
-                if buff['paused'] is True: break
-                if m.stat == stat:
-                    stacks = 1 if 'stacks' not in buff.keys() else buff['stacks']
-                    packed_mod = (m, stacks)
-                    mods.append(packed_mod)
-                    buffs.append(buff)
-
-        if not mods: return None
-        else: return (buffs, mods)
-
-    def _calc_packed_mods(self, packed_mods: list, base):
+    def _calculate_mods(self, base, stat:str, buffs:dict):
         '''Calculates a return value based on a list of packed mods (mod + stacks) and a base.'''
+        if not buffs: return base
         add = 0
         mult = 0
 
-        if not packed_mods: return base
-
-        for mod in packed_mods:
-            ref : Mod = mod[0]
-            stacks = mod[1]
-            
-            if ref.modifier == 'add':   add += ref.base + ( (stacks - 1) * ref.perstack)
-            if ref.modifier == 'mult':  mult += ref.base + ( (stacks - 1) * ref.perstack)
+        for buff in buffs.values():
+            for mod in buff.mods:
+                if mod.stat == stat:    
+                    if mod.modifier == 'add':   add += mod.base + ( (buff.stacks - 1) * mod.perstack)
+                    if mod.modifier == 'mult':  mult += mod.base + ( (buff.stacks - 1) * mod.perstack)
         
         final = (base + add) * (1.0 + mult)
-        return final    
+        return final
     #endregion
     #endregion   
 
@@ -503,6 +506,9 @@ class PerkHandler(object):
         self.obj = obj
         if not self.obj.attributes.has('perks'): self.obj.db.perks = {}
 
+    def __getattr__(self, __name: str) -> BaseBuff:
+       return self.get(__name)
+
     #region properties
     @property
     def db(self):
@@ -510,12 +516,12 @@ class PerkHandler(object):
 
     @property
     def traits(self):
-        _perks = [x for x in self.obj.db.perks.values() if x['ref'].mods ]
+        _perks = {k:v for k,v in self.db.items() if v['ref'].mods}
         return _perks
 
     @property
     def effects(self):
-        _perks = [x for x in self.obj.db.perks.values() if x['ref'].trigger ]
+        _perks = {k:v for k,v in self.db.items() if v['ref'].trigger}
         return _perks
     #endregion
 
@@ -530,21 +536,34 @@ class PerkHandler(object):
         elif perk.slot: self.db[perk.slot] = b
         else: self.db[perk.key] = b     
 
-    def remove(self, key, source=None):
+    def remove(self, key, source=None, context={}):
         '''Removes a perk with matching key or slot from the object's handler. Calls the perk's on_remove function.'''
-        origin = source if source is not None else self.obj
         if key in self.db.keys():
             perk = self.db[key]['ref']
-            context = Context(origin, self.obj, buff=perk, handler=self.db)
-
-            instance: Perk = perk()
-            instance.on_remove(context)
+            instance: Perk = perk(self.obj, self.db[key])
+            instance.on_remove(**context)
             del self.db[key]
             del instance
-            
-            return context
         else: return None
+
+    def get(self, buff: str):
+        '''If the specified key is on this handler, return the instanced buff. Otherwise return None.
+        You should delete this when you're done with it, so that garbage collection doesn't have to.'''
+        _return = None
+        _b = self.db.get(buff)
+        if _b: _return = _b["ref"](self.obj, buff, _b)
+        return _return
+
+    def get_by_type(self, perk:BaseBuff):
+        '''Instances all buffs of the specified type and returns a list of the instances.'''
+        return {k: self.get(k) for k,v in self.db.items() if v == perk }
     #endregion
+
+class BuffableProperty(AttributeProperty):
+    
+    def at_get(self, value, obj):
+        _value = obj.buffs.check(value, self._key)
+        return _value
 
 def cleanup_buffs(obj):
     '''Cleans up all buffs on that object. Removes any buffs which have an expired timer'''
@@ -553,9 +572,10 @@ def cleanup_buffs(obj):
     if _buffs:
         # Dict comprehension to find buffs for removal
         remove = [ k 
-            for k,v in _buffs.items() 
+            for k,v in _buffs.items()
+            if v['duration'] > 0 
             if v['duration'] < time.time() - v['start']
-            if v['paused'] is not True]
+            if v.get('paused') is not True]
 
         # obj.location.msg("Debug: Cleaning up buffs | %s" % str(remove))
         
@@ -563,36 +583,30 @@ def cleanup_buffs(obj):
         for k in remove: 
             obj.buffs.remove(k, expire=True)
 
-def tick_buff(buff: dict, context: Context, initial=True):
+def tick_buff(obj, pid: str, context: dict, initial=True):
     '''Ticks a buff. If a buff's ticking value is True, this is called when the buff is applied, and then once per tick cycle.'''
     # Cache a reference and find the buff on the object
-    _buffs = context.target.db.buffs
-    if context.buffKey in _buffs.keys(): 
-        context.buff = _buffs[context.buffKey]
-        buff = _buffs[context.buffKey]
+    _buffs = obj.buffs.db
+    if pid not in _buffs.keys(): return
+
+    b = dict(_buffs[pid])
 
     # Instantiate the buff and tickrate
-    ref: BaseBuff = buff['ref'](context.target)
-    _tr = ref.tickrate
-
-    # This stops the old ticking process if you refresh/stack the buff
-    if _tr > time.time() - context.buffPrevTick and initial is not True: 
-        return
+    ref = b['ref']
+    buff: Buff = ref(obj, b)
+    _tr = buff.tickrate
+    
+    if _tr > time.time() - buff.prevTick and initial is not True: return     # This stops the old ticking process if you refresh/stack the buff
     
     # If the duration has run out, tick one last time, then stop this process
-    if context.buffDuration < time.time() - context.buffStart:
-        if _tr < time.time() - context.buffPrevTick: ref.on_tick(context)
-        return
-    
-    # If the buff has since been removed, stop this process
-    if context.buffKey not in _buffs.keys(): 
+    if buff.duration < time.time() - buff.start:
+        if _tr < time.time() - buff.prevTick: buff.on_tick()
         return
 
     # If it's time, call the buff's on_tick method and update prevtick
-    if _tr < time.time() - context.buffPrevTick: 
-        ref.on_tick(context)
+    if _tr < time.time() - buff.prevTick: buff.on_tick()
     
-    buff['prevtick'] = time.time()
+    _buffs[pid]['prevtick'] = time.time()
 
     # Recur this function at the tickrate interval, if it didn't stop/fail
-    utils.delay(_tr, tick_buff, buff=context.buff, context=context, initial=False)
+    utils.delay(_tr, tick_buff, obj=obj, pid=pid, context=context, initial=False)

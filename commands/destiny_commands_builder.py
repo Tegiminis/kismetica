@@ -1,4 +1,5 @@
 from content.workshop import RapidHit
+import content.bufflist as bl
 from content.perklist import ExploitPerk, LeechRoundPerk, RampagePerk, ThornsPerk, WeakenPerk
 from typeclasses.context import Context
 from evennia import lockfuncs
@@ -105,6 +106,16 @@ class CmdBuff(BaseCommand):
     """
     key = "buff"
     aliases = ["buff"]
+    help_category = 'builder'
+
+    bufflist = {
+        'rampage' : bl.RampageBuff,
+        'exploited' : bl.Exploited,
+        'exploit' : bl.Exploit,
+        'leeching' : bl.Leeching,
+        'poison' : bl.Poison,
+        'test' : bl.PropertyBuffTest
+    }
 
     def parse(self):
         self.args = self.args.split()
@@ -123,8 +134,12 @@ class CmdBuff(BaseCommand):
             caller.msg("You need to pick a target to buff.")
             return
 
+        if self.args[1] not in self.bufflist.keys():
+            caller.msg("You must pick a valid buff.")
+            return
+
         if target:
-            buff: Context = target.buffs.add(self.args[1])
+            target.buffs.add(self.bufflist[self.args[1]], source=caller)
             pass
 
 class CmdPerk(BaseCommand):
@@ -138,6 +153,7 @@ class CmdPerk(BaseCommand):
     """
     key = "perk"
     aliases = ["perk"]
+    help_category = 'builder'
 
     perklist = {
         'rampage' : RampagePerk,
