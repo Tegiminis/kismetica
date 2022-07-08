@@ -114,7 +114,8 @@ class CmdBuff(BaseCommand):
         'exploit' : bl.Exploit,
         'leeching' : bl.Leeching,
         'poison' : bl.Poison,
-        'test' : bl.PropertyBuffTest
+        'ptest' : bl.PropertyBuffTest,
+        'ttest': bl.TestBuff
     }
 
     def parse(self):

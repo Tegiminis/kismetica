@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from typeclasses.context import Context
 from typeclasses.components.cooldowns import CooldownHandler
 from typeclasses.objects import Object
-from typeclasses.components.buff import Buff, BuffHandler, BuffableProperty, PerkHandler
+from typeclasses.components.buff import BaseBuff, BuffHandler, BuffableProperty
 from evennia.utils import lazy_property
 from evennia import Command as BaseCommand
 from evennia import CmdSet
@@ -13,17 +13,17 @@ from evennia import CmdSet
 if TYPE_CHECKING:
     from typeclasses.characters import Character
 
-class FusionCharging(Buff):
+class FusionCharging(BaseBuff):
     key = 'fusioncharging'
     isVisible = False
     unique = True
     duration = 5
     
-    def on_expire(self, context: Context) -> Context:
+    def on_expire(self, *args, **kwargs) -> Context:
         self.owner.buffs.add(FusionCharged)
         pass
         
-class FusionCharged(Buff):
+class FusionCharged(BaseBuff):
     key = 'fusioncharged'
     
     isVisible = False
@@ -46,7 +46,7 @@ class FusionCharged(Buff):
         player.damage(_dmg)
 
     def on_tick(self, *args, **kwargs):
-        _tn = self.ticknum(self.start)
+        _tn = self.ticknum
         if _tn in self.tick_msg.keys():
             self.owner.location.msg(self.tick_msg[_tn] % self.owner)
 
@@ -106,10 +106,6 @@ class WeaponCmdSet(CmdSet):
         self.add(CmdReload())
         self.add(CmdCharge())
 
-class WeaponData():
-    """An object to hold weapon data while passing it between the weapon and character functions. Condenses the game weapon object into simpler form!"""
-
-
 class Weapon(Object):
     """
     A weapon that can be used by player characters.
@@ -118,10 +114,6 @@ class Weapon(Object):
     @lazy_property
     def buffs(self) -> BuffHandler:
         return BuffHandler(self)
-
-    @lazy_property
-    def perks(self) -> PerkHandler:
-        return PerkHandler(self)
     
     def _reload(self) -> int:
         """Reloads this weapon and returns the amount of ammo that was reloaded."""
@@ -179,9 +171,6 @@ class Weapon(Object):
         self.cmdset.add(WeaponCmdSet, permanent=True)
         self.locks.add('call:equipped()')
         self.tags.add("primary", category="ammo")
-        
-        self.db.buffs = {}
-        self.db.perks = {}
 
         # Ammo stats
         self.db.ammo = 5        # Amount of shots you can make
@@ -246,7 +235,7 @@ class Weapon(Object):
     #region properties
  
     @property
-    def WeaponData(self):
+    def weapondata(self):
         """Returns a dictionary consisting of a randomized damage value and common attributes used for character attack functions.
         Passed to character attack functions as kwargs usually."""
         _dict = {
@@ -294,12 +283,10 @@ class Weapon(Object):
     def traits(self):
         '''All traits on the object, both perks and buffs.'''
         _buffs = self.buffs.traits
-        _perks = self.perks.traits
-        return _perks + _buffs
+        return _buffs
 
     @property
     def effects(self):
         '''All effects on the object, both perks and buffs.'''
-        _perks = self.perks.effects
         _buffs = self.buffs.effects
-        return _perks + _buffs
+        return _buffs

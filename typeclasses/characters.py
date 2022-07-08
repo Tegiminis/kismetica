@@ -14,7 +14,7 @@ from evennia.utils import utils, lazy_property
 
 # Handlers
 from typeclasses.components.combat import CombatHandler
-from typeclasses.components.buff import BuffHandler, PerkHandler, BuffableProperty
+from typeclasses.components.buff import BuffHandler, BuffableProperty
 from typeclasses.components.cooldowns import CooldownHandler
 from typeclasses.item import InventoryHandler, Item
 
@@ -36,10 +36,6 @@ class Character(DefaultCharacter):
     @lazy_property
     def buffs(self) -> BuffHandler:
         return BuffHandler(self)
-
-    @lazy_property
-    def perks(self) -> PerkHandler:
-        return PerkHandler(self)
 
     @lazy_property
     def cooldowns(self) -> CooldownHandler:
@@ -65,19 +61,9 @@ class Character(DefaultCharacter):
 
         self.cmdset.add(default.CharacterCmdSet, permanent=True)
 
-        # The dictionaries we use for buffs, perks, and cooldowns. 
-        self.db.buffs = {}
-        self.db.perks = {}
-        self.db.cooldowns = {}
-
-        self.maxhp
-        self.evasion
-        self.mobility
-        self.resilience
-        self.strength
-        self.discipline
-        self.recovery
-        self.intellect
+        self.buffs, self.cooldowns, self.combat
+        self.maxhp, self.evasion 
+        self.mobility, self.resilience, self.strength, self.discipline, self.recovery, self.intellect
 
         self.db.hp = 100        # Current hp
 

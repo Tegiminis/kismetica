@@ -1,8 +1,8 @@
 from typeclasses.context import Context
-from typeclasses.components.buff import Buff, Perk, Mod
+from typeclasses.components.buff import BaseBuff
 import content.bufflist as bl
 
-class RampagePerk(Perk):
+class RampagePerk(BaseBuff):
     key = 'rampage'
     name = 'Rampage'
     flavor = 'Kills with this weapon temporarily increase its damage.'
@@ -12,7 +12,7 @@ class RampagePerk(Perk):
     def on_trigger(self, *args, **kwargs):
         self.owner.buffs.add(bl.RampageBuff)
 
-class ExploitPerk(Perk):
+class ExploitPerk(BaseBuff):
 
     key = 'exploit'
     name = 'Exploit'
@@ -33,7 +33,7 @@ class ExploitPerk(Perk):
         self.owner.buffs.add(bl.Exploit)
         if self.stacks in self.stack_msg: self.owner.location.msg( self.stack_msg[self.stacks] )
 
-class WeakenPerk(Perk):
+class WeakenPerk(BaseBuff):
     key = 'weaken'
     name = 'Weaken'
     flavor = 'Shooting an enemy with this weapon increases the damage they take from all sources.'
@@ -43,7 +43,7 @@ class WeakenPerk(Perk):
     def on_trigger(self, *args, **kwargs):
         self.context['target'].buffs.add(bl.Poison)
 
-class LeechRoundPerk(Perk):
+class LeechRoundPerk(BaseBuff):
     key = 'leechround'
     name = 'Leech Round'
     flavor = 'Primes enemies with a leeching worm which heals attackers.'
@@ -53,7 +53,7 @@ class LeechRoundPerk(Perk):
     def on_trigger(self, *args, **kwargs):
         self.context['defender'].buffs.add(bl.Leeching)
 
-class ThornsPerk(Perk):
+class ThornsPerk(BaseBuff):
     key = 'thorns'
     name = 'Thorns'
     flavor = 'Damages attackers'

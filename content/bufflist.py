@@ -1,19 +1,8 @@
 import random
-from typeclasses.components.buff import Buff, Perk, Mod
+from typeclasses.components.buff import BaseBuff, Mod
 from typeclasses.context import Context
-    
-class TestBuff(Buff):
-    key = 'testbuff'
-    name = 'Testbuff'
-    flavor = 'Buff for testing!'
 
-    duration = 0
-
-    stacking = True
-    unique = False
-    maxstacks = 3
-
-class RampageBuff(Buff):
+class RampageBuff(BaseBuff):
     key = 'rampage'
     name = 'Rampage'
     flavor = 'Defeating an enemy has filled you with bloodlust.'
@@ -39,7 +28,7 @@ class RampageBuff(Buff):
     def on_expire(self, *args, **kwargs):
         self.owner.location.msg('The bloodlust fades.')
 
-class Exploit(Buff):
+class Exploit(BaseBuff):
     key = 'exploit'
     name = 'Exploit'
     flavor = "You are learning your opponent's weaknesses."
@@ -65,7 +54,7 @@ class Exploit(Buff):
     def on_expire(self, *args, **kwargs):
         self.owner.location.msg("The opportunity passes.")
 
-class Exploited(Buff):
+class Exploited(BaseBuff):
     key = 'exploited'
     name = 'Exploited'
     flavor = "You have sensed your target's vulnerability, and are poised to strike."
@@ -85,7 +74,7 @@ class Exploited(Buff):
     def on_remove(self, *args, **kwargs):
         self.owner.location.msg( "You cannot sense your target's weakness anymore." )
 
-class Weakened(Buff):
+class Weakened(BaseBuff):
     key = 'weakened'
     name = 'Weakened'
     flavor = 'An unexplained weakness courses through this person.'
@@ -98,7 +87,7 @@ class Weakened(Buff):
 
     mods = [ Mod('injury', 'add', 100) ]
 
-class Leeching(Buff):
+class Leeching(BaseBuff):
     key = 'leeching'
     name = 'Leeching'
     flavor = 'Attacking this target fills you with vigor.'
@@ -116,7 +105,7 @@ class Leeching(Buff):
         heal = damage * 0.1
         attacker.heal(heal)
 
-class Poison(Buff):
+class Poison(BaseBuff):
     key = 'poison'
     name = 'Poison'
     flavor = 'A poison wracks this body.'
@@ -135,11 +124,16 @@ class Poison(Buff):
 
     def on_tick(self, *args, **kwargs):
         _dmg = self.dmg * self.stacks
-        self.owner.location.msg_contents("Poison courses through %s's body, dealing %i damage." % (self.owner.named,_dmg))
+        self.owner.location.msg_contents("Poison courses through {actor}'s body, dealing {damage} damage.".format(actor=self.owner.named, damage=_dmg))
         self.owner.damage(_dmg)
 
-class PropertyBuffTest(Buff):
-    key = 'pTest'
+class Overflow(BaseBuff):
+    key = 'overflow'
+    name = 'Overflow'
+    flavor = 'Your magazine is overflowing!'
+
+class PropertyBuffTest(BaseBuff):
+    key = 'ptest'
     name = 'ptest'
     flavor = 'This person is invigorated.'
 
@@ -151,6 +145,18 @@ class PropertyBuffTest(Buff):
     unique = True
 
     mods = [Mod('maxhp', 'add', 100, 50)]
+
+class TestBuff(BaseBuff):
+    key = 'ttest'
+    name = 'ttest'
+    flavor = 'This buff has been triggered'
+
+    duration = 0
+
+    trigger = 'test'
+
+    def on_trigger(self, *args, **kwargs):
+        print('Triggered test buff!')
 
 class BuffList():
     '''Initialization of buff and effect typeclasses used to apply buffs to players.
