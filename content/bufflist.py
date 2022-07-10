@@ -33,7 +33,7 @@ class Exploit(BaseBuff):
     name = 'Exploit'
     flavor = "You are learning your opponent's weaknesses."
 
-    trigger = 'hit'
+    triggers = ['hit']
 
     duration = 30
 
@@ -42,7 +42,7 @@ class Exploit(BaseBuff):
     unique = True
     maxstacks = 20
 
-    def on_trigger(self, *args, **kwargs):
+    def on_trigger(self, trigger:str, *args, **kwargs):
         chance = self.stacks / 20
         roll = random.random()
 
@@ -98,9 +98,10 @@ class Leeching(BaseBuff):
     stacking = False
     unique = True
 
-    trigger = 'injury'
+    triggers = ['injury']
 
-    def on_trigger(self, attacker, damage, *args, **kwargs) -> Context:
+    def on_trigger(self, trigger:str, attacker, damage, *args, **kwargs) -> Context:
+        if not attacker or not damage: return
         attacker.msg('Debug: Attempting leech.')
         heal = damage * 0.1
         attacker.heal(heal)
@@ -113,11 +114,9 @@ class Poison(BaseBuff):
     duration = 30
 
     refresh = True
-    stacking = True
     maxstacks = 5
     unique = True
 
-    ticking = True
     tickrate = 5
 
     dmg = 5
@@ -153,9 +152,9 @@ class TestBuff(BaseBuff):
 
     duration = 0
 
-    trigger = 'test'
+    triggers = ['test']
 
-    def on_trigger(self, *args, **kwargs):
+    def on_trigger(self, trigger:str, *args, **kwargs):
         print('Triggered test buff!')
 
 class BuffList():

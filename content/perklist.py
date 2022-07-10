@@ -9,7 +9,7 @@ class RampagePerk(BaseBuff):
 
     trigger = 'hit'
 
-    def on_trigger(self, *args, **kwargs):
+    def on_trigger(self, trigger, *args, **kwargs):
         self.owner.buffs.add(bl.RampageBuff)
 
 class ExploitPerk(BaseBuff):
@@ -28,7 +28,7 @@ class ExploitPerk(BaseBuff):
 
     trigger_msg = ''
 
-    def on_trigger(self, *args, **kwargs):
+    def on_trigger(self, trigger, *args, **kwargs):
         if self.owner.buffs.find(bl.Exploited): return None
         self.owner.buffs.add(bl.Exploit)
         if self.stacks in self.stack_msg: self.owner.location.msg( self.stack_msg[self.stacks] )
@@ -36,12 +36,12 @@ class ExploitPerk(BaseBuff):
 class WeakenPerk(BaseBuff):
     key = 'weaken'
     name = 'Weaken'
-    flavor = 'Shooting an enemy with this weapon increases the damage they take from all sources.'
+    flavor = 'Shooting an enemy with this weapon applies a virulent poison.'
 
     trigger = 'hit'
 
-    def on_trigger(self, *args, **kwargs):
-        self.context['target'].buffs.add(bl.Poison)
+    def on_trigger(self, trigger, defender, *args, **kwargs):
+        defender.buffs.add(bl.Poison)
 
 class LeechRoundPerk(BaseBuff):
     key = 'leechround'
@@ -50,8 +50,8 @@ class LeechRoundPerk(BaseBuff):
 
     trigger = 'hit'
 
-    def on_trigger(self, *args, **kwargs):
-        self.context['defender'].buffs.add(bl.Leeching)
+    def on_trigger(self, trigger, defender, *args, **kwargs):
+        defender.buffs.add(bl.Leeching)
 
 class ThornsPerk(BaseBuff):
     key = 'thorns'
@@ -60,7 +60,7 @@ class ThornsPerk(BaseBuff):
 
     trigger = 'injury'
 
-    def on_trigger(self, attacker, damage, *args, **kwargs):
+    def on_trigger(self, trigger, attacker, damage, *args, **kwargs):
         attacker.damage(damage * 0.1)
 
 class PerkList():
