@@ -148,13 +148,13 @@ class Mod():
     perstack = 0        # How much additional value is added to the buff per stack
     modifier = 'add'    # The modifier the buff applies. 'add' or 'mult' 
 
-    def __init__(self, stat: str, modifier: str, value, perstack=0) -> None:
+    def __init__(self, stat: str, modifier: str, value, perstack=0.0) -> None:
         '''
         Args:
             stat:       The stat the buff affects. Normally matches the object attribute name
             mod:        The modifier the buff applies. "add" for add/sub or "mult" for mult/div  
             value:      The value of the modifier
-            perstack:   How much additional value is added to the buff per stack'''
+            perstack:   How much is added to the base, per stack (including first).'''
         self.stat = stat
         self.modifier = modifier
         self.value = value
@@ -253,19 +253,19 @@ class BuffHandler(object):
         context={}, *args, **kwargs
         ):
         
-        '''Add a buff or effect instance to this object, respecting all stacking/refresh/reapplication rules.
+        '''Add a buff to this object, respecting all stacking/refresh/reapplication rules. Takes
+        a number of optional parameters to allow for customization.
         
         Args:
             buff:       The buff class you wish to add
             source:     (optional) The source of this buff.
             stacks:     (optional) The number of stacks you want to add, if the buff is stacking
-            duration:   (optional) The amount of time, in seconds, you want the buff to last.
+            duration:   (optional) The amount of time, in seconds, you want the buff to last. 
             context:    (optional) An existing context you want to add buff details to
-        
-        Returns the buff context for the action.
         '''
         
         _context = context
+        source = self.obj
 
         # Create the buff dict that holds a reference and all runtime information.
         b = { 
@@ -281,8 +281,8 @@ class BuffHandler(object):
         # This is the actual key the buff uses on the dictionary
         uid = key
         if not uid:
-            uid = str(source.dbref).replace("#","")
-            uid = buff.key if buff.unique is True else buff.key + uid
+            if source: mix = str(source.dbref).replace("#","")
+            uid = buff.key if buff.unique is True else buff.key + mix
         
         # If the buff is on the dictionary, we edit existing values for refreshing/stacking
         if uid in self.db.keys(): 
@@ -303,7 +303,7 @@ class BuffHandler(object):
         if instance.ticks: tick_buff(self, uid, _context)
         
         # Clean up the buff at the end of its duration through a delayed cleanup call
-        utils.delay( duration + 0.01, cleanup_buffs, self, persistent=True )
+        utils.delay( b['duration'], cleanup_buffs, self, persistent=True )
 
         # Apply the buff and pass the Context upwards.
         # return _context
@@ -331,13 +331,33 @@ class BuffHandler(object):
         if loud:
             if dispel: instance.on_dispel(**context)
             elif expire: instance.on_expire(**context)
-
             instance.on_remove(**context)
 
         del instance
         del self.db[buffkey]
 
         return _context
+    
+    def remove_by_type(self, bufftype:BaseBuff, 
+        loud=True, dispel=False, expire=False, 
+        context={}, *args, **kwargs
+        ):
+        '''Removes all buffs of a specified type from this object'''
+        _remove = self.get_by_type(bufftype)
+        if not _remove: return None
+
+        _context = context
+        for k,instance in _remove.items():
+            instance: BaseBuff        
+            if loud:
+                if dispel: instance.on_dispel(**context)
+                elif expire: instance.on_expire(**context)
+                instance.on_remove(**context)
+            del instance
+            del self.db[k]
+
+        return _context
+        
 
     def get(self, buffkey: str):
         '''If the specified key is on this handler, return the instanced buff. Otherwise return None.
@@ -384,7 +404,7 @@ class BuffHandler(object):
             value: The value you intend to modify
             stat: The string that designates which stat buffs you want
             
-        Returns the value modified by relevant buffs, and any messaging.'''
+        Returns the value modified by relevant buffs.'''
         # Buff cleanup to make sure all buffs are valid before processing
         self.cleanup()
 
@@ -407,7 +427,7 @@ class BuffHandler(object):
         Takes a trigger string and a dictionary that is passed to the buff as kwargs.
         '''
         self.cleanup()
-        _effects = self.effects
+        _effects = self.get_by_trigger(trigger, context)
         if _effects is None: return None
 
         # Trigger all buffs whose trigger matches the trigger string
@@ -475,9 +495,11 @@ class BuffHandler(object):
 
         for buff in buffs.values():
             for mod in buff.mods:
+                buff:BaseBuff
+                mod:Mod
                 if mod.stat == stat:    
-                    if mod.modifier == 'add':   add += mod.value + ( (buff.stacks - 1) * mod.perstack)
-                    if mod.modifier == 'mult':  mult += mod.value + ( (buff.stacks - 1) * mod.perstack)
+                    if mod.modifier == 'add':   add += mod.value + ( (buff.stacks) * mod.perstack)
+                    if mod.modifier == 'mult':  mult += mod.value + ( (buff.stacks) * mod.perstack)
         
         final = (value + add) * (1.0 + mult)
         return final
