@@ -1,10 +1,9 @@
 # in a module tests.py somewhere i your game dir
-import unittest
-
+from unittest.mock import Mock, patch
 from evennia import DefaultObject, create_object
 # the function we want to test
-from .buff import BaseBuff, Mod, BuffHandler
-from evennia.utils.test_resources import BaseEvenniaTestCase, EvenniaTest
+from .buff import BaseBuff, Mod, BuffHandler, BuffableProperty
+from evennia.utils.test_resources import EvenniaTest
 
 class _EmptyBuff(BaseBuff):
     pass
@@ -64,12 +63,24 @@ class _TestComplexBuff(BaseBuff):
         Mod('com2', 'add', 100)
     ]
 
-    def conditional(self, cond=None, *args, **kwargs):
+    def conditional(self, cond=False, *args, **kwargs):
         return not cond
 
     def on_trigger(self, trigger: str, *args, **kwargs):
         if trigger == 'comtest': self.owner.db.comtext = {'cond': True}
         else: self.owner.db.comtext = {}
+
+class _TestTimeBuff(BaseBuff):
+    key = 'ttib'
+    name = 'ttib'
+    flavor = 'timerbuff'
+    maxstacks = 1
+    tickrate = 1
+    duration = 5
+    mods = [Mod('timetest', 'add', 665)]
+
+    def on_tick(self, initial=True, *args, **kwargs):
+        self.owner.db.ticktest = True
 
 class _TestBuffsAndHandler(EvenniaTest):
     "This tests a number of things about buffs."
@@ -185,11 +196,12 @@ class _TestBuffsAndHandler(EvenniaTest):
         # setup
         handler: BuffHandler = self.obj1.handler
         handler.add(_TestConBuff)
-        _testcontext = {'attacker':self.obj2, 'defender':self.obj1, 'damage':5}
         self.obj1.db.cond1, self.obj1.db.att, self.obj1.db.dmg = False, None, 0
+        # context to pass, containing basic event data and a little extra to be ignored
+        _testcontext = {'attacker':self.obj2, 'defender':self.obj1, 'damage':5, 'overflow':10} 
         # test negative conditional
         self.assertEqual(handler.get_by_type(_TestConBuff)['tcb'].conditional(**_testcontext), False)
-        handler.trigger('condtest')
+        handler.trigger('condtest', _testcontext)
         self.assertEqual(self.obj1.db.att, None)
         self.assertEqual(self.obj1.db.dmg, 0)
         # test positive conditional + context passing
@@ -200,15 +212,50 @@ class _TestBuffsAndHandler(EvenniaTest):
         self.assertEqual(self.obj1.db.dmg, 5)
     
     def test_complex(self):
-        '''tests complex mods (conditionals, multiple triggers/mods)'''
+        '''tests a complex mod (conditionals, multiple triggers/mods)'''
         # setup
         handler: BuffHandler = self.obj1.handler
-        self.obj1.db.comone, self.obj1.db.comtwo = 10, 0
+        self.obj1.db.comone, self.obj1.db.comtwo, self.obj1.db.comtext = 10, 0, {}
         handler.add(_TestComplexBuff)
         # stat checks work correctly and separately
-        self.assertEqual(self.owner.db.comtext, None)
+        self.assertEqual(self.obj1.db.comtext, {})
         self.assertEqual(handler.check(self.obj1.db.comone, 'com1'), 105)
         self.assertEqual(handler.check(self.obj1.db.comtwo, 'com2'), 100)
-        handler.trigger('comtest')
-        self.assertEqual(handler.check(self.obj1.db.comone, 'com1'), 10)
+        # stat checks don't happen if the conditional is true
+        handler.trigger('comtest', self.obj1.db.comtext)
+        self.assertEqual(self.obj1.db.comtext, {'cond': True})
+        self.assertEqual(handler.get_by_type(_TestComplexBuff)['tcomb'].conditional(**self.obj1.db.comtext), False)
+        self.assertEqual(handler.check(self.obj1.db.comone, 'com1', context=self.obj1.db.comtext), 10)
+        self.assertEqual(handler.check(self.obj1.db.comtwo, 'com2', context=self.obj1.db.comtext), 0)
+        handler.trigger('complextest', self.obj1.db.comtext)
+        self.assertEqual(handler.check(self.obj1.db.comone, 'com1', context=self.obj1.db.comtext), 10)
+        self.assertEqual(handler.check(self.obj1.db.comtwo, 'com2', context=self.obj1.db.comtext), 0)
+        # separate trigger follows different codepath
+        self.obj1.db.comtext = {'cond': False}
+        handler.trigger('complextest', self.obj1.db.comtext)
+        self.assertEqual(self.obj1.db.comtext, {})
+        self.assertEqual(handler.check(self.obj1.db.comone, 'com1', context=self.obj1.db.comtext), 105)
+        self.assertEqual(handler.check(self.obj1.db.comtwo, 'com2', context=self.obj1.db.comtext), 100)
 
+    def test_timing(self):
+        '''tests timing-related features, such as ticking and duration'''
+        # setup
+        handler: BuffHandler = self.obj1.handler
+        handler.add(_TestTimeBuff)
+        self.obj1.db.timetest, self.obj1.db.ticktest = 1, False
+        # test duration and ticking
+        self.assertTrue(handler.ttib.ticks)
+        self.assertEqual(handler.get('ttib').duration, 5)
+        handler.get('ttib').on_tick()
+        self.assertTrue(self.obj1.db.ticktest)
+        # test duration modification and cleanup
+        handler.modify_duration('ttib', 0, set=True)
+        self.assertEqual(handler.get('ttib').duration, 0)
+        handler.cleanup()
+        self.assertFalse(handler.get('ttib'), None)
+    
+    def test_buffableproperty(self):
+        '''tests buffable properties'''
+        # setup
+        handler: BuffHandler = self.obj1.handler
+        handler.add(_TestModBuff)

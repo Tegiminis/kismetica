@@ -1,43 +1,211 @@
+"""Buffs - Tegiminis 2022
+
+A buff is a timed object, attached to a game entity, that modifies values, triggers 
+code, or both. It is a common design pattern in RPGs, particularly action games.
+
+This contrib gives you a buff handler to apply to your objects, a buff class to extend them,
+and a sample property class to show how to automatically check modifiers.
+
+## Quick Start
+Assign the handler to a property on the object, like so.
+
+```
+@lazy_property
+def buffs(self) -> BuffHandler:
+    return BuffHandler(self)```
+
+You may then call the handler to add or manipulate buffs.
+
+### Customization
+
+If you want to customize the handler, you can feed the constructor two arguments:
+    - `dbkey`: The string you wish to use as a key for the buff database. Defaults to "buffs"
+    This allows you to keep separate buff pools - for example, "buffs" and "perks".
+    - `autopause`: If you want this handler to automatically pause certain buffs when
+    its owning object is unpuppeted.
+
+> IMPORTANT: If you enable autopausing, you MUST initialize the property in your object's
+> `at_init` hook to cache. Otherwise, a hot reload can cause playtime buffs to not update properly
+> on puppet/unpuppet. You have been warned!
+
+Let's say you want another handler for an object, `perks`, which has a separate database and 
+respects playtime buffs. You'd assign this new property as so:
+
+```
+@lazy_property
+def perks(self) -> BuffHandler:
+    return BuffHandler(self, dbkey='perks', autopause=True)
+```
+
+And add `self.perks` to the object's `at_init`.
+
+### Using the Handler
+
+To actually make use of the handler, you still have to do some leg work.
+
+#### Apply a Buff
+
+Call the handler `add(BuffClass)` method. This requires a class reference, and also contains a number of 
+optional arguments to customize the buff's duration, stacks, and so on.
+
+#### Modify
+
+Call the handler `check(value, stat)` method wherever you want to see the modified value. 
+This will return the value, modified by and relevant buffs on the handler's owner (identified by 
+the `stat` string).
+
+For example, let's say you want to modify how much damage you take. That might look something like this
+
+```
+# The method we call to damage ourselves
+def take_damage(self, source, damage):
+    _damage = self.buffs.check(damage, 'taken_damage')
+    self.db.health -= _damage
+```
+
+#### Trigger
+
+Call the handler `trigger(triggerstring)` method wherever you want an event call. This 
+will call the `on_trigger` hook method on all buffs with the relevant trigger.
+
+For example, let's say you want to trigger a buff to "detonate" when you hit your target with an attack.
+You'd write a buff with at least the following stats:
+
+```
+triggers = ['take_damage']
+def on_trigger(self, trigger, *args, **kwargs)
+    self.owner.take_damage(100)
+```
+
+And then call `handler.trigger('take_damage')` in the method you use to take damage.
+
+#### Tick
+
+Ticking buffs are slightly special. They are similar to trigger buffs in that they run code, but instead of
+doing so on an event trigger, they do so are a periodic tick. A common use case for a buff like this is a poison,
+or a heal over time.
+
+All you need to do to make a buff tick is ensure the `tickrate` is 1 or higher, and it has code in its `on_tick`
+method. Once you add it to the handler, it starts ticking!
+
+## Buffs
+
+But wait! You still have to actually create the buffs you're going to be applying.
+
+Creating a buff is very easy: extend BaseBuff into a new class, and fill in all the relevant buff details.
+However, there are a lot of individual moving parts to a buff! Here's a step-through of the important stuff.
+
+### Basics
+
+Regardless of triggers or mods, all buffs also have the following qualities:
+    - They can stack. If a buff's `maxstacks` is greater than 1, if will stack with any buff with
+    the same key on that handler. If `maxstacks` is 0 or less, there is no limit to the number of stacks. 
+    Buffs which are not `unique` will be have slightly different keys according to the object that applied them. 
+    - They have a `duration`, and automatically clean up at the end of it (-1 for infinite duration, 0 to 
+    cleanup immediately).
+    - They handle timing. They remember when they were applied, and can `pause`, `unpause`, and `refresh`.
+
+### Modifiers
+
+Buffs which have one or more Mod objects in them can modify stats. You can use the handler method to check all 
+mods of a specific stat string and apply their modifications to the value; however, you are encouraged to use 
+`check` in a getter/setter, for easy access.
+
+Mod objects consist of only four values:
+    - `stat`: The stat you want to modify. When `check` is called, this string is used
+    to find all the mods that are to be collected.
+    - `mod`: The modifier. Defaults are 'add' and 'mult'. Modifiers are calculated additively,
+    and in standard arithmetic order (see `_calculate_mods` for more)
+    - `value`: How much value the modifier gives regardless of stacks
+    - `perstack`: How much value the modifier grants per stack, INCLUDING the first. (defualt: 0)
+
+To add a mod to a buff, you do so in the buff definition, like this:
+```
+def DamageBuff(BaseBuff):
+    mods = [Mod('damage', 'add', 10)]
+```
+
+No mods applied to the value are permanent in any way. All calculations are done at
+runtime, and the mod values are never stored anywhere except on the buff in question. In
+other words: you don't need to track the origin of particular stat mods, and you
+will never permanently change a stat modified by a trait buff. To remove the modification, simply
+remove the buff off the object.
+
+### Triggers
+
+Buffs which have one or more strings in the `triggers` attribute can be triggered by events.
+``` 
+def AmplifyBuff(BaseBuff):
+    triggers = ['damage', 'heal'] 
+```
+When the handler `trigger` method is called, it searches all buffs on the handler for any with a matching
+trigger, then triggers all their 
+
+### Ticking
+
+A buff with ticking isn't much different than one which triggers. You're still executing arbitrary code off
+the buff class. The main thing is you need to have a `tickrate` higher than 1.
+```
+# this buff will tick 6 times between application and cleanup.
+duration = 30
+tickrate = 5
+def on_tick(self, initial, **kwargs):
+    self.owner.take_damage(10)
+```
+There are two subtleties to this.
+    - The buff always ticks once when applied. For this first tick only, `initial` will be True in the 
+
+### Extras
+
+Buffs have a grab-bag of extra functionality to make all this easier.
+
+You can restrict whether or not the buff will check or trigger through defining the `conditional` hook. As long
+as it returns a "truthy" value, the buff apply itself. This is useful for making buffs dependent on game state - for
+example, if you want a buff that makes the player take more damage when they are on fire.
+
+There are a number of helper methods. If you have a buff instance - for example, because you got the buff with
+`handler.get(key)` - you can `pause`, `unpause`, `remove`, `dispel`, and even `lengthen` or `shorten` the duration.
+
+### How Does It Work?
+
+Buffs are stored in two parts in the cache: as an immutable reference to the buff class, and as mutable data.
+You can technically store any information you like in the cache - by default, it's all the basic timing and event
+information necessary for the system to run.
+
+#### Context
+
+You may have noticed that almost every important handler method also passes a `context` dictionary.
+
+Context is an important concept for this handler. Every method which modifies, triggers, or
+checks a buff passes this dictionary (default: empty) to the buff hook methods as keyword arguments (**kwargs). This 
+allows you to make those methods "event-aware" by storing relevant data in the dictionary you feed to the method.
+
+For example, let's say you want a "thorns" buff which damages enemies that attack you. Let's take our `take_damage` method
+and add a context to the mix.
+
+```
+def take_damage(attacker, damage):
+    context = {'attacker': attacker, 'damage': damage}
+    _damage = self.buffs.check(damage, 'taken_damage', context=context)
+    self.db.health -= _damage
+```
+Now we use the values that context passes to the buff kwargs to customize our logic.
+```
+triggers = ['taken_damage']
+# This is the hook method on our thorns buff
+def on_trigger(self, trigger, attacker=None, damage=0, **kwargs):
+    attacker.db.health -= damage * 0.2
+```
+Apply the buff, take damage, and watch the thorns buff do its work!
+
+"""    
+
 import time
-from evennia import utils
+from evennia.server import signals
+from evennia.utils import utils, search
 from evennia.typeclasses.attributes import AttributeProperty
 
-class BaseBuff():
-    '''A buff is a self-contained object used to modify a value, trigger code, or both.
-    You can freely mix them however you like.
-
-    Buffs which have one or more Mod objects in the mods attribute can modify stats.
-    You can use the handler to `check` all mods of a specific stat string and apply
-    their modifications to the value. You can either do this manually (by calling
-    the handler check method) or you can set up a property to do it for you automatically
-    (see BuffableProperty below).
-
-    No mods applied to the value are permanent in any way. All calculations are done at
-    runtime, and the mod values are never stored anywhere except on the buff in question. In
-    other words: you don't need to track the origin of particular stat mods, and you
-    will never permanently change a stat modified by a trait buff. To remove the modification,
-    remove the buff off the object.
-
-    Buffs which have one or more strings in the `triggers` attribute can be triggered by events. 
-    Effects allow buffs to react to the game state.
-    
-    For example, let's say I want to trigger all "hit" buffs on myself when I successfully
-    hit a target. I add `self.handler.trigger("hit")` to the relevant point in my attack code.
-    Now, whenever I land a successful hit, the buffs are triggered and run their on_trigger method.
-
-    Regardless of triggers or mods, buffs also have the following qualities:
-        - They can stack. If a buff's `maxstacks` is greater than 1, if will stack with any buff with
-        the same key on that handler. Buffs which are not `unique` will be separated according to
-        the object that applied them.
-        - They have a `duration`, and automatically clean up at the end of it (0 duration = forever).
-        - They handle timing. They remember when they were applied, and can be paused, resumed, and refreshed.
-        - They can tick. They keep track of how many ticks have happened, and continue ticking until removed
-
-    Buffs are stored in two parts: as an immutable reference to the buff class, and as cached mutable data.
-    You can store any information you like in the cache - by default, it's all the basic timing and event
-    information necessary for the system to run.
-    '''
-    
+class BaseBuff():    
     key = 'template'        # The buff's unique key. Will be used as the buff's key in the handler
     name = 'Template'       # The buff's name. Used for user messaging
     flavor = 'Template'     # The buff's flavor text. Used for user messaging
@@ -45,10 +213,11 @@ class BaseBuff():
 
     triggers = []       # The effect's trigger strings, used for functions.
 
-    duration = 0        # Default buff duration; 0 or lower for permanent buff
+    duration = -1       # Default buff duration; -1 or lower for permanent buff, 0 for an "instant" buff (removed immediately after it is added)
+    playtime = False    # Does this buff pause automatically when the puppet its own is unpuppetted? No effect on objects that won't be puppetted.
 
     refresh = True      # Does the buff refresh its timer on application?
-    unique = True      # Does the buff overwrite existing buffs with the same key on the same target?
+    unique = True       # Does the buff overwrite existing buffs with the same key on the same target?
     maxstacks = 1       # The maximum number of stacks the buff can have. If >1, this buff will stack.
     tickrate = 0        # How frequent does this buff tick, in seconds (cannot be lower than 1)
     
@@ -62,10 +231,10 @@ class BaseBuff():
 
     @property
     def owner(self):
-        return self.handler.obj
+        return self.handler.owner
 
     @property
-    def ticks(self)-> bool:
+    def ticking(self)-> bool:
         '''Returns if this buff ticks or not (tickrate => 1)'''
         return self.tickrate >= 1
 
@@ -80,16 +249,23 @@ class BaseBuff():
         
         cache:dict = handler.db.get(uid)
         self.start = cache.get('start')
+        self.duration = cache.get('duration')
         self.prevtick = cache.get('prevtick')
         self.paused = cache.get('paused')
         self.stacks = cache.get('stacks')
         self.source = cache.get('source')
 
-    def remove(self, loud=True, dispel=False, delay=0, context={}):
+    def conditional(self, *args, **kwargs):
+        '''Hook function for conditional stat mods. This must return True in 
+        order for a mod to be applied, or a trigger to fire.'''
+        return True
+    
+    #region helper methods
+    def remove(self, loud=True, expire=False, dispel=False, delay=0, context={}):
         '''Helper method which removes this buff from its handler.'''
         self.handler.remove(self.uid, loud, dispel, delay, context)
 
-    def dispel(self, dispel=True, loud=True, delay=0, context={}):
+    def dispel(self, loud=True, dispel=True, delay=0, context={}):
         '''Helper method which dispels this buff (removes and calls on_dispel).'''
         self.handler.remove(self.uid, loud, dispel, delay, context)
 
@@ -101,11 +277,16 @@ class BaseBuff():
         '''Helper method which unpauses this buff on its handler.'''
         self.handler.unpause(self.uid)
 
-    def conditional(self, *args, **kwargs):
-        '''Hook function for conditional stat mods. This must return True in 
-        order for a mod to be applied, or a trigger to fire.'''
-        return True
+    def lengthen(self, value):
+        '''Helper method which lengthens a buff's timer. Positive = increase'''
+        self.handler.modify_duration(self.uid, value)
 
+    def shorten(self, value):
+        '''Helper method which shortens a buff's timer. Positive = decrease'''
+        self.handler.modify_duration(self.uid, -1*value)
+    #endregion
+    
+    #region hook methods
     def on_apply(self, *args, **kwargs):
         '''Hook function to run when this buff is applied to an object.'''
         pass
@@ -136,9 +317,11 @@ class BaseBuff():
         triggers on one buff.'''
         pass
 
-    def on_tick(self, initial, *args, **kwargs):
-        '''Hook for actions that occur per-tick, a designer-set sub-duration.'''
+    def on_tick(self, initial: bool, *args, **kwargs):
+        '''Hook for actions that occur per-tick, a designer-set sub-duration.
+        `initial` tells you if it's the first tick that happens (when a buff is applied).'''
         pass
+    #endregion
 
 class Mod():
     '''A single stat mod object. One buff or trait can hold multiple mods, for the same or different stats.'''
@@ -161,48 +344,33 @@ class Mod():
         self.perstack = perstack
 
 class BuffHandler(object):
-    '''This is the handler for your buffs. You should add this as a @lazy_property to any object
-    you want to utilize buffs. You may optionally do so with a dbkey, so you can have multiple buff
-    systems that do not overlap (for example: perks vs buffs) without having to create multiple
-    BuffHandler classes.
-
-    Context is an important concept for this handler. Every method which modifies, triggers, or
-    checks a buff optionally feeds a `context` dictionary (default: empty) to the buff hook methods as keyword 
-    arguments. This makes those methods "event-aware".
     
-    For example, let's say you want a "thorns" buff which damages enemies that attack you. In your character's 
-    "take damage" method, you create a dictionary with the value {"attacker":attacker}, and trigger the
-    character's "damaged" buffs with your dictionary as the `context` argument. Then, in your thorns 
-    buff, you add "attacker" as an `on_trigger` argument, and write whatever retaliation code you like. Apply
-    the buff and watch it work!
-
-    The handler itself has only a few attributes:
-        - the `obj` it is attached to. This is passed when you define it as a @lazy_property.
-        - the `dbkey` used for the handler's data. Defaults to "buffs" if you don't define it with the @lazy_property
-
-    You can access buffs on this handler in a number of ways, all of which return either the buff or a dictionary of buffs:
-        - You can use `handler.buffname`, as long as the buff's key isn't already used in the handler's namespace.
-        - You can call the `traits` and `effects` properties, which find ALL trigger and modifier buffs respectively
-        - You can call several `get` methods for different slices of buffs; keys, type, stat value, trigger, and cache value
-    '''
-
-    obj = None
+    ownerref = None
     dbkey = "buffs"
+    autopause = False
     
-    def __init__(self, obj, dbkey=dbkey):
-        self.obj = obj
+    def __init__(self, owner, dbkey=dbkey, autopause=autopause):
+        self.ownerref = owner.dbref
         self.dbkey = dbkey
+        if autopause:
+            signals.SIGNAL_OBJECT_POST_UNPUPPET.connect(self.pause_playtime)
+            signals.SIGNAL_OBJECT_POST_PUPPET.connect(self.unpause_playtime)
 
-    def __getattr__(self, __name: str):
-       return self.get(__name)
+    def __getattr__(self, key):
+        if key not in self.db.keys(): raise AttributeError
+        return self.get(key)
 
     #region properties
     @property
+    def owner(self):
+        return search.search_object(self.ownerref)[0]
+
+    @property
     def db(self):
         '''The object attribute we use for the buff database. Auto-creates if not present. 
-        Convenience shortcut (equal to self.obj.db.dbkey)'''
-        if not self.obj.attributes.has(self.dbkey): self.obj.attributes.add(self.dbkey, {})
-        return self.obj.attributes.get(self.dbkey)
+        Convenience shortcut (equal to self.owner.db.dbkey)'''
+        if not self.owner.attributes.has(self.dbkey): self.owner.attributes.add(self.dbkey, {})
+        return self.owner.attributes.get(self.dbkey)
 
     @property
     def traits(self):
@@ -234,7 +402,7 @@ class BuffHandler(object):
         _e = { k: self.get(k) 
             for k,v in self.db.items()
             if not v['paused']
-            if v['duration'] > 0 
+            if v['duration'] > -1 
             if v['duration'] < time.time() - v['start'] }
         return _e
 
@@ -265,7 +433,7 @@ class BuffHandler(object):
         '''
         
         _context = context
-        source = self.obj
+        source = self.owner
 
         # Create the buff dict that holds a reference and all runtime information.
         b = { 
@@ -300,10 +468,10 @@ class BuffHandler(object):
         # Create the buff instance and run the on-application hook method
         instance: BaseBuff = self.get(uid)
         instance.on_apply(**_context)
-        if instance.ticks: tick_buff(self, uid, _context)
+        if instance.ticking: tick_buff(self, uid, _context)
         
         # Clean up the buff at the end of its duration through a delayed cleanup call
-        utils.delay( b['duration'], cleanup_buffs, self, persistent=True )
+        if b['duration'] > -1: utils.delay( b['duration'], cleanup_buffs, self, persistent=True )
 
         # Apply the buff and pass the Context upwards.
         # return _context
@@ -358,14 +526,12 @@ class BuffHandler(object):
 
         return _context
         
-
     def get(self, buffkey: str):
         '''If the specified key is on this handler, return the instanced buff. Otherwise return None.
         You should delete this when you're done with it, so that garbage collection doesn't have to.'''
-        _return = None
-        _b = self.db.get(buffkey)
-        if _b: _return = _b["ref"](self, buffkey)
-        return _return
+        buff = self.db.get(buffkey)
+        if buff: return buff["ref"](self, buffkey)
+        else: return None
 
     def get_by_type(self, buff:BaseBuff):
         '''Returns a dictionary of instanced buffs of the specified type in the format {uid: instance}.'''
@@ -393,10 +559,6 @@ class BuffHandler(object):
             if not buff.paused
             if buff.conditional(**context)}
 
-    def get_by_cachevalue(key:str, value):
-        '''Returns a dictionary of instanced buffs which have the associated key:value in their cache, in the format {uid: instance}.'''
-        pass
-
     def check(self, value: float, stat: str, loud=True, context={}):    
         '''Finds all buffs and perks related to a stat and applies their effects.
         
@@ -409,7 +571,7 @@ class BuffHandler(object):
         self.cleanup()
 
         # Find all buffs and traits related to the specified stat.
-        applied = self.get_by_stat(stat)
+        applied = self.get_by_stat(stat, context)
         if not applied: return value
 
         # The final result
@@ -439,9 +601,10 @@ class BuffHandler(object):
     def pause(self, key: str):
         """Pauses the buff. This excludes it from being checked for mods, triggered, or cleaned up. 
         Used to make buffs 'playtime' instead of 'realtime'."""
-        if key in self.db.values():
+        if key in self.db.keys():
             # Mark the buff as paused
-            buff = self.db[key]
+            buff = dict(self.db[key])
+            if buff['paused']: return
             buff['paused'] = True
 
             # Figure out our new duration
@@ -452,21 +615,44 @@ class BuffHandler(object):
             nd = e - t              # New duration
 
             # Apply the new duration
-            if nd > 0: buff['duration'] = nd 
+            if nd > 0: 
+                buff['duration'] = nd
+                self.db[key] = buff 
             else: self.remove(key)
         return
 
     def unpause(self, key: str):
         '''Unpauses a buff. This makes it visible to the various buff systems again.'''
-        if key in self.db.values():
+        if key in self.db.keys():
             # Mark the buff as unpaused
-            buff = self.db[key]
+            buff = dict(self.db[key])
+            if not buff['paused']: return
             buff['paused'] = False
 
             # Start our new timer
             buff['start'] = time.time()
-            utils.delay( buff['duration'] + 0.01, cleanup_buffs, self, persistent=True )
+            self.db[key] = buff 
+            utils.delay( buff['duration'], cleanup_buffs, self, persistent=True )
         return
+
+    def pause_playtime(self, sender=owner, **kwargs):
+        '''Pauses all playtime buffs when attached object is puppeted.'''
+        if sender != self.owner: return
+        buffs = self.playtime
+        for buff in buffs.values(): buff.pause()
+
+    def unpause_playtime(self, sender=owner, **kwargs):
+        '''Unpauses all playtime buffs when attached object is unpuppeted.'''
+        if sender != self.owner: return
+        buffs = self.playtime
+        for buff in buffs.values(): buff.unpause()
+        pass
+
+    def modify_duration(self, key, value, set=False):
+        '''Modifies the duration of a buff. Normally adds/subtracts; call with "set=True" to set it to the value instead'''
+        if key in self.db.keys():
+           if set: self.db[key]['duration'] = value
+           else: self.db[key]['duration'] += value
 
     def view(self) -> list:
         '''Gets the name and flavor of all buffs and effects on the object.'''
@@ -474,21 +660,28 @@ class BuffHandler(object):
         message = []
         
         if self.db:
-            _cache = self.db.values()
+            _cache = dict(self.db.values())
             for x in _cache:
                 buff: BaseBuff = x.get('ref')
                 msg = "    " + buff.name + ": " + buff.flavor
                 message.append(msg)
-        
+        del _cache
         return message
 
     def cleanup(self):
-        '''Cleans up all old buffs on this handler.'''
+        '''Removes expired buffs, ensures pause state is respected.'''
+        self.validate_state()
         cleanup_buffs(self)
+
+    def validate_state(self):
+        '''Validates the state of paused/unpaused playtime buffs.'''
+        if not self.autopause: return
+        if self.owner.has_account: self.unpause_playtime()
+        elif not self.owner.has_account: self.pause_playtime() 
 
     #region private methods
     def _calculate_mods(self, value, stat:str, buffs:dict):
-        '''Calculates a return value from a base value, a stat string, and a dictionary of instanced buffs.'''
+        '''Calculates a return value from a base value, a stat string, and a dictionary of instanced buffs with associated mods.'''
         if not buffs: return value
         add = 0
         mult = 0
@@ -503,6 +696,7 @@ class BuffHandler(object):
         
         final = (value + add) * (1.0 + mult)
         return final
+
     #endregion
     #endregion   
 
@@ -517,29 +711,31 @@ def cleanup_buffs(handler: BuffHandler):
     _remove = handler.expired
     for v in _remove.values(): v.remove(expire=True)
 
-def tick_buff(obj, handler: BuffHandler, uid: str, context={}, initial=True):
+def tick_buff(handler: BuffHandler, uid: str, context={}, initial=True):
     '''Ticks a buff. If a buff's tickrate is 1 or larger, this is called when the buff is applied, and then once per tick cycle.'''
     # Cache a reference and find the buff on the object
-    _cache = handler.db
-    if uid not in _cache.keys(): return
-    b = dict(_cache[uid])
+    if uid not in handler.db.keys(): return
 
     # Instantiate the buff and tickrate
-    buff: BaseBuff = b['ref'](obj, handler, uid, b)
+    buff: BaseBuff = handler.get(uid)
     tr = buff.tickrate
-    
+
     # This stops the old ticking process if you refresh/stack the buff
-    if tr > time.time() - buff.prevtick and initial is not True: return     
-    
-    # If the duration has run out, tick one last time, then stop this process
-    if buff.duration < time.time() - buff.start:
+    if tr > time.time() - buff.prevtick and initial != True: return
+
+    # Always tick this buff on initial
+    if initial: buff.on_tick(initial, **context)
+
+    # Tick this buff one last time, then remove
+    if buff.duration <= time.time() - buff.start:
         if tr < time.time() - buff.prevtick: buff.on_tick(initial, **context)
+        buff.remove(expire=True)
         return
 
-    # If it's time, call the buff's on_tick method and update prevtick
-    if tr < time.time() - buff.prevtick: buff.on_tick(initial, **context)
+    # Tick this buff on-time
+    if tr <= time.time() - buff.prevtick: buff.on_tick(initial, **context)
     
-    _cache[uid]['prevtick'] = time.time()
+    handler.db[uid]['prevtick'] = time.time()
 
     # Recur this function at the tickrate interval, if it didn't stop/fail
-    utils.delay(tr, tick_buff, obj=obj, handler=handler, uid=uid, context=context, initial=False)
+    utils.delay(tr, tick_buff, handler=handler, uid=uid, context=context, initial=False, persistent=True)
