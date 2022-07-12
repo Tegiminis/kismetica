@@ -1,15 +1,27 @@
 import time
 
+from evennia.utils import search
+
 class CooldownHandler(object):
-    obj = None 
+    ownerref = None
+    dbkey = "cooldowns"
+    autopause = False
     
-    def __init__(self, obj) -> None:
-        self.obj = obj
-        if not obj.attributes.has('cooldowns'): self.obj.db.cooldowns = {}
+    def __init__(self, owner, dbkey=dbkey, autopause=autopause):
+        self.ownerref = owner.dbref
+        self.dbkey = dbkey
+        self.autopause = autopause
 
     @property
+    def owner(self):
+        return search.search_object(self.ownerref)[0]
+    
+    @property
     def db(self):
-        return self.obj.db.cooldowns
+        '''The object attribute we use for the cooldown database. Auto-creates if not present. 
+        Convenience shortcut (equal to self.owner.db.dbkey)'''
+        if not self.owner.attributes.has(self.dbkey): self.owner.attributes.add(self.dbkey, {})
+        return self.owner.attributes.get(self.dbkey)
 
     def check(self, key) -> bool:
         ''' True:   Cooldown time is up, cooldown not found

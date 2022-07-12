@@ -116,15 +116,15 @@ class Poison(BaseBuff):
     refresh = True
     maxstacks = 5
     unique = True
-
     tickrate = 5
-
     dmg = 5
 
-    def on_tick(self, *args, **kwargs):
+    def on_tick(self, initial=True, *args, **kwargs):
         _dmg = self.dmg * self.stacks
-        self.owner.location.msg_contents("Poison courses through {actor}'s body, dealing {damage} damage.".format(actor=self.owner.named, damage=_dmg))
-        self.owner.damage(_dmg)
+        if initial: self.owner.msg('Initial poison tick')
+        if not initial:
+            self.owner.location.msg_contents("Poison courses through {actor}'s body, dealing {damage} damage.".format(actor=self.owner.named, damage=_dmg))
+            self.owner.combat.damage(_dmg, quiet=True)
 
 class Overflow(BaseBuff):
     key = 'overflow'
@@ -136,10 +136,10 @@ class PropertyBuffTest(BaseBuff):
     name = 'ptest'
     flavor = 'This person is invigorated.'
 
-    duration = 0
+    duration = 600
+    playtime = True
 
     refresh = True
-    stacking = True
     maxStacks = 5
     unique = True
 
@@ -148,9 +148,7 @@ class PropertyBuffTest(BaseBuff):
 class TestBuff(BaseBuff):
     key = 'ttest'
     name = 'ttest'
-    flavor = 'This buff has been triggered'
-
-    duration = 0
+    flavor = 'This buff has been triggered.'
 
     triggers = ['test']
 

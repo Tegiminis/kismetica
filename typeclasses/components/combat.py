@@ -18,8 +18,8 @@ class CombatHandler(object):
     def maxHP(self):
         return self.obj.maxHP
 
-    def damage(self, damage: int, armor=None, context={}) -> int:
-        '''Applies damage, and returns the damage it applied. Optionally modified by armor.'''
+    def damage(self, damage: int, quiet=False, context={}) -> int:
+        '''Applies damage, and returns the damage it applied. Use `quiet` to stifle default damage message.'''
         
         # An "injury is damage taken as the result of a physical attack
         if 'attacker' in context.keys():
@@ -28,10 +28,10 @@ class CombatHandler(object):
 
         # Apply damage
         self.hp = max(self.hp - damage, 0)
-        self.obj.msg('You take %i damage!' % damage)
+        if not quiet: self.obj.msg('You take %i damage!' % damage)
 
         # If you are out of life, you are out of luck
-        self.obj.die()
+        self.die()
 
         return damage
 
