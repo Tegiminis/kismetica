@@ -73,14 +73,14 @@ def take_damage(self, source, damage):
 #### Trigger
 
 Call the handler `trigger(triggerstring)` method wherever you want an event call. This 
-will call the `on_trigger` hook method on all buffs with the relevant trigger.
+will call the `at_trigger` hook method on all buffs with the relevant trigger.
 
 For example, let's say you want to trigger a buff to "detonate" when you hit your target with an attack.
 You'd write a buff with at least the following stats:
 
 ```python
 triggers = ['take_damage']
-def on_trigger(self, trigger, *args, **kwargs)
+def at_trigger(self, trigger, *args, **kwargs)
     self.owner.take_damage(100)
 ```
 
@@ -92,7 +92,7 @@ Ticking buffs are slightly special. They are similar to trigger buffs in that th
 doing so on an event trigger, they do so are a periodic tick. A common use case for a buff like this is a poison,
 or a heal over time.
 
-All you need to do to make a buff tick is ensure the `tickrate` is 1 or higher, and it has code in its `on_tick`
+All you need to do to make a buff tick is ensure the `tickrate` is 1 or higher, and it has code in its `at_tick`
 method. Once you add it to the handler, it starts ticking!
 
 ## Buffs
@@ -140,14 +140,14 @@ remove the buff off the object.
 Buffs which have one or more strings in the `triggers` attribute can be triggered by events.
 
 When the handler `trigger` method is called, it searches all buffs on the handler for any with a matching
-trigger, then calls their `on_trigger` methods. You can tell which trigger is the one it fired with by the `trigger`
+trigger, then calls their `at_trigger` methods. You can tell which trigger is the one it fired with by the `trigger`
 argument in the method.
 
 ``` 
 def AmplifyBuff(BaseBuff):
     triggers = ['damage', 'heal'] 
 
-    def on_trigger(self, trigger, **kwargs):
+    def at_trigger(self, trigger, **kwargs):
         if trigger == 'damage': print('Damage trigger called!')
         if trigger == 'heal': print('Heal trigger called!')
 ```
@@ -160,11 +160,11 @@ the buff class. The main thing is you need to have a `tickrate` higher than 1.
 # this buff will tick 6 times between application and cleanup.
 duration = 30
 tickrate = 5
-def on_tick(self, initial, **kwargs):
+def at_tick(self, initial, **kwargs):
     self.owner.take_damage(10)
 ```
 It's important to note the buff always ticks once when applied. For this first tick only, `initial` will be True 
-in the `on_tick` hook method.
+in the `at_tick` hook method.
 
 ### Extras
 
@@ -217,7 +217,7 @@ Now we use the values that context passes to the buff kwargs to customize our lo
 ```
 triggers = ['taken_damage']
 # This is the hook method on our thorns buff
-def on_trigger(self, trigger, attacker=None, damage=0, **kwargs):
+def at_trigger(self, trigger, attacker=None, damage=0, **kwargs):
     attacker.db.health -= damage * 0.2
 ```
 Apply the buff, take damage, and watch the thorns buff do its work!
@@ -247,6 +247,8 @@ class BaseBuff():
     
     mods = []   # List of mod objects. See Mod class below for more detail
 
+    _duration = -1
+
     @property
     def ticknum(self):
         '''Returns how many ticks this buff has gone through as an integer.'''
@@ -267,13 +269,20 @@ class BaseBuff():
         '''Returns if this buff stacks or not (maxstacks > 1)'''
         return self.maxstacks > 1
 
+    @property 
+    def duration(self):
+        return self._duration
+    @duration.setter
+    def duration(self, value):
+        self.handler.db[self.uid]['duration'] = value
+
     def __init__(self, handler, uid) -> None:
         self.handler: BuffHandler = handler
         self.uid = uid
         
         cache:dict = handler.db.get(uid)
         self.start = cache.get('start')
-        self.duration = cache.get('duration')
+        self._duration = cache.get('duration')
         self.prevtick = cache.get('prevtick')
         self.paused = cache.get('paused')
         self.stacks = cache.get('stacks')
@@ -285,13 +294,13 @@ class BaseBuff():
         return True
     
     #region helper methods
-    def remove(self, loud=True, expire=False, dispel=False, delay=0, context={}):
+    def remove(self, loud=True, expire=False, context={}):
         '''Helper method which removes this buff from its handler.'''
-        self.handler.remove(self.uid, loud, dispel, delay, context)
+        self.handler.remove(self.uid, loud=loud, expire=expire, context=context)
 
-    def dispel(self, loud=True, dispel=True, delay=0, context={}):
-        '''Helper method which dispels this buff (removes and calls on_dispel).'''
-        self.handler.remove(self.uid, loud, dispel, delay, context)
+    def dispel(self, loud=True, delay=0, context={}):
+        '''Helper method which dispels this buff (removes and calls at_dispel).'''
+        self.handler.remove(self.uid, loud=loud, dispel=True, delay=delay, context=context)
 
     def pause(self):
         '''Helper method which pauses this buff on its handler.'''
@@ -301,47 +310,39 @@ class BaseBuff():
         '''Helper method which unpauses this buff on its handler.'''
         self.handler.unpause(self.uid)
 
-    def lengthen(self, value):
-        '''Helper method which lengthens a buff's timer. Positive = increase'''
-        self.handler.modify_duration(self.uid, value)
-
-    def shorten(self, value):
-        '''Helper method which shortens a buff's timer. Positive = decrease'''
-        self.handler.modify_duration(self.uid, -1*value)
+    def reset(self):
+        '''Resets the buff start time as though it were just applied; functionally identical to a refresh'''
+        self.handler.db[self.uid]['start'] = time.time()
     #endregion
     
     #region hook methods
-    def on_apply(self, *args, **kwargs):
+    def at_apply(self, *args, **kwargs):
         '''Hook function to run when this buff is applied to an object.'''
         pass
     
-    def on_remove(self, *args, **kwargs):
+    def at_remove(self, *args, **kwargs):
         '''Hook function to run when this buff is removed from an object.'''
         pass
 
-    def on_remove_stack(self, *args, **kwargs):
-        '''Hook function to run when this buff loses stacks.'''
-        pass
-
-    def on_dispel(self, *args, **kwargs):
+    def at_dispel(self, *args, **kwargs):
         '''Hook function to run when this buff is dispelled from an object (removed by someone other than the buff holder).'''
         pass
 
-    def on_expire(self, *args, **kwargs):
+    def at_expire(self, *args, **kwargs):
         '''Hook function to run when this buff expires from an object.'''
         pass
 
-    def after_check(self, *args, **kwargs):
+    def at_post_check(self, *args, **kwargs):
         '''Hook function to run after this buff's mods are checked.'''
         pass
 
-    def on_trigger(self, trigger:str, *args, **kwargs):
+    def at_trigger(self, trigger:str, *args, **kwargs):
         '''Hook for the code you want to run whenever the effect is triggered.
         Passes the trigger string to the function, so you can have multiple
         triggers on one buff.'''
         pass
 
-    def on_tick(self, initial: bool, *args, **kwargs):
+    def at_tick(self, initial: bool, *args, **kwargs):
         '''Hook for actions that occur per-tick, a designer-set sub-duration.
         `initial` tells you if it's the first tick that happens (when a buff is applied).'''
         pass
@@ -500,7 +501,7 @@ class BuffHandler(object):
 
         # Create the buff instance and run the on-application hook method
         instance: BaseBuff = self.get(uid)
-        instance.on_apply(**_context)
+        instance.at_apply(**_context)
         if instance.ticking: tick_buff(self, uid, _context)
         
         # Clean up the buff at the end of its duration through a delayed cleanup call
@@ -513,14 +514,14 @@ class BuffHandler(object):
         loud=True, dispel=False, expire=False, 
         context={}, *args, **kwargs
         ):
-        '''Remove a buff or effect with matching key from this object. Normally calls on_remove,
-        calls on_expire if the buff expired naturally, and optionally calls on_dispel.
+        '''Remove a buff or effect with matching key from this object. Normally calls at_remove,
+        calls at_expire if the buff expired naturally, and optionally calls at_dispel.
         
         Args:
             key:    The buff key
-            loud:   Calls on_remove when True. Default remove hook.
-            dispel: Calls on_dispel when True
-            expire: Calls on_expire when True. Used when cleaned up.
+            loud:   Calls at_remove when True. Default remove hook.
+            dispel: Calls at_dispel when True
+            expire: Calls at_expire when True. Used when cleaned up.
 '''
 
         if buffkey not in self.db: return None
@@ -530,9 +531,9 @@ class BuffHandler(object):
         instance : BaseBuff = buff(self, buffkey)
         
         if loud:
-            if dispel: instance.on_dispel(**context)
-            elif expire: instance.on_expire(**context)
-            instance.on_remove(**context)
+            if dispel: instance.at_dispel(**context)
+            elif expire: instance.at_expire(**context)
+            instance.at_remove(**context)
 
         del instance
         del self.db[buffkey]
@@ -551,9 +552,9 @@ class BuffHandler(object):
         for k,instance in _remove.items():
             instance: BaseBuff        
             if loud:
-                if dispel: instance.on_dispel(**context)
-                elif expire: instance.on_expire(**context)
-                instance.on_remove(**context)
+                if dispel: instance.at_dispel(**context)
+                elif expire: instance.at_expire(**context)
+                instance.at_remove(**context)
             del instance
             del self.db[k]
 
@@ -613,7 +614,7 @@ class BuffHandler(object):
         # Run the "after check" functions on all relevant buffs
         for buff in applied.values():
             buff: BaseBuff
-            if loud: buff.after_check(**context)
+            if loud: buff.at_post_check(**context)
             del buff
         return final
     
@@ -629,7 +630,7 @@ class BuffHandler(object):
         for buff in _effects.values():
             buff: BaseBuff
             if trigger in buff.triggers and not buff.paused:
-                buff.on_trigger(trigger, **context)
+                buff.at_trigger(trigger, **context)
     
     def pause(self, key: str):
         """Pauses the buff. This excludes it from being checked for mods, triggered, or cleaned up. 
@@ -751,16 +752,16 @@ def tick_buff(handler: BuffHandler, uid: str, context={}, initial=True):
     if tr > time.time() - buff.prevtick and initial != True: return
 
     # Always tick this buff on initial
-    if initial: buff.on_tick(initial, **context)
+    if initial: buff.at_tick(initial, **context)
 
     # Tick this buff one last time, then remove
     if buff.duration <= time.time() - buff.start:
-        if tr < time.time() - buff.prevtick: buff.on_tick(initial, **context)
+        if tr < time.time() - buff.prevtick: buff.at_tick(initial, **context)
         buff.remove(expire=True)
         return
 
     # Tick this buff on-time
-    if tr <= time.time() - buff.prevtick: buff.on_tick(initial, **context)
+    if tr <= time.time() - buff.prevtick: buff.at_tick(initial, **context)
     
     handler.db[uid]['prevtick'] = time.time()
 
