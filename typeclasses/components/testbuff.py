@@ -1,6 +1,8 @@
 # in a module tests.py somewhere i your game dir
 from unittest.mock import Mock, patch
 from evennia import DefaultObject, create_object
+from evennia.utils import create
+from evennia.utils.utils import lazy_property
 # the function we want to test
 from .buff import BaseBuff, Mod, BuffHandler, BuffableProperty
 from evennia.utils.test_resources import EvenniaTest
@@ -82,7 +84,18 @@ class _TestTimeBuff(BaseBuff):
     def on_tick(self, initial=True, *args, **kwargs):
         self.owner.db.ticktest = True
 
-class _TestBuffsAndHandler(EvenniaTest):
+class BuffableObject(DefaultObject):
+    stat1 = BuffableProperty(10)
+
+    @lazy_property
+    def buffs(self) -> BuffHandler:
+        return BuffHandler(self)
+
+    def at_init(self):
+        self.stat1, self.buffs
+        return super().at_init()
+
+class TestBuffsAndHandler(EvenniaTest):
     "This tests a number of things about buffs."
 
     def setUp(self):
@@ -91,8 +104,6 @@ class _TestBuffsAndHandler(EvenniaTest):
         
     def tearDown(self):
         """done after every test_* method below """
-        del self.obj1.handler
-        del self.obj1.db.buffs
         super().tearDown()
 
     def test_addremove(self):
@@ -244,7 +255,7 @@ class _TestBuffsAndHandler(EvenniaTest):
         handler.add(_TestTimeBuff)
         self.obj1.db.timetest, self.obj1.db.ticktest = 1, False
         # test duration and ticking
-        self.assertTrue(handler.ttib.ticks)
+        self.assertTrue(handler.ttib.ticking)
         self.assertEqual(handler.get('ttib').duration, 5)
         handler.get('ttib').on_tick()
         self.assertTrue(self.obj1.db.ticktest)
@@ -257,5 +268,8 @@ class _TestBuffsAndHandler(EvenniaTest):
     def test_buffableproperty(self):
         '''tests buffable properties'''
         # setup
-        handler: BuffHandler = self.obj1.handler
-        handler.add(_TestModBuff)
+        self.propobj = create.create_object(BuffableObject, key='testobj')
+        self.propobj.buffs.add(_TestModBuff)
+        self.assertEqual(self.propobj.stat1, 25)
+        self.propobj.buffs.remove('tmb')
+        self.assertEqual(self.propobj.stat1, 10)
