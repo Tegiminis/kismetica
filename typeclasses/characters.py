@@ -56,7 +56,10 @@ class Character(DefaultCharacter):
     intellect = BuffableProperty(3)
 
     def at_object_creation(self):
-        
+        self.buffs, self.cooldowns, self.combat
+        self.maxhp, self.evasion 
+        self.mobility, self.resilience, self.strength, self.discipline, self.recovery, self.intellect
+
         self.cmdset.add(default.CharacterCmdSet, permanent=True)
         self.db.hp = 100        # Current hp
 
@@ -64,9 +67,6 @@ class Character(DefaultCharacter):
 
     def at_init(self):
         self.buffs, self.cooldowns, self.combat
-        self.maxhp, self.evasion 
-        self.mobility, self.resilience, self.strength, self.discipline, self.recovery, self.intellect
-        
         self.ndb.target = None      # Used if you use attack someone or use 'target'
         self.tags.remove('attacking', category='combat')
         super().at_init()

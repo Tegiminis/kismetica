@@ -269,24 +269,16 @@ class BaseBuff():
         '''Returns if this buff stacks or not (maxstacks > 1)'''
         return self.maxstacks > 1
 
-    @property 
-    def duration(self):
-        return self._duration
-    @duration.setter
-    def duration(self, value):
-        self.handler.db[self.uid]['duration'] = value
-
     def __init__(self, handler, uid) -> None:
         self.handler: BuffHandler = handler
         self.uid = uid
         
-        cache:dict = handler.db.get(uid)
+        cache:dict = dict(self.handler.db.get(uid))
         self.start = cache.get('start')
-        self._duration = cache.get('duration')
+        self.duration = cache.get('duration')
         self.prevtick = cache.get('prevtick')
         self.paused = cache.get('paused')
         self.stacks = cache.get('stacks')
-        self.source = cache.get('source')
 
     def conditional(self, *args, **kwargs):
         '''Hook function for conditional stat mods. This must return True in 
@@ -332,6 +324,10 @@ class BaseBuff():
         '''Hook function to run when this buff expires from an object.'''
         pass
 
+    def at_post_check(self, *args, **kwargs):
+        '''Hook function to run before this buff's modifiers are checked.'''
+        pass
+    
     def at_post_check(self, *args, **kwargs):
         '''Hook function to run after this buff's mods are checked.'''
         pass
@@ -445,6 +441,7 @@ class BuffHandler(object):
         '''Returns dictionary of instanced buffs equivalent to ALL buffs on this handler, 
         regardless of state, type, or anything else. You will only need this to extend 
         handler functionality. It is otherwise unused.'''
+        
         _a = {k:self.get(k) for k,v in self.db.items()}
         return _a
     #endregion
@@ -459,13 +456,15 @@ class BuffHandler(object):
         a number of optional parameters to allow for customization.
         
         Args:
-            buff:       The buff class you wish to add
+            buff:       The buff class type you wish to add
             source:     (optional) The source of this buff.
             stacks:     (optional) The number of stacks you want to add, if the buff is stacking
             duration:   (optional) The amount of time, in seconds, you want the buff to last. 
             context:    (optional) An existing context you want to add buff details to
         '''
         
+        if not isinstance(buff, type): raise ValueError
+
         _context = context
         source = self.owner
 
@@ -476,8 +475,9 @@ class BuffHandler(object):
             'duration': buff.duration, 
             'prevtick': None,
             'paused': False, 
-            'stacks': stacks,  
-            'source': source }
+            'stacks': stacks,
+            'source': source  
+            }
 
         # Generate the pID (procedural ID) from the object's dbref (uID) and buff key. 
         # This is the actual key the buff uses on the dictionary
@@ -505,7 +505,7 @@ class BuffHandler(object):
         if instance.ticking: tick_buff(self, uid, _context)
         
         # Clean up the buff at the end of its duration through a delayed cleanup call
-        if b['duration'] > -1: utils.delay( b['duration'], cleanup_buffs, self, persistent=True )
+        if b['duration'] > -1: utils.delay( b['duration'], self.cleanup, persistent=True )
 
         # Apply the buff and pass the Context upwards.
         # return _context
@@ -569,6 +569,7 @@ class BuffHandler(object):
 
     def get_by_type(self, buff:BaseBuff):
         '''Returns a dictionary of instanced buffs of the specified type in the format {uid: instance}.'''
+        
         return {k: self.get(k) for k,v in self.db.items() if v['ref'] == buff}
 
     def get_by_stat(self, stat:str, context={}):
@@ -682,11 +683,10 @@ class BuffHandler(object):
         for buff in buffs.values(): buff.unpause()
         pass
 
-    def modify_duration(self, key, value, set=False):
-        '''Modifies the duration of a buff. Normally adds/subtracts; call with "set=True" to set it to the value instead'''
+    def set_duration(self, key, value):
+        '''Modifies the duration of a buff. Normally adds/subtracts'''
         if key in self.db.keys():
-           if set: self.db[key]['duration'] = value
-           else: self.db[key]['duration'] += value
+           self.db[key]['duration'] = value
 
     def view(self) -> list:
         '''Returns a buff flavor text as a dictionary of tuples in the format {key: (name, flavor)}. Common use for this is a buff readout of some kind.'''
@@ -695,6 +695,8 @@ class BuffHandler(object):
             k:(buff.name, buff.flavor)
             for k, buff in self.visible
         }
+        
+        return _flavor
 
     def cleanup(self):
         '''Removes expired buffs, ensures pause state is respected.'''

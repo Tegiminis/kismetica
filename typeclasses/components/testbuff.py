@@ -36,7 +36,7 @@ class _TestTrigBuff(BaseBuff):
     flavor = 'triggerbuff'
     triggers = ['test1', 'test2']
 
-    def on_trigger(self, trigger: str, *args, **kwargs):
+    def at_trigger(self, trigger: str, *args, **kwargs):
         if trigger == 'test1': self.owner.db.triggertest1 = True
         if trigger == 'test2': self.owner.db.triggertest2 = True
 
@@ -49,7 +49,7 @@ class _TestConBuff(BaseBuff):
     def conditional(self, *args, **kwargs):
         return self.owner.db.cond1
 
-    def on_trigger(self, trigger: str, attacker=None, defender=None, damage=0, *args, **kwargs):
+    def at_trigger(self, trigger: str, attacker=None, defender=None, damage=0, *args, **kwargs):
         defender.db.att, defender.db.dmg = attacker, damage
 
 class _TestComplexBuff(BaseBuff):
@@ -68,7 +68,7 @@ class _TestComplexBuff(BaseBuff):
     def conditional(self, cond=False, *args, **kwargs):
         return not cond
 
-    def on_trigger(self, trigger: str, *args, **kwargs):
+    def at_trigger(self, trigger: str, *args, **kwargs):
         if trigger == 'comtest': self.owner.db.comtext = {'cond': True}
         else: self.owner.db.comtext = {}
 
@@ -81,7 +81,7 @@ class _TestTimeBuff(BaseBuff):
     duration = 5
     mods = [Mod('timetest', 'add', 665)]
 
-    def on_tick(self, initial=True, *args, **kwargs):
+    def at_tick(self, initial=True, *args, **kwargs):
         self.owner.db.ticktest = True
 
 class BuffableObject(DefaultObject):
@@ -257,10 +257,10 @@ class TestBuffsAndHandler(EvenniaTest):
         # test duration and ticking
         self.assertTrue(handler.ttib.ticking)
         self.assertEqual(handler.get('ttib').duration, 5)
-        handler.get('ttib').on_tick()
+        handler.get('ttib').at_tick()
         self.assertTrue(self.obj1.db.ticktest)
         # test duration modification and cleanup
-        handler.modify_duration('ttib', 0, set=True)
+        handler.set_duration('ttib', 0)
         self.assertEqual(handler.get('ttib').duration, 0)
         handler.cleanup()
         self.assertFalse(handler.get('ttib'), None)
