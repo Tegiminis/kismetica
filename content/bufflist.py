@@ -1,6 +1,5 @@
 import random
 from typeclasses.components.buff import BaseBuff, Mod
-from typeclasses.context import Context
 
 class RampageBuff(BaseBuff):
     key = 'rampage'
@@ -22,10 +21,10 @@ class RampageBuff(BaseBuff):
 
     mods = [ Mod('damage', 'mult', 0.15, 0.15) ]
 
-    def on_apply(self, *args, **kwargs):
+    def at_apply(self, *args, **kwargs):
         if self.stacks in self.stack_msg.keys(): self.owner.msg(self.stack_msg[self.stacks])
 
-    def on_expire(self, *args, **kwargs):
+    def at_expire(self, *args, **kwargs):
         self.owner.location.msg('The bloodlust fades.')
 
 class Exploit(BaseBuff):
@@ -42,7 +41,7 @@ class Exploit(BaseBuff):
     unique = True
     maxstacks = 20
 
-    def on_trigger(self, trigger:str, *args, **kwargs):
+    def at_trigger(self, trigger:str, *args, **kwargs):
         chance = self.stacks / 20
         roll = random.random()
 
@@ -51,7 +50,7 @@ class Exploit(BaseBuff):
             self.owner.location.msg("   An opportunity presents itself!")
             self.owner.buffs.remove('exploit')
 
-    def on_expire(self, *args, **kwargs):
+    def at_expire(self, *args, **kwargs):
         self.owner.location.msg("The opportunity passes.")
 
 class Exploited(BaseBuff):
@@ -67,11 +66,11 @@ class Exploited(BaseBuff):
 
     mods = [ Mod('damage', 'add', 100) ]
 
-    def after_check(self, *args, **kwargs):
+    def at_post_check(self, *args, **kwargs):
         self.owner.location.msg( "   You exploit your target's weakness!" )
         self.owner.buffs.remove('exploited', delay=0.01)
 
-    def on_remove(self, *args, **kwargs):
+    def at_remove(self, *args, **kwargs):
         self.owner.location.msg( "You cannot sense your target's weakness anymore." )
 
 class Weakened(BaseBuff):
@@ -100,7 +99,7 @@ class Leeching(BaseBuff):
 
     triggers = ['injury']
 
-    def on_trigger(self, trigger:str, attacker, damage, *args, **kwargs) -> Context:
+    def at_trigger(self, trigger:str, attacker, damage, *args, **kwargs):
         if not attacker or not damage: return
         attacker.msg('Debug: Attempting leech.')
         heal = damage * 0.1
@@ -111,7 +110,7 @@ class Poison(BaseBuff):
     name = 'Poison'
     flavor = 'A poison wracks this body.'
 
-    duration = 30
+    duration = 600
 
     refresh = True
     maxstacks = 5
@@ -119,7 +118,12 @@ class Poison(BaseBuff):
     tickrate = 5
     dmg = 5
 
-    def on_tick(self, initial=True, *args, **kwargs):
+    playtime = True
+
+    def at_unpause(self, *args, **kwargs):
+        self.owner.location.msg_contents("{actor} begins to twitch.".format(actor=self.owner.named))
+
+    def at_tick(self, initial=True, *args, **kwargs):
         _dmg = self.dmg * self.stacks
         if initial: self.owner.msg('Initial poison tick')
         if not initial:
@@ -152,7 +156,7 @@ class TestBuff(BaseBuff):
 
     triggers = ['test']
 
-    def on_trigger(self, trigger:str, *args, **kwargs):
+    def at_trigger(self, trigger:str, *args, **kwargs):
         print('Triggered test buff!')
 
 class BuffList():

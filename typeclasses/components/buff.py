@@ -44,11 +44,14 @@ To actually make use of the handler, you still have to do some leg work.
 #### Apply a Buff
 
 Call the handler `add(BuffClass)` method. This requires a class reference, and also contains a number of 
-optional arguments to customize the buff's duration, stacks, and so on.
+optional arguments to customize the buff's duration, stacks, and so on. You can also store any arbitrary value 
+in the buff's cache by passing a dictionary through the `to_cache` argument. This will not overwrite the normal
+values on the cache.
 
 ```python
 self.buffs.handler.add(StrengthBuff)    # A single stack of StrengthBuff with normal duration
 self.buffs.handler.add(DexBuff, stacks=3, duration=60)  # Three stacks of DexBuff, with a duration of 60 seconds
+self.buffs.handler.add(ReflectBuff, to_cache={'reflect': 0.5})  # A single stack of ReflectBuff, with an extra cache value
 ```
 
 Two important attributes on the buff are checked when the buff is applied: `refresh` and `unique`.
@@ -181,10 +184,11 @@ def conditional(self, *args, **kwargs):
 ```
 
 There are a number of helper methods. If you have a buff instance - for example, because you got the buff with
-`handler.get(key)` - you can `pause`, `unpause`, `remove`, `dispel`, and even `lengthen` or `shorten` the duration.
+`handler.get(key)` - you can `pause`, `unpause`, `remove`, `dispel`, etc.
 
 Finally, if your handler has `autopause` enabled, any buffs with truthy `playtime` value will automatically pause
-and unpause when the object the handler is attached to is puppetted or unpuppetted.
+and unpause when the object the handler is attached to is puppetted or unpuppetted. This even works with ticking buffs,
+although if you have less than 1 second of tick duration remaining, it will round up to 1s.
 
 ### How Does It Work?
 
@@ -218,6 +222,7 @@ Now we use the values that context passes to the buff kwargs to customize our lo
 triggers = ['taken_damage']
 # This is the hook method on our thorns buff
 def at_trigger(self, trigger, attacker=None, damage=0, **kwargs):
+    if not attacker: return
     attacker.db.health -= damage * 0.2
 ```
 Apply the buff, take damage, and watch the thorns buff do its work!
@@ -237,18 +242,20 @@ class BaseBuff():
 
     triggers = []       # The effect's trigger strings, used for functions.
 
+    handler = None
+    start = 0
     duration = -1       # Default buff duration; -1 or lower for permanent buff, 0 for an "instant" buff (removed immediately after it is added)
+
     playtime = False    # Does this buff pause automatically when the puppet its own is unpuppetted? No effect on objects that won't be puppetted.
 
     refresh = True      # Does the buff refresh its timer on application?
     unique = True       # Does the buff overwrite existing buffs with the same key on the same target?
     maxstacks = 1       # The maximum number of stacks the buff can have. If >1, this buff will stack.
+    stacks = 1          # If >1, used as the default when applying this buff
     tickrate = 0        # How frequent does this buff tick, in seconds (cannot be lower than 1)
     
     mods = []   # List of mod objects. See Mod class below for more detail
-
-    _duration = -1
-
+    
     @property
     def ticknum(self):
         '''Returns how many ticks this buff has gone through as an integer.'''
@@ -257,6 +264,7 @@ class BaseBuff():
 
     @property
     def owner(self):
+        if not self.handler: return None
         return self.handler.owner
 
     @property
@@ -269,16 +277,16 @@ class BaseBuff():
         '''Returns if this buff stacks or not (maxstacks > 1)'''
         return self.maxstacks > 1
 
-    def __init__(self, handler, uid) -> None:
+    def __init__(self, handler, uid, cache={}) -> None:
         self.handler: BuffHandler = handler
         self.uid = uid
-        
-        cache:dict = dict(self.handler.db.get(uid))
+        if not cache: cache = dict(self.handler.db.get(uid))
         self.start = cache.get('start')
         self.duration = cache.get('duration')
         self.prevtick = cache.get('prevtick')
         self.paused = cache.get('paused')
         self.stacks = cache.get('stacks')
+        self.source = cache.get('source')
 
     def conditional(self, *args, **kwargs):
         '''Hook function for conditional stat mods. This must return True in 
@@ -294,13 +302,13 @@ class BaseBuff():
         '''Helper method which dispels this buff (removes and calls at_dispel).'''
         self.handler.remove(self.uid, loud=loud, dispel=True, delay=delay, context=context)
 
-    def pause(self):
+    def pause(self, context={}):
         '''Helper method which pauses this buff on its handler.'''
-        self.handler.pause(self.uid)
+        self.handler.pause(self.uid, context)
 
-    def unpause(self):
+    def unpause(self, context={}):
         '''Helper method which unpauses this buff on its handler.'''
-        self.handler.unpause(self.uid)
+        self.handler.unpause(self.uid, context)
 
     def reset(self):
         '''Resets the buff start time as though it were just applied; functionally identical to a refresh'''
@@ -324,7 +332,7 @@ class BaseBuff():
         '''Hook function to run when this buff expires from an object.'''
         pass
 
-    def at_post_check(self, *args, **kwargs):
+    def at_pre_check(self, *args, **kwargs):
         '''Hook function to run before this buff's modifiers are checked.'''
         pass
     
@@ -341,6 +349,14 @@ class BaseBuff():
     def at_tick(self, initial: bool, *args, **kwargs):
         '''Hook for actions that occur per-tick, a designer-set sub-duration.
         `initial` tells you if it's the first tick that happens (when a buff is applied).'''
+        pass
+
+    def at_pause(self, *args, **kwargs):
+        '''Hook for when this buff is paused'''
+        pass
+
+    def at_unpause(self, *args, **kwargs):
+        '''Hook for when this buff is unpaused.'''
         pass
     #endregion
 
@@ -369,6 +385,7 @@ class BuffHandler(object):
     ownerref = None
     dbkey = "buffs"
     autopause = False
+    _owner = None
     
     def __init__(self, owner, dbkey=dbkey, autopause=autopause):
         self.ownerref = owner.dbref
@@ -378,62 +395,60 @@ class BuffHandler(object):
             signals.SIGNAL_OBJECT_POST_UNPUPPET.connect(self.pause_playtime)
             signals.SIGNAL_OBJECT_POST_PUPPET.connect(self.unpause_playtime)
 
-    def __getattr__(self, key):
-        if key not in self.db.keys(): raise AttributeError
-        return self.get(key)
-
     #region properties
     @property
     def owner(self):
-        return search.search_object(self.ownerref)[0]
+        if self.ownerref: _owner = search.search_object(self.ownerref)
+        if _owner: return _owner[0]
+        else: return None
 
     @property
     def db(self):
-        '''The object attribute we use for the buff database. Auto-creates if not present. 
-        Convenience shortcut (equal to self.owner.db.dbkey)'''
+        '''The object attribute we use for the buff database. Auto-creates if not present.'''
+        if not self.owner: return {}
         if not self.owner.attributes.has(self.dbkey): self.owner.attributes.add(self.dbkey, {})
         return self.owner.attributes.get(self.dbkey)
 
     @property
     def traits(self):
         '''All buffs on this handler that modify a stat.'''
-        _t = {k:self.get(k) for k,v in self.db.items() if v['ref'].mods}
+        _t = {k:buff for k,buff in self.get_all().items() if buff.mods}
         return _t
 
     @property
     def effects(self):
         '''All buffs on this handler that trigger off an event.'''
-        _e = {k:self.get(k) for k,v in self.db.items() if v['ref'].triggers}
+        _e = {k:buff for k,buff in self.get_all().items() if buff.triggers}
         return _e
 
     @property
     def playtime(self):
         '''All buffs on this handler that only count down during active playtime.'''
-        _pt = {k:self.get(k) for k,v in self.db.items() if v['ref'].playtime}
+        _pt = {k:buff for k,buff in self.get_all().items() if buff.playtime}
         return _pt
 
     @property
     def paused(self):
         '''All buffs on this handler that are paused.'''
-        _p = {k:self.get(k) for k,v in self.db.items() if v['paused'] == True}
+        _p = {k:buff for k,buff in self.get_all().items() if buff.paused}
         return _p
 
     @property
     def expired(self):
         '''All buffs on this handler that have expired.'''
-        _e = { k: self.get(k) 
-            for k,v in self.db.items()
-            if not v['paused']
-            if v['duration'] > -1 
-            if v['duration'] < time.time() - v['start'] }
+        _e = { k:buff
+            for k,buff in self.get_all().items()
+            if not buff.paused
+            if buff.duration > -1 
+            if buff.duration < time.time() - buff.start }
         return _e
 
     @property
     def visible(self):
         '''All buffs on this handler that are visible.'''
-        _v = { k: self.get(k) 
-            for k,v in self.db.items()
-            if v['ref'].visible }
+        _v = { k:buff
+            for k,buff in self.get_all().items()
+            if buff.visible }
         return _v
 
     @property
@@ -441,15 +456,14 @@ class BuffHandler(object):
         '''Returns dictionary of instanced buffs equivalent to ALL buffs on this handler, 
         regardless of state, type, or anything else. You will only need this to extend 
         handler functionality. It is otherwise unused.'''
-        
-        _a = {k:self.get(k) for k,v in self.db.items()}
+        _a = self.get_all()
         return _a
     #endregion
     
     #region methods
     def add(self, buff: BaseBuff, key:str=None,
-        stacks=1, duration=None, source=None,
-        context={}, *args, **kwargs
+        stacks=0, duration=None, source=None,
+        to_cache:dict={},context:dict={}, *args, **kwargs
         ):
         
         '''Add a buff to this object, respecting all stacking/refresh/reapplication rules. Takes
@@ -460,24 +474,26 @@ class BuffHandler(object):
             source:     (optional) The source of this buff.
             stacks:     (optional) The number of stacks you want to add, if the buff is stacking
             duration:   (optional) The amount of time, in seconds, you want the buff to last. 
+            to_cache:   (optional) A dictionary to store in the buff's cache; does not overwrite default cache keys
             context:    (optional) An existing context you want to add buff details to
         '''
-        
         if not isinstance(buff, type): raise ValueError
 
         _context = context
         source = self.owner
+        b = to_cache
+        if stacks <1: stacks = min(1, buff.stacks)
 
         # Create the buff dict that holds a reference and all runtime information.
-        b = { 
+        b.update({ 
             'ref': buff,
             'start': time.time(),
             'duration': buff.duration, 
-            'prevtick': None,
+            'prevtick': time.time(),
             'paused': False, 
             'stacks': stacks,
             'source': source  
-            }
+            })
 
         # Generate the pID (procedural ID) from the object's dbref (uID) and buff key. 
         # This is the actual key the buff uses on the dictionary
@@ -486,14 +502,16 @@ class BuffHandler(object):
             if source: mix = str(source.dbref).replace("#","")
             uid = buff.key if buff.unique is True else buff.key + mix
         
-        # If the buff is on the dictionary, we edit existing values for refreshing/stacking
-        if uid in self.db.keys(): 
-            b = dict( self.db[uid] )
-            if buff.refresh: b['start'] = time.time()
-            if buff.maxstacks>1: b['stacks'] = min( b['stacks'] + stacks, buff.maxstacks )
-        
+        # Rules for applying over an existing buff
+        if uid in self.db.keys():
+            existing = dict(self.db[uid])
+            # Stacking
+            if buff.maxstacks>1: b['stacks'] = min( existing['stacks'] + stacks, buff.maxstacks )
+            elif buff.maxstacks<1: b['stacks'] = existing['stacks'] + stacks
+            # Carrying over old arbitrary cache values
+            cur_cache = {k:v for k,v in existing.items() if k not in b.keys()}
+            b.update(cur_cache)
         # Setting duration and initial tick, if relevant
-        b['prevtick'] = time.time() if buff.tickrate>=1 else None
         if duration: b['duration'] = duration
 
         # Apply the buff!
@@ -507,15 +525,13 @@ class BuffHandler(object):
         # Clean up the buff at the end of its duration through a delayed cleanup call
         if b['duration'] > -1: utils.delay( b['duration'], self.cleanup, persistent=True )
 
-        # Apply the buff and pass the Context upwards.
-        # return _context
-
     def remove(self, buffkey, 
-        loud=True, dispel=False, expire=False, 
+        stacks=0, loud=True, dispel=False, expire=False, 
         context={}, *args, **kwargs
         ):
         '''Remove a buff or effect with matching key from this object. Normally calls at_remove,
-        calls at_expire if the buff expired naturally, and optionally calls at_dispel.
+        calls at_expire if the buff expired naturally, and optionally calls at_dispel. Can also
+        remove stacks instead of the entire buff (still calls at_remove)
         
         Args:
             key:    The buff key
@@ -526,7 +542,6 @@ class BuffHandler(object):
 
         if buffkey not in self.db: return None
         
-        _context = context
         buff: BaseBuff = self.db[buffkey]['ref']
         instance : BaseBuff = buff(self, buffkey)
         
@@ -536,9 +551,8 @@ class BuffHandler(object):
             instance.at_remove(**context)
 
         del instance
-        del self.db[buffkey]
-
-        return _context
+        if not stacks: del self.db[buffkey]
+        elif stacks: self.db[buffkey]['stacks'] -= stacks
     
     def remove_by_type(self, bufftype:BaseBuff, 
         loud=True, dispel=False, expire=False, 
@@ -567,10 +581,15 @@ class BuffHandler(object):
         if buff: return buff["ref"](self, buffkey)
         else: return None
 
+    def get_all(self):
+        '''Returns a dictionary of instanced buffs (all of them) on this handler in the format {uid, instance}'''
+        _cache = dict(self.db)
+        return {k:buff['ref'](self, k, cache=buff) for k,buff in _cache.items()}
+
     def get_by_type(self, buff:BaseBuff):
         '''Returns a dictionary of instanced buffs of the specified type in the format {uid: instance}.'''
-        
-        return {k: self.get(k) for k,v in self.db.items() if v['ref'] == buff}
+        _cache = self.get_all()
+        return {k:_buff for k,_buff in _cache.items() if isinstance(_buff, buff)}
 
     def get_by_stat(self, stat:str, context={}):
         '''Returns a dictionary of instanced buffs which modify the specified stat in the format {uid: instance}.'''
@@ -608,6 +627,7 @@ class BuffHandler(object):
         # Find all buffs and traits related to the specified stat.
         applied = self.get_by_stat(stat, context)
         if not applied: return value
+        for buff in applied.values(): buff.at_pre_check(**context)
 
         # The final result
         final = self._calculate_mods(value, stat, applied)
@@ -633,7 +653,7 @@ class BuffHandler(object):
             if trigger in buff.triggers and not buff.paused:
                 buff.at_trigger(trigger, **context)
     
-    def pause(self, key: str):
+    def pause(self, key: str, context={}):
         """Pauses the buff. This excludes it from being checked for mods, triggered, or cleaned up. 
         Used to make buffs 'playtime' instead of 'realtime'."""
         if key in self.db.keys():
@@ -642,21 +662,30 @@ class BuffHandler(object):
             if buff['paused']: return
             buff['paused'] = True
 
-            # Figure out our new duration
+            # Math assignments
             t = time.time()         # Current Time
             s = buff['start']       # Start
             d = buff['duration']    # Duration
+            pt = buff['prevtick']   # Previous tick timestamp
+            tr = buff['ref'].tickrate   # Buff's tick rate
+            
+            # New duration and tick left
             e = s + d               # End
             nd = e - t              # New duration
+
+            if buff['ref'].ticking == True: pass
 
             # Apply the new duration
             if nd > 0: 
                 buff['duration'] = nd
-                self.db[key] = buff 
+                if buff['ref'].ticking: buff['tickleft'] = max(1, tr - (t - pt))
+                self.db[key] = buff
+                instance: BaseBuff = buff['ref'](self, key)
+                instance.at_pause(**context) 
             else: self.remove(key)
         return
 
-    def unpause(self, key: str):
+    def unpause(self, key: str, context={}):
         '''Unpauses a buff. This makes it visible to the various buff systems again.'''
         if key in self.db.keys():
             # Mark the buff as unpaused
@@ -664,10 +693,19 @@ class BuffHandler(object):
             if not buff['paused']: return
             buff['paused'] = False
 
-            # Start our new timer
-            buff['start'] = time.time()
-            self.db[key] = buff 
+            # Math assignments
+            tr = buff['ref'].tickrate
+            if buff['ref'].ticking: tl = buff['tickleft']
+            t = time.time()         # Current Time
+
+            # Start our new timer, adjust prevtik
+            buff['start'] = t
+            if buff['ref'].ticking: buff['prevtick'] = t - (tr - tl)
+            self.db[key] = buff
+            instance: BaseBuff = buff['ref'](self, key)
+            instance.at_unpause(**context)  
             utils.delay( buff['duration'], cleanup_buffs, self, persistent=True )
+            utils.delay( tr, tick_buff, handler=self, uid=key, initial=False, persistent=True)
         return
 
     def pause_playtime(self, sender=owner, **kwargs):
@@ -684,7 +722,7 @@ class BuffHandler(object):
         pass
 
     def set_duration(self, key, value):
-        '''Modifies the duration of a buff. Normally adds/subtracts'''
+        '''Modifies the duration of a buff.'''
         if key in self.db.keys():
            self.db[key]['duration'] = value
 
@@ -724,7 +762,7 @@ class BuffHandler(object):
                     if mod.modifier == 'add':   add += mod.value + ( (buff.stacks) * mod.perstack)
                     if mod.modifier == 'mult':  mult += mod.value + ( (buff.stacks) * mod.perstack)
         
-        final = (value + add) * (1.0 + mult)
+        final = (value + add) * max(0, 1.0 + mult)
         return final
 
     #endregion
