@@ -84,6 +84,22 @@ class _TestTimeBuff(BaseBuff):
     def at_tick(self, initial=True, *args, **kwargs):
         self.owner.db.ticktest = True
 
+class StatBuff(BaseBuff):
+    key = 'statbuff'
+    name = 'statbuff'
+    flavor = "This buff affects one of your stats!"
+
+    maxstacks = 0
+    refresh = True
+    unique = False
+
+    cache = {'modgen':['strength','add',0,0]}
+
+    def __init__(self, handler, uid, cache={}) -> None:
+        super().__init__(handler, uid, cache)
+        modgen = list(self.cache['modgen'])
+        if modgen: self.mods = [Mod(*modgen)]
+
 class BuffableObject(DefaultObject):
     stat1 = BuffableProperty(10)
 
@@ -131,8 +147,7 @@ class TestBuffsAndHandler(EvenniaTest):
         handler: BuffHandler = self.obj1.handler
         handler.add(_TestModBuff)
         handler.add(_TestTrigBuff)
-        # normal getters
-        self.assertEqual(isinstance(handler.tmb, _TestModBuff), True)
+        # normal getter
         self.assertEqual(isinstance(handler.get('tmb'),_TestModBuff), True)
         # stat getters
         self.assertEqual(isinstance(handler.get_by_stat('stat1')['tmb'], _TestModBuff), True)
@@ -149,8 +164,8 @@ class TestBuffsAndHandler(EvenniaTest):
         handler: BuffHandler = self.obj1.handler
         handler.add(_TestModBuff)
         handler.add(_TestTrigBuff)
-        self.assertEqual(handler.tmb.flavor, 'modderbuff')
-        self.assertEqual(handler.ttb.name, 'ttb')
+        self.assertEqual(handler.get('tmb').flavor, 'modderbuff')
+        self.assertEqual(handler.get('ttb').name, 'ttb')
     
     def test_modify(self):
         '''tests to ensure that values are modified correctly, and stack across mods'''
@@ -255,10 +270,12 @@ class TestBuffsAndHandler(EvenniaTest):
         handler.add(_TestTimeBuff)
         self.obj1.db.timetest, self.obj1.db.ticktest = 1, False
         # test duration and ticking
-        self.assertTrue(handler.ttib.ticking)
-        self.assertEqual(handler.get('ttib').duration, 5)
-        handler.get('ttib').at_tick()
+        buff = handler.get('ttib')
+        self.assertTrue(buff.ticking)
+        self.assertEqual(buff.duration, 5)
+        buff.at_tick()
         self.assertTrue(self.obj1.db.ticktest)
+        del buff
         # test duration modification and cleanup
         handler.set_duration('ttib', 0)
         self.assertEqual(handler.get('ttib').duration, 0)
@@ -273,3 +290,14 @@ class TestBuffsAndHandler(EvenniaTest):
         self.assertEqual(self.propobj.stat1, 25)
         self.propobj.buffs.remove('tmb')
         self.assertEqual(self.propobj.stat1, 10)
+
+    def test_modgen(self):
+        '''test generating mods on the fly'''
+        # setup
+        handler: BuffHandler = self.obj1.handler
+        self.obj1.db.gentest = 5
+        self.assertEqual(self.obj1.db.gentest, 5)
+        tc = {'modgen':['gentest', 'add', 5, 0]}
+        handler.add(StatBuff, to_cache=tc)
+        self.assertEqual(handler.check(self.obj1.db.gentest, 'gentest'), 10)
+        

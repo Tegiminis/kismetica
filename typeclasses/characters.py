@@ -14,7 +14,7 @@ from evennia.utils import utils, lazy_property
 
 # Handlers
 from typeclasses.components.combat import CombatHandler
-from typeclasses.components.buff import BuffHandler, BuffableProperty
+from evennia.contrib.rpg.buffs.buff import BuffHandler, BuffableProperty
 from typeclasses.components.cooldowns import CooldownHandler
 from typeclasses.item import InventoryHandler, Item
 
@@ -27,6 +27,7 @@ from evennia import TICKER_HANDLER, DefaultCharacter
 if TYPE_CHECKING:
     from typeclasses.npc import NPC
     from typeclasses.weapon import Weapon
+
 
 class Character(DefaultCharacter):
 
@@ -57,25 +58,27 @@ class Character(DefaultCharacter):
 
     def at_object_creation(self):
         self.buffs, self.cooldowns, self.combat
-        self.maxhp, self.evasion 
+        self.maxhp, self.evasion
         self.mobility, self.resilience, self.strength, self.discipline, self.recovery, self.intellect
 
         self.cmdset.add(default.CharacterCmdSet, permanent=True)
-        self.db.hp = 100        # Current hp
+        self.db.hp = 100  # Current hp
 
         super().at_object_creation()
 
     def at_init(self):
         self.buffs, self.cooldowns, self.combat
-        self.ndb.target = None      # Used if you use attack someone or use 'target'
-        self.tags.remove('attacking', category='combat')
+        self.ndb.target = None  # Used if you use attack someone or use 'target'
+        self.tags.remove("attacking", category="combat")
         super().at_init()
 
-    #region calculated properties    
+    # region calculated properties
     @property
     def named(self) -> str:
-        if self.tags.get('named') is None: return "the " + self.key
-        else: return self.key
+        if self.tags.get("named") is None:
+            return "the " + self.key
+        else:
+            return self.key
 
     @property
     def traits(self):
@@ -89,7 +92,7 @@ class Character(DefaultCharacter):
         _buffs = self.buffs.effects
         return _perks | _buffs
 
-    #endregion
+    # endregion
 
     """
     The Character defaults to reimplementing some of base Object's hook methods with the
@@ -113,22 +116,23 @@ class Character(DefaultCharacter):
 
     pass
 
+
 class PlayerCharacter(Character):
 
     # The module we use for all player characters. This contains player-specific stats.
-    
+
     @lazy_property
     def inv(self) -> InventoryHandler:
         return InventoryHandler(self)
-    
+
     def at_object_creation(self):
 
         self.cmdset.add(destiny.DestinyBasicCmdSet, permanent=True)
         self.cmdset.add(destiny.DestinyBuilderCmdSet, permanent=True)
 
-        self.db.subclasses = {}     # Subclasses dictionary
-        self.db.armor = {}          # Armor dictionary
-        self.db.skills = {}         # Skills dictionary
+        self.db.subclasses = {}  # Subclasses dictionary
+        self.db.armor = {}  # Armor dictionary
+        self.db.skills = {}  # Skills dictionary
 
         # TickerHandler that fires off the "learn" function
         # TICKER_HANDLER.add(15, self.learn_xp)
@@ -139,43 +143,43 @@ class PlayerCharacter(Character):
         # Your held weapon. What you shoot with when you use 'attack'
         self.db.held = None
 
-        # XP stats. Current and cap XP. 
+        # XP stats. Current and cap XP.
         self.db.xp = 0
         self.db.xpCap = 1000
         self.db.xpGain = 10
-        self.db.level = 1   
+        self.db.level = 1
 
-        super().at_object_creation() 
+        super().at_object_creation()
 
-    
     @property
     def weight(self):
-        '''The character's current weight, taking into account all held items.'''
+        """The character's current weight, taking into account all held items."""
         _weight = 0
 
-        for x in self.contents: 
+        for x in self.contents:
             if utils.inherits_from(x, Item):
                 x: Item
                 _weight += x.db.weight
-        
+
         return _weight
 
     @property
     def xpGain(self):
-        '''The amount of XP you learn from your cap with each tick.'''
-        _gain = self.buffs.check(self.level * 50, 'gain')
+        """The amount of XP you learn from your cap with each tick."""
+        _gain = self.buffs.check(self.level * 50, "gain")
         return _gain
 
     @property
     def xpCap(self):
-        '''The amount of XP you can have "stored". It is "learned" with each tick.'''
-        _cap = self.buffs.check(self.level * 1000, 'cap')
+        """The amount of XP you can have "stored". It is "learned" with each tick."""
+        _cap = self.buffs.check(self.level * 1000, "cap")
         return _cap
 
     @property
     def level(self):
-        '''The combined levels of all a player's subclasses.'''
+        """The combined levels of all a player's subclasses."""
         subclasses: dict = self.db.subclasses
         _lvl = 0
-        for x in subclasses.values(): _lvl += x.get('level', 1)
+        for x in subclasses.values():
+            _lvl += x.get("level", 1)
         return _lvl
