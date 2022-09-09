@@ -1,247 +1,127 @@
+from typing import TYPE_CHECKING
 import random
+import inflect
 import evennia.utils as utils
+from world.rules import make_context
+
+if TYPE_CHECKING:
+    from typeclasses.characters import Character
+    from typeclasses.npc import NPC
+    from typeclasses.weapon import Weapon
+
+p = inflect.engine()
+
 
 class CombatHandler(object):
-    obj = None 
-    
-    def __init__(self, obj) -> None:
-        self.obj = obj
+    owner = None
+
+    def __init__(self, owner) -> None:
+        self.owner = owner
 
     @property
     def hp(self):
-        return self.obj.db.hp
+        return self.owner.db.hp
+
     @hp.setter
     def hp(self, value):
-        self.obj.db.hp = value
+        self.owner.db.hp = value
 
     @property
-    def maxHP(self):
-        return self.obj.maxHP
+    def maxhp(self):
+        return self.owner.maxhp
 
-    def damage(self, damage: int, quiet=False, context={}) -> int:
-        '''Applies damage, and returns the damage it applied. Use `quiet` to stifle default damage message.'''
-        
-        # An "injury is damage taken as the result of a physical attack
-        if 'attacker' in context.keys():
-            damage = self.obj.buffs.check(damage, 'injury')
-            self.obj.buffs.trigger('injury', context=context)
+    def take_damage(self, damage: int = 0, loud=True, raw=False, context=None) -> dict:
+        """Applies damage. Affected by "injury" buffs.
+
+        Args:
+            damage: Damage to take
+            loud:   Use the default damage message (default: True)
+            raw:    Is this "raw" damage (unmodified by buffs)?
+            context:    Context to update
+
+        Returns a context dictionary updated with the following values:
+            damage_taken:   damage taken after buffs were applied
+            is_kill:        did this damage instance kill the target?"""
+
+        context = make_context(context)
 
         # Apply damage
+        damage_taken = damage if damage < self.hp else self.hp
         self.hp = max(self.hp - damage, 0)
-        if not quiet: self.obj.msg('You take %i damage!' % damage)
+        if loud:
+            self.owner.msg("  ... You take %i damage!" % damage)
 
         # If you are out of life, you are out of luck
-        self.die()
+        is_killing = self.hp <= 0
+        if is_killing:
+            self.die()
 
-        return damage
-
-    def die(self, context={}):
-        '''This was your life.'''
-        self.obj.tags.clear(category='combat')
-        self.obj.tags.add('dead', category='combat')
-        pass
-    
-    def heal(self, heal: int, msg=None) -> int:
-        self.hp = min(self.hp + heal, self.db.maxHP)
-        self.obj.msg('You healed by %i!' % heal)
-
-    def shoot(self, defender, auto=True, sim=False):
-        '''The most basic attack a character can perform. 
-        
-        Attacker must have a weapon in db.held, otherwise 
-        this method will return an error.
-        '''
-        if not self.tags.has('attacking', 'combat'): return
-
-        # Can't attack something that isn't an NPC (for now)
-        if self.obj.is_typeclass('typeclasses.characters.PlayerCharacter') and not defender.is_typeclass('typeclasses.npc.NPC'): 
-            self.msg("You can only attack NPCs!")
-            return
-
-        # Your target changed rooms; gave you the slip
-        if defender.location != self.location:
-            self.msg("Your target has slipped away from you!")
-            return
-
-        weapon = self.db.held
-
-        # Can't fire an empty gun!
-        if weapon.ammo <= 0:
-            self.msg("Your weapon is out of ammo!")
-            return
-
-        # Variable assignments for legibility
-        _rpm = weapon.rpm
-
-        # If it has been too soon since your last attack, figure out when you can attack next, and delay to then
-        if self.cooldowns.find('attack'): 
-            _tl = self.cooldowns.time_left('attack')
-            utils.delay(_tl, self.basic_attack, defender=defender)
-            return
-        
-        # Default messages for hits and crits, depending on the damage type
-        # (bullet, plasma, slashing, blunt)
-        default_msg = {
-            "bullet": {
-                "hit": ["%s staggers under the flurry of bullets.", None],
-                "crit": ["Blood spurts uncontrollably from newly-apportioned wounds!", None]
-            },
-            "fusion": {
-                "hit": ["Bolts of multicolored plasma singe %s's armor."],
-                "crit": ["Molten matter fuses to flesh as %s screams in agony!"]
-            }
-
-        }
-
-        # The context dictionary for combat, used to pass combat event data around to other functions
-        combat = {'attacker': self, 'defender': defender}
-
-        # Messaging for yourself and the room
-        self.msg( weapon.db.msg['self'] % ( weapon.named, defender.named ) )
-        self.location.msg_contents( weapon.db.msg['attack'] % (self.named, weapon.named, defender.named), exclude=self)
-
-        # Multishot loop
-        for x in range(max(1, weapon.shots)):
-            
-            # Bundle weapon stats and pass them to the "single shot" attack method
-            weapon_stats = weapon.WeaponData
-            combat = self.single_attack(defender, **weapon_stats, context=combat)
-
-            if x <= 0: self.msg(f"  HIT: +{int(combat['hit'])} vs EVA: +{int(combat['dodge'])}")
-
-            if combat['isHit'] is True: 
-                combat['damage'] = defender.damage(combat['damage'], context=combat)
-
-                weapon.buffs.trigger('hit', context=combat)
-                if combat['isCrit'] is True: weapon.buffs.trigger('crit', context=combat)
-
-                defender.buffs.trigger('thorns', context=combat)
-                defender.buffs.trigger('injury', context=combat)
-
-                if combat['isHit'] is True: self.msg( "    ... %i damage! |n\n" % combat['damage'] )
-
-                msgHit = random.choice(default_msg['bullet']['hit'])
-                msgCrit = random.choice(default_msg['bullet']['crit'])
-            else:
-                if x <= 0: self.msg('    ... Miss!')
-                break
-    
-        if msgHit: self.msg("    " +  (msgHit % defender.named).capitalize() + "|n\n")
-        if msgCrit: self.msg("    " +  msgCrit.capitalize() + "|n\n")
-
-        weapon.db.ammo -= 1
-        self.cooldowns.start('attack', _rpm)
-        
-        if auto: utils.delay(_rpm, self.basic_attack, defender=defender)
-
-    def base_attack(self, defender, 
-        context: dict = {}):
-        '''The most basic attack a character can perform. This attack corresponds to a standard melee strike without a weapon. 
-        Very weak unless the character has high strength or damage buffs. Cannot crit.
-        
-        Args:
-            defender:   The target you are shooting'''
-
-        # The context for our combat. This holds all sorts of useful info we pass around.
-        if context is None: combat = {'attacker': self.obj, 'defender': defender}
-        else: combat = context
-
-        # Hit calculation and context update
-        combat = self.accuracy_roll(context=combat)  
-
-        # Damage calc and buff triggers
-        if combat['isHit'] is True:
-            combat['damage'] = 10
-            
-            self.obj.buffs.trigger('hit', context=combat)
-
-        return combat
-
-    def weapon_attack(self, defender, 
-        damage, critChance, critMult, accuracy, 
-        context: dict = {}):
-        '''Most basic attacks will be of this variety. Uses weapon stats and characteristics to create combat texture.
-        
-        Args:
-            defender:   The target you are shooting
-            damage:     The source damage value; typically weapon damage
-            crit:       Crit chance
-            mult:       Crit multiplier
-            acc:        Accuracy'''
-        
-        # self.location.msg_contents("Debug: Attempting a shot")
-
-        # The context for our combat. 
-        # This holds all sorts of useful info we pass around.
-        if not context: combat = {'attacker': self, 'defender': defender}
-        else: combat = context
-
-        evasion = defender.evasion
-
-        # Hit calculation and context update
-        combat = self.hit_roll(accuracy=accuracy, crit=critChance, evasion=evasion, context=combat)
-
-        # Damage calc and buff triggers
-        if combat.get('isHit'):
-            combat['damage'] = self.mod_damage(damage, combat['isCrit'], critMult, False)
-            
-            self.obj.buffs.trigger('hit', context=combat)
-            if combat.get('isCrit'): self.obj.buffs.trigger('crit', context=combat)
-
-        return combat
-
-    def hit_roll(
-        self,
-        accuracy=1.0, crit=2.0, evasion=1.0,
-        context:dict={}
-        ) -> tuple:
-        '''
-        Rolls to hit a defender, based on accuracy and evasion values.
-        
-        Args:
-            defender: The defender.
-            accuracy: The base accuracy value. Typically your weapon's accuracy
-
-        Updates and returns the context
-        '''
-
-        # Apply all accuracy and crit buffs for attack
-        accuracy = self.obj.buffs.check(accuracy, 'accuracy')
-        crit = self.obj.buffs.check(crit, 'critchance')
-
-        # Random values for hit calculations
-        # hit must be > evasion for the player to hit
-        hit = random.random() * 100
-        dodge = random.random() * 100
-
-        # Modify the hit roll by the accuracy value.
-        hit += accuracy * random.random()
-        dodge += evasion * random.random()
-
-        # Update and return the combat context
-        toUpdate = {
-            'isHit':hit > dodge,
-            'isCrit':hit > dodge * crit,
-            'hit':hit,
-            'dodge':dodge}
-
-        context.update(toUpdate)
+        to_update = {"damage_taken": damage_taken, "is_kill": is_killing}
+        context.update(to_update)
         return context
 
-    def mod_damage(
-        self, damage,
-        crit=False, critMult=2.0, falloff=False
-        ) -> float:
-        '''Applies crit and character modifiers to damage.'''
+    def die(self, context=None):
+        """Die! Marks you as dead."""
+        context = make_context(context)
+        self.owner.tags.clear(category="combat")
+        self.owner.tags.add("dead", category="combat")
 
-        # All damage is multiplied by crit
-        if crit is True: damage = round(damage * critMult)
+    def heal(self, heal: int, msg=None) -> int:
+        """Heals you.
 
-        # Apply all attacker buffs to damage
-        damage = self.obj.buffs.check(damage, 'damage')
+        Args:
+            heal:   The amount you want to heal for (will be converted to an int)
+        """
+        self.hp = min(self.hp + heal, self.maxhp)
+        self.owner.msg("You healed by %i!" % heal)
 
-        return round(damage)
+    def opposed_hit(self, acc=0.0, eva=0.0, crit=2.0, context: dict = None) -> dict:
+        """
+        Performs an "opposed hit roll". An example of this would be an accuracy
+        vs evasion roll, or an awareness vs spread roll. Each roll is
+        d100 + random(acc/eva), and a hit is made if the hit value is higher.
 
-    def spread_roll(): pass
+        Args:
+            acc:    The attacker's accuracy modifier.(default: 0)
+            eva:    The defender's evasion modifier. (default: 0)
+            crit:   The attacker's crit modifier (default: 2)
+            context:    (optional) The context dictionary you wish to update with this method's values
 
-    def will_roll(): pass
+        Returns a context dictionary updated with the following values:
+            hit/dodge:  nested dictionary of {base, bonus, total}
+            is_hit:     if this was a hit
+            hit_div:    hit total divided by dodge total
+        """
+        context = make_context(context)
+
+        # Roll two d100s
+        hit = int(random.random() * 100)
+        dodge = int(random.random() * 100)
+
+        # Add random(accuracy) to the relevant values
+        accuracy = acc * random.random()
+        evasion = eva * random.random()
+
+        # Update and return the context dictionary
+        to_update = {
+            "hit": {"base": hit, "bonus": accuracy, "total": round(hit + accuracy)},
+            "dodge": {"base": dodge, "bonus": evasion, "total": round(dodge + evasion)},
+            "is_hit": (hit + accuracy) > (dodge + evasion),
+            "hit_div": (hit + accuracy) / (dodge + evasion),
+            "is_crit": hit > dodge * crit,
+        }
+
+        # Update the context and return
+        context.update(to_update)
+        return context
+
+    def mod_damage(self, attacker=None, damage=0, crit=False, prec=1, context=None):
+        """Modifies the damage taken before applying it. This is where you modify
+        damage based on armor, but not general damage reduction."""
+        context = make_context(context)
+
+        if crit:
+            damage *= attacker.buffs.check(prec, "precision")
+
+        context["damage"] = damage
+        return context

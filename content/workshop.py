@@ -1,50 +1,54 @@
-'''Where new perks and buffs are made!'''
+"""Where new perks and buffs are made!"""
 
 from typeclasses.context import Context
-from typeclasses.components.buff import BaseBuff, Mod
+from evennia.contrib.rpg.buffs.buff import BaseBuff, Mod
+
 
 class FourthTime(BaseBuff):
-    id = 'fourthtime'
+    id = "fourthtime"
     name = "Fourth Time's The Charm"
     flavor = "Rapidly landing precision hits returns two rounds to the magazine."
-    
-    trigger = 'crit'
+
+    trigger = "crit"
 
     def on_trigger(self, *args, **kwargs):
         self.owner.buffs.add(FourthTimeEffect)
 
+
 class FourthTimeEffect(BaseBuff):
-    id = 'fourthtime'
+    id = "fourthtime"
     name = "Fourth Time's The Charm"
     flavor = "Rapidly landing precision hits returns two rounds to the magazine."
 
     duration = 30
     maxstacks = 4
 
-    trigger = 'crit'
+    trigger = "crit"
 
     def on_trigger(self, *args, **kwargs):
-        if self.stacks >= 4: 
-            self.owner.location.msg('Your magazine feels slightly heavier.')
+        if self.stacks >= 4:
+            self.owner.location.msg("Your magazine feels slightly heavier.")
             self.owner.db.ammo += 2
             self.remove()
 
+
 class RapidHit(BaseBuff):
-    id = 'rapidhit'
+    id = "rapidhit"
     name = "Rapid Hit"
     flavor = "Precision hits temporarily increase stability and reload speed."
-    
-    trigger = 'crit'
+
+    trigger = "crit"
 
     def on_trigger(self, *args, **kwargs):
         bc: Context = self.owner.buffs.add(RapidHitBuff)
         return bc
 
+
 class RapidHitBuff(BaseBuff):
 
-    id = 'rapidhit'
-    name = 'Rapid Hit'
-    flavor = 'Precision hits temporarily increase stability and reload speed.'
+    id = "rapidhit"
+    name = "Rapid Hit"
+    flavor = "Precision hits temporarily increase stability and reload speed."
 
     duration = 30
     refresh = True
@@ -52,38 +56,38 @@ class RapidHitBuff(BaseBuff):
 
     maxstacks = 5
 
-    mods = [
-        Mod('stability', 'add', 6, 1),
-        Mod('reload', 'mult', -0.05, -0.05)
-    ]
+    mods = [Mod("stability", "add", 6, 1), Mod("reload", "mult", -0.05, -0.05)]
+
 
 class KillClipPerk(BaseBuff):
-    id = 'kc_perk'
-    name = 'Kill Clip'
-    flavor = 'Reloading after a kill grants increased damage.'
-    
-    trigger = 'kill'
+    id = "kc_perk"
+    name = "Kill Clip"
+    flavor = "Reloading after a kill grants increased damage."
+
+    trigger = "kill"
 
     def on_trigger(self, *args, **kwargs):
         self.owner.buffs.add(KillClipEffect)
 
-class KillClipEffect(BaseBuff):
-    id = 'kc_triggered'
-    name = 'Kill Clip'
-    flavor = 'Reloading after a kill grants increased damage'
 
-    trigger = 'reload'
+class KillClipEffect(BaseBuff):
+    id = "kc_triggered"
+    name = "Kill Clip"
+    flavor = "Reloading after a kill grants increased damage"
+
+    trigger = "reload"
 
     duration = 30
 
     def on_trigger(self, *args, **kwargs):
-        self.owner.location.msg('Your weapon begins to glow with otherworldly light.')
+        self.owner.location.msg("Your weapon begins to glow with otherworldly light.")
         self.owner.buffs.add(KillClipBuff)
 
+
 class KillClipBuff(BaseBuff):
-    id = 'killclip'
-    name = 'Kill Clip'
-    flavor = 'Reloading after a kill grants increased damage.'
+    id = "killclip"
+    name = "Kill Clip"
+    flavor = "Reloading after a kill grants increased damage."
 
     duration = 300
 
@@ -91,7 +95,7 @@ class KillClipBuff(BaseBuff):
     stacking = False
     unique = True
 
-    mods = [ Mod('damage', 'mult', 0.25, 0.0) ]
+    mods = [Mod("damage", "mult", 0.25, 0.0)]
 
     def on_remove(self, context: Context):
-        context.target.msg('    The glow around your weapon dissipates.')
+        context.target.msg("    The glow around your weapon dissipates.")

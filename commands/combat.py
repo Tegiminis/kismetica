@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from typeclasses.characters import PlayerCharacter
     from typeclasses.weapon import Weapon
 
+
 class CmdAttack(BaseCommand):
     """
     Attack an opponent
@@ -20,10 +21,11 @@ class CmdAttack(BaseCommand):
     Usage:
       attack <target>
 
-    This will attack a target in the same room. If you have selected a target 
+    This will attack a target in the same room. If you have selected a target
     using the 'target' command, it will use that target instead. You will
-    continue to attack the target until you stop via disengage.    
+    continue to attack the target until you stop via disengage.
     """
+
     key = "attack"
     aliases = []
 
@@ -31,7 +33,7 @@ class CmdAttack(BaseCommand):
         self.args = self.args.strip()
 
     def func(self):
-        caller: PlayerCharacter = self.caller    
+        caller: PlayerCharacter = self.caller
         target = None
         now = time.time()
         weapon = caller.db.held
@@ -44,21 +46,22 @@ class CmdAttack(BaseCommand):
         else:
             caller.msg("You need to pick a target to attack.")
             return
-        
-        if target.db.state == 'dead':
+
+        if target.db.state == "dead":
             caller.msg("You cannot attack a dead target.")
             return
 
-        if caller.cooldowns.find('attack'):
+        if caller.cooldowns.find("attack"):
             caller.msg("You cannot act again so quickly!")
             return
 
         if target:
-            caller.tags.add('attacking', category='combat')
-            caller.combat.weapon_attack(target)    
+            caller.tags.add("attacking", category="combat")
+            caller.combat.weapon_attack(target)
         else:
             caller.msg("You must select a valid target to attack!")
             return
+
 
 class CmdMag(BaseCommand):
     """
@@ -67,8 +70,9 @@ class CmdMag(BaseCommand):
     Usage:
       mag
 
-    This checks the magazine of the weapon you currently have equipped.   
+    This checks the magazine of the weapon you currently have equipped.
     """
+
     key = "mag"
     aliases = ["magcheck"]
 
@@ -76,26 +80,28 @@ class CmdMag(BaseCommand):
         self.args = self.args.strip()
 
     def func(self):
-        caller: PlayerCharacter = self.caller    
+        caller: PlayerCharacter = self.caller
         weapon: Weapon = caller.db.held
 
-        caller.msg( "You check your magazine and see that it is %s." % weapon.magcheck)
+        caller.msg("You check your magazine and see that it is %s." % weapon.magcheck)
+
 
 class CmdDisengage(BaseCommand):
     """
     Stop attacking an opponent
 
     Usage:
-      disengage    
+      disengage
     """
+
     key = "disengage"
     aliases = []
 
     def func(self):
         caller: PlayerCharacter = self.caller
-        caller.msg('You stop attacking.')
-        caller.location.msg_contents('%s stops attacking.' % caller, exclude=caller)
-        caller.tags.remove('attacking', category='combat')
+        caller.msg("You stop attacking.")
+        caller.location.msg_contents("%s stops attacking." % caller, exclude=caller)
+        caller.tags.remove("attacking", category="combat")
 
 
 class CmdTarget(BaseCommand):
@@ -105,11 +111,12 @@ class CmdTarget(BaseCommand):
     Usage:
       target <target>
 
-    Target an object that can be attacked in the same room. This will allow 
-    you to use the attack command without specifying an object. Very useful 
-    for multi-opponent combat. Attacking a target manually will also 
+    Target an object that can be attacked in the same room. This will allow
+    you to use the attack command without specifying an object. Very useful
+    for multi-opponent combat. Attacking a target manually will also
     automatically make it your target.
     """
+
     key = "target"
     aliases = ["tar"]
 
@@ -127,6 +134,7 @@ class CmdTarget(BaseCommand):
         if target:
             caller.ndb.target = target
 
+
 class CmdEquip(BaseCommand):
     """
     Equip this weapon
@@ -134,13 +142,14 @@ class CmdEquip(BaseCommand):
     Usage:
       equip
 
-    This will equip a weapon you are carrying on you to the weapon's 
-    relevant slot. You can equip a kinetic, an energy, and a power 
-    weapon. Attempting to equip to a slot you already have equipped 
-    will swap the weapons. You cannot unequip a weapon after equipping 
+    This will equip a weapon you are carrying on you to the weapon's
+    relevant slot. You can equip a kinetic, an energy, and a power
+    weapon. Attempting to equip to a slot you already have equipped
+    will swap the weapons. You cannot unequip a weapon after equipping
     it; you must swap to another weapon on your person.
-    
+
     """
+
     key = "equip"
 
     def parse(self):
@@ -150,7 +159,7 @@ class CmdEquip(BaseCommand):
         "Implementing combat"
 
         caller = self.caller
-           
+
         if not self.args:
             caller.msg("You must pick a weapon to equip!")
             return
@@ -166,16 +175,22 @@ class CmdEquip(BaseCommand):
 
                 _name = caller.named
                 name = target.named
-                caller.location.msg_contents("%s hoists %s in their hands." % (caller.named, target.named), exclude=caller)
+                caller.location.msg_contents(
+                    "%s hoists %s in their hands." % (caller.named, target.named),
+                    exclude=caller,
+                )
                 return
             else:
-                caller.msg("You must have a weapon in your inventory in order to equip it.")
+                caller.msg(
+                    "You must have a weapon in your inventory in order to equip it."
+                )
                 return
         else:
             caller.msg("You must pick a valid weapon to equip.")
             return
         return
-    
+
+
 class CmdDraw(BaseCommand):
     """
     Draws the specified weapon
@@ -185,8 +200,9 @@ class CmdDraw(BaseCommand):
 
     This will switch your active weapon to specified weapon, as long as it is equipped.
     """
+
     key = "draw"
-    aliases = ["weapon swap","wswap"]
+    aliases = ["weapon swap", "wswap"]
 
     def parse(self):
         self.args = self.args.strip()
@@ -194,23 +210,25 @@ class CmdDraw(BaseCommand):
     def func(self):
 
         caller = self.caller
-            
+
         if not self.args:
             caller.msg("You must specify a weapon to draw.")
             return
 
         caller.db.held = self.args
 
-class CmdDraw(BaseCommand):
+
+class CmdHolster(BaseCommand):
     """
-    Stows your weapon.
+    Holsters your weapon in its designated holster.
 
     Usage:
-        stow
+        holster
 
-    This puts your weapon away. You cannot fire it or 
+    This puts your weapon away. You cannot fire it or
     """
-    key = "stow"
+
+    key = "holster"
     aliases = []
 
     def parse(self):

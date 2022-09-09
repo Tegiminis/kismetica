@@ -1,4 +1,5 @@
-from destiny.typeclasses.components.buff import Trait
+from evennia.contrib.rpg.buffs.buff import BaseBuff
 
-class Rifled(Trait):
+
+class Rifled(BaseBuff):
     pass

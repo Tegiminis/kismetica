@@ -9,6 +9,7 @@ creation commands.
 """
 import time
 import random
+from world.rules import make_context
 from typing import TYPE_CHECKING
 from evennia.utils import utils, lazy_property
 
@@ -16,7 +17,6 @@ from evennia.utils import utils, lazy_property
 from typeclasses.components.combat import CombatHandler
 from evennia.contrib.rpg.buffs.buff import BuffHandler, BuffableProperty
 from typeclasses.components.cooldowns import CooldownHandler
-from typeclasses.item import InventoryHandler, Item
 
 # Commands
 import commands.default_cmdsets as default
@@ -39,6 +39,10 @@ class Character(DefaultCharacter):
         return BuffHandler(self, autopause=True)
 
     @lazy_property
+    def perks(self) -> BuffHandler:
+        return BuffHandler(self, dbkey="perks", autopause=True)
+
+    @lazy_property
     def cooldowns(self) -> CooldownHandler:
         return CooldownHandler(self)
 
@@ -49,17 +53,9 @@ class Character(DefaultCharacter):
     maxhp = BuffableProperty(100)
     evasion = BuffableProperty(1)
 
-    mobility = BuffableProperty(3)
-    resilience = BuffableProperty(3)
-    strength = BuffableProperty(3)
-    discipline = BuffableProperty(3)
-    recovery = BuffableProperty(3)
-    intellect = BuffableProperty(3)
-
     def at_object_creation(self):
         self.buffs, self.cooldowns, self.combat
         self.maxhp, self.evasion
-        self.mobility, self.resilience, self.strength, self.discipline, self.recovery, self.intellect
 
         self.cmdset.add(default.CharacterCmdSet, permanent=True)
         self.db.hp = 100  # Current hp
@@ -67,7 +63,10 @@ class Character(DefaultCharacter):
         super().at_object_creation()
 
     def at_init(self):
-        self.buffs, self.cooldowns, self.combat
+        self.buffs: BuffHandler
+        self.perks: BuffHandler
+        self.cooldowns: CooldownHandler
+        self.combat: CombatHandler
         self.ndb.target = None  # Used if you use attack someone or use 'target'
         self.tags.remove("attacking", category="combat")
         super().at_init()
@@ -80,17 +79,22 @@ class Character(DefaultCharacter):
         else:
             return self.key
 
-    @property
-    def traits(self):
-        _perks = self.perks.traits
-        _buffs = self.buffs.traits
-        return _perks | _buffs
+    def trigger_buffs(self, trigger: str, context: dict = None):
+        self.buffs.trigger(trigger, context=context)
+        self.perks.trigger(trigger, context=context)
 
-    @property
-    def effects(self):
-        _perks = self.perks.effects
-        _buffs = self.buffs.effects
-        return _perks | _buffs
+    def check_buffs(
+        self,
+        value: float,
+        stat: str,
+        loud=True,
+        context=None,
+        trigger=False,
+        strongest=False,
+    ):
+        _value = value
+        _value = self.buffs.check(value, stat, loud, context, trigger, strongest)
+        _value = self.perks.check(value, stat, loud, context, trigger, strongest)
 
     # endregion
 
@@ -121,18 +125,19 @@ class PlayerCharacter(Character):
 
     # The module we use for all player characters. This contains player-specific stats.
 
-    @lazy_property
-    def inv(self) -> InventoryHandler:
-        return InventoryHandler(self)
+    mobility = BuffableProperty(3)
+    resilience = BuffableProperty(3)
+    strength = BuffableProperty(3)
+    discipline = BuffableProperty(3)
+    recovery = BuffableProperty(3)
+    intellect = BuffableProperty(3)
+    xpcap = BuffableProperty(1000)
+    xpgain = BuffableProperty(10)
 
     def at_object_creation(self):
 
         self.cmdset.add(destiny.DestinyBasicCmdSet, permanent=True)
         self.cmdset.add(destiny.DestinyBuilderCmdSet, permanent=True)
-
-        self.db.subclasses = {}  # Subclasses dictionary
-        self.db.armor = {}  # Armor dictionary
-        self.db.skills = {}  # Skills dictionary
 
         # TickerHandler that fires off the "learn" function
         # TICKER_HANDLER.add(15, self.learn_xp)
@@ -145,11 +150,16 @@ class PlayerCharacter(Character):
 
         # XP stats. Current and cap XP.
         self.db.xp = 0
-        self.db.xpCap = 1000
-        self.db.xpGain = 10
+        self.db.xpcap = 1000
+        self.db.xpgain = 10
         self.db.level = 1
+        return super().at_object_creation()
 
-        super().at_object_creation()
+    def at_init(self):
+        self.inv
+        self.mobility, self.resilience, self.strength
+        self.discipline, self.recovery, self.intellect
+        return super().at_init()
 
     @property
     def weight(self):
