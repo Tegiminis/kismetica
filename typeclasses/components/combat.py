@@ -30,6 +30,10 @@ class CombatHandler(object):
     def maxhp(self):
         return self.owner.maxhp
 
+    @property
+    def buffs(self) -> BuffHandlerExtended:
+        return self.owner.buffs
+
     def take_damage(self, damage: int = 0, loud=True, raw=False, context=None) -> dict:
         """Applies damage. Affected by "injury" buffs.
 

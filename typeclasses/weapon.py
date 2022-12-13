@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING
 from evennia.typeclasses.attributes import AttributeProperty
 from evennia.typeclasses.tags import TagHandler
 
-from typeclasses.context import Context
 from typeclasses.components.cooldowns import CooldownHandler
 from typeclasses.objects import Object
-from evennia.contrib.rpg.buffs.buff import BaseBuff, BuffHandler, BuffableProperty
+from evennia.contrib.rpg.buffs.buff import BaseBuff, BuffableProperty
+from typeclasses.components.buffsextended import BuffHandlerExtended
 from evennia.utils import lazy_property, utils
 from evennia import Command as BaseCommand
 from evennia import CmdSet
@@ -204,8 +204,8 @@ class Weapon(Object):
     """
 
     @lazy_property
-    def buffs(self) -> BuffHandler:
-        return BuffHandler(self)
+    def buffs(self) -> BuffHandlerExtended:
+        return BuffHandlerExtended(self)
 
     # ammo
     mag = BuffableProperty(10)
@@ -459,3 +459,9 @@ class Weapon(Object):
             self.db.reserves -= _toreload
 
         return _return
+
+    def equip_weapon(self):
+        owner = self.location
+        owner.events.subscribe(self.buffs)
+
+    # endregion

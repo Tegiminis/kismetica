@@ -15,14 +15,17 @@ from evennia.utils import utils, lazy_property
 
 # Handlers
 from typeclasses.components.combat import CombatHandler
-from evennia.contrib.rpg.buffs.buff import BuffHandler, BuffableProperty
+from evennia.contrib.rpg.buffs.buff import BuffableProperty
+from typeclasses.components.buffsextended import BuffHandlerExtended
 from typeclasses.components.cooldowns import CooldownHandler
+from typeclasses.components.eventmanager import EventManager
 
 # Commands
 import commands.default_cmdsets as default
 import commands.destiny_cmdsets as destiny
 
 from evennia import TICKER_HANDLER, DefaultCharacter
+from typeclasses.item import Item
 
 if TYPE_CHECKING:
     from typeclasses.npc import NPC
@@ -35,12 +38,12 @@ class Character(DefaultCharacter):
 
     # Buff and perk handlers
     @lazy_property
-    def buffs(self) -> BuffHandler:
-        return BuffHandler(self, autopause=True)
+    def buffs(self) -> BuffHandlerExtended:
+        return BuffHandlerExtended(self, autopause=True)
 
     @lazy_property
-    def perks(self) -> BuffHandler:
-        return BuffHandler(self, dbkey="perks", autopause=True)
+    def perks(self) -> BuffHandlerExtended:
+        return BuffHandlerExtended(self, dbkey="perks", autopause=True)
 
     @lazy_property
     def cooldowns(self) -> CooldownHandler:
@@ -49,6 +52,10 @@ class Character(DefaultCharacter):
     @lazy_property
     def combat(self) -> CombatHandler:
         return CombatHandler(self)
+
+    @lazy_property
+    def events(self) -> EventManager:
+        return EventManager(self)
 
     maxhp = BuffableProperty(100)
     evasion = BuffableProperty(1)
@@ -63,10 +70,14 @@ class Character(DefaultCharacter):
         super().at_object_creation()
 
     def at_init(self):
-        self.buffs: BuffHandler
-        self.perks: BuffHandler
-        self.cooldowns: CooldownHandler
-        self.combat: CombatHandler
+        _e, _b, _p, _c, _co = (
+            self.events,
+            self.buffs,
+            self.perks,
+            self.cooldowns,
+            self.combat,
+        )
+
         self.ndb.target = None  # Used if you use attack someone or use 'target'
         self.tags.remove("attacking", category="combat")
         super().at_init()
