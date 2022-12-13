@@ -7,7 +7,6 @@ from content.perklist import (
     ThornsPerk,
     WeakenPerk,
 )
-from typeclasses.context import Context
 from evennia import lockfuncs
 from evennia import Command as BaseCommand
 from world import rules

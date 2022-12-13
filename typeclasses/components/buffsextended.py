@@ -2,11 +2,15 @@ from evennia.contrib.rpg.buffs.buff import BuffHandler
 
 
 class BuffHandlerExtended(BuffHandler):
-    def __init__(self, owner, dbkey=..., autopause=...):
+    def __init__(self, owner=None, dbkey="buffs", autopause=False):
         super().__init__(owner, dbkey, autopause)
-        if hasattr(owner, "events"):
-            owner.events.subscribe(self)
+        self.sub()
 
-    def event_parse(self, event):
-        _event = dict(event)
-        self.trigger(event["name"], event["context"])
+    def sub(self):
+        if hasattr(self.owner, "events"):
+            self.owner.events.subscribe(self)
+        else:
+            return
+
+    def event_parse(self, context):
+        self.trigger(context["eventid"], context)

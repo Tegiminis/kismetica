@@ -1,5 +1,7 @@
 import time
 from typeclasses.objects import Object
+from world.rules import make_context
+from evennia.utils import search, utils
 
 EVENT = {"source": None, "timestamp": None, "context": None}
 
@@ -7,27 +9,40 @@ EVENT = {"source": None, "timestamp": None, "context": None}
 class EventManager(object):
     """An event manager handles events, subscribers, and the like."""
 
-    owner = None
-    subs = []
+    ownerref = None
+    _owner = None
 
     def __init__(self, owner) -> None:
-        self.owner: Object = owner
+        self.ownerref = owner.dbref
+        self.subs = []
+
+    @property
+    def owner(self):
+        """The object this handler is attached to."""
+        if self.ownerref:
+            _owner = search.search_object(self.ownerref)
+        if _owner:
+            return _owner[0]
+        else:
+            return None
 
     def subscribe(self, subscriber):
         self.subs.append(subscriber)
-        pass
+        return
 
     def unsubscribe(self, subscriber):
         if subscriber in self.subs:
             self.subs.remove(subscriber)
+        return
 
     def receive(self, source, name: str, context: dict = None):
         event = {
-            "name": name,
-            "source": source,
-            "timestamp": time.time(),
-            "context": context,
+            "eventid": name,
+            "eventsource": source,
+            "eventtimestamp": time.time(),
         }
+        _context = make_context(context)
+        event.update(_context)
         for sub in self.subs:
             sub.event_parse(event)
 

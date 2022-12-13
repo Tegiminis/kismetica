@@ -35,12 +35,38 @@ class CombatHandler(object):
     def buffs(self) -> BuffHandlerExtended:
         return self.owner.buffs
 
-    def take_damage(self, damage: int = 0, loud=True, raw=False, context=None) -> dict:
+    def calc_damage(
+        self, attacker=None, damage=0, raw=False, crit=False, prec=1, context=None
+    ):
+        """Returns damage modified by armor, crit, buffs, and other normal combat modifiers"""
+        context = make_context(context)
+        _damage = damage
+
+        # apply crit
+        if crit:
+            _damage *= attacker.buffs.check(prec, "precision")
+
+        # calc damage
+        _damage = damage
+        if not raw:
+            _damage = self.buffs.check(damage, "injury", context=context)
+
+        context["damage_instances"].append(_damage)
+        return context
+
+    def take_damage(
+        self,
+        damage: int = 0,
+        loud=True,
+        event=True,
+        source=None,
+        context=None,
+    ) -> dict:
         """Applies damage. Affected by "injury" buffs.
 
         Args:
             damage: Damage to take
-            loud:   Use the default damage message (default: True)
+            loud:   Trigger a damage event (default: True)
             raw:    Is this "raw" damage (unmodified by buffs)?
             context:    Context to update
 
@@ -49,10 +75,10 @@ class CombatHandler(object):
             is_kill:        did this damage instance kill the target?"""
 
         context = make_context(context)
+        _damage = damage
 
-        # Apply damage
-        _damage = self.buffs.check(damage, "injury", context=context)
-        damage_taken = _damage if _damage < self.hp else self.hp
+        # deal damage
+        _damage = _damage if _damage < self.hp else self.hp
         self.hp = max(self.hp - _damage, 0)
         if loud:
             self.owner.msg("  ... You take %i damage!" % _damage)
@@ -62,8 +88,18 @@ class CombatHandler(object):
         if is_killing:
             self.die()
 
-        to_update = {"damage_taken": damage_taken, "is_kill": is_killing}
+        # update context
+        to_update = {
+            "defender": self.owner,
+            "damage_taken": _damage,
+            "is_kill": is_killing,
+        }
         context.update(to_update)
+
+        # fire injury event
+        if event:
+            self.owner.events.receive(source, "injury", context=context)
+
         return context
 
     def die(self, context=None):
@@ -119,15 +155,4 @@ class CombatHandler(object):
 
         # Update the context and return
         context.update(to_update)
-        return context
-
-    def mod_damage(self, attacker=None, damage=0, crit=False, prec=1, context=None):
-        """Modifies the damage taken before applying it. This is where you modify
-        damage based on armor, but not general damage reduction."""
-        context = make_context(context)
-
-        if crit:
-            damage *= attacker.buffs.check(prec, "precision")
-
-        context["damage"] = damage
         return context

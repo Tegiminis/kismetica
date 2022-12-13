@@ -169,6 +169,9 @@ class CmdEquip(BaseCommand):
 
         if target:
             if target.location.id == caller.id:
+                _held = caller.db.held
+                if _held:
+                    _held._unequip()
                 caller.db.held = target
                 caller.msg("You equip the %s." % target)
 
@@ -176,6 +179,7 @@ class CmdEquip(BaseCommand):
                     "%s hoists %s in their hands." % (caller, target),
                     exclude=caller,
                 )
+                target._equip()
                 return
             else:
                 caller.msg(

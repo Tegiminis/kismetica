@@ -18,7 +18,7 @@ from typeclasses.components.combat import CombatHandler
 from evennia.contrib.rpg.buffs.buff import BuffableProperty
 from typeclasses.components.buffsextended import BuffHandlerExtended
 from typeclasses.components.cooldowns import CooldownHandler
-from typeclasses.components.eventmanager import EventManager
+from typeclasses.components.events import EventManager
 
 # Commands
 import commands.default_cmdsets as default
@@ -38,6 +38,10 @@ class Character(DefaultCharacter):
 
     # Buff and perk handlers
     @lazy_property
+    def events(self) -> EventManager:
+        return EventManager(self)
+
+    @lazy_property
     def buffs(self) -> BuffHandlerExtended:
         return BuffHandlerExtended(self, autopause=True)
 
@@ -53,34 +57,33 @@ class Character(DefaultCharacter):
     def combat(self) -> CombatHandler:
         return CombatHandler(self)
 
-    @lazy_property
-    def events(self) -> EventManager:
-        return EventManager(self)
-
     maxhp = BuffableProperty(100)
     evasion = BuffableProperty(1)
 
     def at_object_creation(self):
-        self.buffs, self.cooldowns, self.combat
+        # self.events
+        # self.buffs
+        # self.perks
+        # self.cooldowns
+        # self.combat
         self.maxhp, self.evasion
 
         self.cmdset.add(default.CharacterCmdSet, permanent=True)
         self.db.hp = 100  # Current hp
 
-        super().at_object_creation()
+        return super().at_object_creation()
 
     def at_init(self):
-        _e, _b, _p, _c, _co = (
-            self.events,
-            self.buffs,
-            self.perks,
-            self.cooldowns,
-            self.combat,
-        )
+        # handler init
+        self.events
+        self.buffs
+        self.perks
+        self.cooldowns
+        self.combat
 
         self.ndb.target = None  # Used if you use attack someone or use 'target'
         self.tags.remove("attacking", category="combat")
-        super().at_init()
+        return super().at_init()
 
     # region calculated properties
     @property

@@ -7,34 +7,25 @@ class RampagePerk(BaseBuff):
     name = "Rampage"
     flavor = "Kills with this weapon temporarily increase its damage."
 
-    trigger = "hit"
+    triggers = ["hit"]
 
-    def on_trigger(self, trigger, *args, **kwargs):
+    def at_trigger(self, trigger, *args, **kwargs):
         self.owner.buffs.add(bl.RampageBuff)
 
 
 class ExploitPerk(BaseBuff):
-
     key = "exploit"
     name = "Exploit"
     flavor = "Shooting an enemy with this weapon allows you to find their weakness."
 
-    trigger = "hit"
-
-    stack_msg = {
-        1: "    You begin to notice flaws in your opponent's defense.",
-        10: "    You're certain you've found a weakness. You just need more time.",
-        20: "    You've discovered your opponent's weak spot.",
-    }
+    triggers = ["hit"]
 
     trigger_msg = ""
 
-    def on_trigger(self, trigger, *args, **kwargs):
-        if self.owner.buffs.find(bl.Exploited):
+    def at_trigger(self, trigger, *args, **kwargs):
+        if self.owner.buffs.has(bl.Exploited):
             return None
         self.owner.buffs.add(bl.Exploit)
-        if self.stacks in self.stack_msg:
-            self.owner.location.msg(self.stack_msg[self.stacks])
 
 
 class WeakenPerk(BaseBuff):
@@ -42,9 +33,9 @@ class WeakenPerk(BaseBuff):
     name = "Weaken"
     flavor = "Shooting an enemy with this weapon applies a virulent poison."
 
-    trigger = "hit"
+    triggers = ["hit"]
 
-    def on_trigger(self, trigger, defender, *args, **kwargs):
+    def at_trigger(self, trigger, defender, *args, **kwargs):
         defender.buffs.add(bl.Poison)
 
 
@@ -53,9 +44,9 @@ class LeechRoundPerk(BaseBuff):
     name = "Leech Round"
     flavor = "Primes enemies with a leeching worm which heals attackers."
 
-    trigger = "hit"
+    triggers = ["hit"]
 
-    def on_trigger(self, trigger, defender, *args, **kwargs):
+    def at_trigger(self, trigger, defender, *args, **kwargs):
         defender.buffs.add(bl.Leeching)
 
 
@@ -64,10 +55,23 @@ class ThornsPerk(BaseBuff):
     name = "Thorns"
     flavor = "Damages attackers"
 
-    trigger = "injury"
+    triggers = ["injury"]
 
-    def on_trigger(self, trigger, attacker, damage, *args, **kwargs):
-        attacker.damage(damage * 0.1)
+    def at_trigger(self, trigger, attacker, damage_taken, *args, **kwargs):
+        _context = {
+            "attacker": self.owner,
+            "defender": attacker,
+            "damage_taken": damage_taken,
+        }
+        _up = dict(kwargs)
+        _context.update(_up)
+        thorns = round(damage_taken * 0.1)
+        if not thorns:
+            return
+        attacker.combat.take_damage(
+            thorns, loud=False, source=attacker, context=_context
+        )
+        attacker.msg("You take {dmg} thorns damage!".format(dmg=thorns))
 
 
 class PerkList:

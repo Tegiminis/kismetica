@@ -44,6 +44,16 @@ class Exploit(BaseBuff):
     unique = True
     maxstacks = 20
 
+    stack_msg = {
+        1: "    You begin to notice flaws in your opponent's defense.",
+        3: "    You're certain you've found a weakness. You just need more time.",
+        5: "    You've discovered your opponent's weak spot.",
+    }
+
+    def at_apply(self, *args, **kwargs):
+        if self.stacks in self.stack_msg:
+            self.owner.location.msg(self.stack_msg[self.stacks])
+
     def at_trigger(self, trigger: str, *args, **kwargs):
         chance = self.stacks / 20
         roll = random.random()
@@ -68,14 +78,11 @@ class Exploited(BaseBuff):
     stacking = False
     unique = True
 
-    mods = [Mod("damage", "add", 100)]
+    mods = [Mod("total_damage", "add", 100)]
 
     def at_post_check(self, *args, **kwargs):
-        self.owner.location.msg("   You exploit your target's weakness!")
-        self.owner.buffs.remove("exploited", delay=0.01)
-
-    def at_remove(self, *args, **kwargs):
-        self.owner.location.msg("You cannot sense your target's weakness anymore.")
+        self.owner.location.msg("      + You exploit your target's weakness!")
+        self.owner.buffs.remove("exploited")
 
 
 class Weakened(BaseBuff):

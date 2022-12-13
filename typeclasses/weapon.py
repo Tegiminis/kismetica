@@ -208,6 +208,10 @@ class Weapon(Object):
     def buffs(self) -> BuffHandlerExtended:
         return BuffHandlerExtended(self)
 
+    @lazy_property
+    def perks(self) -> BuffHandlerExtended:
+        return BuffHandlerExtended(self, dbkey="perks")
+
     # ammo
     mag = BuffableProperty(10)
     inventory = BuffableProperty(0)
@@ -308,20 +312,11 @@ class Weapon(Object):
     @property
     def randomized_damage(self):
         """Returns a randomized damage value."""
-        _dmg = random.randint(self.damageMin, self.damageMax)
-        return _dmg
-
-    @property
-    def damageMin(self):
-        """Ranges from 50% base damage to 100% base damage, depending on stability"""
         _dmg = self.damage
-        return int(_dmg * (0.5 + (0.5 * (self.stability / 100))))
-
-    @property
-    def damageMax(self):
-        """Ranges from 150% base damage to 200% base damage, depending on range."""
-        _dmg = self.damage
-        return int(_dmg * (1.5 + (0.5 * (self.range / 100))))
+        _min = int(_dmg * 0.5 + (0.5 * (self.stability / 100)))
+        _max = int(_dmg * 1.5 + (0.5 * (self.range / 100)))
+        _ret = random.randint(_min, _max)
+        return _ret
 
     @property
     def shots(self):
@@ -350,6 +345,16 @@ class Weapon(Object):
 
         return 100 * min(self.accuracy / 100, 1)
 
+    def at_init(self):
+        owner: Object = self.location
+        _b, _p = self.buffs, self.perks
+        if owner.attributes.has("held"):
+            if owner.db.held == self:
+                owner.events.subscribe(self.buffs)
+                owner.events.subscribe(self.perks)
+
+        return super().at_init()
+
     # endregion
 
     # region methods
@@ -369,6 +374,7 @@ class Weapon(Object):
             "attacker": attacker,
             "defender": defender,
             "weapon": self,
+            "damage_instances": [],
         }
         combat.update(_basics)
 
@@ -387,6 +393,7 @@ class Weapon(Object):
         was_hit = False
         was_crit = False
         total_damage = 0
+        dmg_instances = []
 
         for x in range(max(1, _shots)):
             # roll to hit and update variables
@@ -414,28 +421,33 @@ class Weapon(Object):
                     _critdmg = _damage * _prec
                     combat.update({"damage": _critdmg})
 
+                attacker.events.receive(self, "hit", combat)
+
                 # damage application
                 _damage = combat.get("damage", 0)
-                combat = defender.combat.mod_damage(attacker, _damage, context=combat)
-                _damage = combat.get("damage", 0)
-                combat = defender.combat.take_damage(_damage, context=combat)
-
-                # damage messaging
-                dmg_msg = "    ... {dmg} damage!"
-                dmg_taken = combat.get("damage_taken")
-                if dmg_taken == 0:
-                    dmg_msg = "    ... no damage!"
-                attacker.location.msg_contents(dmg_msg.format(dmg=dmg_taken))
-                total_damage += dmg_taken
+                combat = defender.combat.calc_damage(attacker, _damage, context=combat)
 
             else:
                 if x == 0:
                     attacker.location.msg_contents("    ... Miss!")
-                    attacker.events.receive("miss")
+                    attacker.events.receive(self, "miss", combat)
                 break
 
         # outro messaging
         if was_hit:
+
+            # damage messaging
+            for x in combat["damage_instances"]:
+                dmg_msg = "    ... {dmg} damage!"
+                dmg_ = x
+                if dmg_ == 0:
+                    dmg_msg = "    ... no damage!"
+                attacker.location.msg_contents(dmg_msg.format(dmg=dmg_))
+                total_damage += dmg_
+
+            # apply total damage buffs
+            total_damage = self.buffs.check(total_damage, "total_damage")
+
             # total damage message
             if total_damage:
                 total_msg = "      = {dmg} total damage!"
@@ -455,6 +467,10 @@ class Weapon(Object):
                 attacker.location.msg_contents("    " + _msgC)
             else:
                 attacker.location.msg_contents("    " + _msgH)
+
+            combat = defender.combat.take_damage(
+                total_damage, source=attacker, context=combat
+            )
 
         attacker.location.msg_contents("|n\n")
 
@@ -490,7 +506,11 @@ class Weapon(Object):
 
         return _return
 
-    def equip_weapon(self):
+    def _unequip(self):
+        owner = self.location
+        owner.events.unsubscribe(self.buffs)
+
+    def _equip(self):
         owner = self.location
         owner.events.subscribe(self.buffs)
 
