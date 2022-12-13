@@ -7,7 +7,6 @@ from world import rules
 from evennia import utils
 import time
 import world.loot as loot
-from typeclasses.context import Context
 
 if TYPE_CHECKING:
     from typeclasses.characters import PlayerCharacter
@@ -171,12 +170,10 @@ class CmdEquip(BaseCommand):
         if target:
             if target.location.id == caller.id:
                 caller.db.held = target
-                caller.msg("You equip the %s." % target.named)
+                caller.msg("You equip the %s." % target)
 
-                _name = caller.named
-                name = target.named
                 caller.location.msg_contents(
-                    "%s hoists %s in their hands." % (caller.named, target.named),
+                    "%s hoists %s in their hands." % (caller, target),
                     exclude=caller,
                 )
                 return

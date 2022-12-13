@@ -1,6 +1,5 @@
 """Where new perks and buffs are made!"""
 
-from typeclasses.context import Context
 from evennia.contrib.rpg.buffs.buff import BaseBuff, Mod
 
 
@@ -40,8 +39,7 @@ class RapidHit(BaseBuff):
     trigger = "crit"
 
     def on_trigger(self, *args, **kwargs):
-        bc: Context = self.owner.buffs.add(RapidHitBuff)
-        return bc
+        pass
 
 
 class RapidHitBuff(BaseBuff):
@@ -97,5 +95,5 @@ class KillClipBuff(BaseBuff):
 
     mods = [Mod("damage", "mult", 0.25, 0.0)]
 
-    def on_remove(self, context: Context):
-        context.target.msg("    The glow around your weapon dissipates.")
+    def on_remove(self, *args, **kwargs):
+        pass

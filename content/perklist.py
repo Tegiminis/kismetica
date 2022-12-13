@@ -1,4 +1,3 @@
-from typeclasses.context import Context
 from evennia.contrib.rpg.buffs.buff import BaseBuff
 import content.bufflist as bl
 

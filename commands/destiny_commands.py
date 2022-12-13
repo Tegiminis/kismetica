@@ -6,11 +6,11 @@ from world import rules
 from evennia import utils
 import time
 import world.loot as loot
-from typeclasses.context import Context
 
 if TYPE_CHECKING:
     from typeclasses.characters import PlayerCharacter
     from typeclasses.weapon import Weapon
+
 
 class CmdCheck(BaseCommand):
     """
@@ -19,6 +19,7 @@ class CmdCheck(BaseCommand):
     Usage:
         check <target>
     """
+
     key = "check"
     aliases = []
 
@@ -28,25 +29,26 @@ class CmdCheck(BaseCommand):
     def func(self):
 
         caller = self.caller
- 
+
         if not self.args:
             buffs = caller.buffs.view()
             if buffs:
-                msg = 'You are currently buffed by: \n|n'
+                msg = "You are currently buffed by: \n|n"
                 for x in buffs:
                     msg += x + "\n|n"
                 caller.msg(msg)
             return
-        
+
         target = caller.search(self.args)
         buffs = target.buffs.view()
         if buffs:
-            msg = target.name.capitalize() + ' is currently buffed by: \n|n'
+            msg = target.name.capitalize() + " is currently buffed by: \n|n"
             for x in buffs:
                 msg += x + "\n|n"
             caller.msg(msg)
         else:
-            caller.msg('There are no buffs on the target.')  
+            caller.msg("There are no buffs on the target.")
+
 
 class CmdPTest(BaseCommand):
     """
@@ -62,7 +64,8 @@ class CmdPTest(BaseCommand):
 
     def func(self):
         caller = self.caller
-        caller.msg( str(caller.maxhp) )
+        caller.msg(str(caller.maxhp))
+
 
 class CmdLootTest(BaseCommand):
     """
@@ -73,19 +76,16 @@ class CmdLootTest(BaseCommand):
     locks = "cmd: perm(Builder)"
     help_category = "General"
 
-    table = [
-        (loot.TestWeapon, 100)
-    ]
+    table = [(loot.TestWeapon, 100)]
 
     def parse(self):
         self.target = self.args.strip()
 
     def func(self):
         caller = self.caller
-        context = Context(caller, caller)
         _t = loot.roll(1.0)
-        caller.msg("Debug: Loot roll: " + str(_t) )
+        caller.msg("Debug: Loot roll: " + str(_t))
 
         if loot.roll(1.0):
-            result = loot.roll_on_table(self.table, context)
-            loot.parse_result(result, context)
+            result = loot.roll_on_table(self.table)
+            loot.parse_result(result)

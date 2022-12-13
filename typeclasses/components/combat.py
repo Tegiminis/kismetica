@@ -3,6 +3,7 @@ import random
 import inflect
 import evennia.utils as utils
 from world.rules import make_context
+from typeclasses.components.buffsextended import BuffHandlerExtended
 
 if TYPE_CHECKING:
     from typeclasses.characters import Character
@@ -50,10 +51,11 @@ class CombatHandler(object):
         context = make_context(context)
 
         # Apply damage
-        damage_taken = damage if damage < self.hp else self.hp
-        self.hp = max(self.hp - damage, 0)
+        _damage = self.buffs.check(damage, "injury", context=context)
+        damage_taken = _damage if _damage < self.hp else self.hp
+        self.hp = max(self.hp - _damage, 0)
         if loud:
-            self.owner.msg("  ... You take %i damage!" % damage)
+            self.owner.msg("  ... You take %i damage!" % _damage)
 
         # If you are out of life, you are out of luck
         is_killing = self.hp <= 0

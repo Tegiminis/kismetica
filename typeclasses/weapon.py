@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
 DEFAULT_ATTACK_MSG = {
     "bullet": {
+        "invuln": "Bullets glance harmlessly off {defender}!",
         "hit": "{defender} staggers under the flurry of bullets.",
         "crit": "Blood spurts uncontrollably from newly-apportioned wounds!",
     },
@@ -43,7 +44,7 @@ class FusionCharging(BaseBuff):
     unique = True
     duration = 5
 
-    def at_remove(self, *args, **kwargs) -> Context:
+    def at_remove(self, *args, **kwargs):
         player = self.owner.location
         self.owner.buffs.add(FusionCharged)
         pass
@@ -97,7 +98,7 @@ class CmdReload(BaseCommand):
         _caller = self.caller
         _obj = self.obj
         mapping = {"character": _caller, "weapon": self.obj}
-        self.obj._reload()
+        self.obj.reload_weapon()
         _caller.msg("You slap a new mag into your {weapon}.".format(**mapping))
         _caller.location.msg_contents(
             "{character} reloads their {weapon}.".format(**mapping), exclude=_caller
@@ -326,7 +327,11 @@ class Weapon(Object):
     def shots(self):
         """Returns the number of shots this weapon will fire. Based on combo stat."""
         _combo = self.combo
-        _shots = round(random.random() * _combo)
+        _shots = (
+            round(random.random() * _combo)
+            if not self.tags.has("burst", category="weapon")
+            else int(self.combo)
+        )
         return _shots
 
     @property
@@ -373,29 +378,37 @@ class Weapon(Object):
 
         # variable assignment
         _crit = self.crit
+        base_msg = self.db.msg["self"].format(**combat)
+        room_msg = self.db.msg["attack"].format(**combat)
 
-        for x in range(max(1, self.shots)):
+        attacker.msg(base_msg)
+        attacker.location.msg_contents(room_msg, exclude=attacker)
+        _shots = self.shots
+        was_hit = False
+        was_crit = False
+        total_damage = 0
+
+        for x in range(max(1, _shots)):
             # roll to hit and update variables
             combat = attacker.combat.opposed_hit(_acc, _eva, _crit, combat)
             _is_hit = combat.get("is_hit", False)
-            attacker.msg(self.db.msg["self"].format(**combat))
-            attacker.location.msg_contents(
-                self.db.msg["self"].format(**combat), exclude=attacker
-            )
+
             _hit = combat.get("hit").get("total")
             _dodge = combat.get("dodge").get("total")
 
-            if x == 1:
-                _hit_msg = "  HIT: +{hit} vs EVA: +{dodge}"
-                attacker.msg(_hit_msg.format(hit=_hit, dodge=_dodge))
+            if x == 0:
+                roll_msg = "  HIT: +{hit} vs EVA: +{dodge}"
+                attacker.msg(roll_msg.format(hit=_hit, dodge=_dodge))
 
             if _is_hit:
                 # precision check
+                was_hit = True
                 combat.update({"damage": self.randomized_damage})
                 _is_crit = combat.get("is_crit", False)
 
                 # crit multiply
                 if _is_crit:
+                    was_crit = True
                     _damage = combat.get("damage", 0)
                     _prec = attacker.buffs.check(self.precision, "precision")
                     _critdmg = _damage * _prec
@@ -410,22 +423,39 @@ class Weapon(Object):
                 # damage messaging
                 dmg_msg = "    ... {dmg} damage!"
                 dmg_taken = combat.get("damage_taken")
+                if dmg_taken == 0:
+                    dmg_msg = "    ... no damage!"
                 attacker.location.msg_contents(dmg_msg.format(dmg=dmg_taken))
+                total_damage += dmg_taken
 
-                _msgH = (
-                    DEFAULT_ATTACK_MSG["bullet"]["hit"].format(**combat).capitalize()
-                )
-                _msgC = (
-                    DEFAULT_ATTACK_MSG["bullet"]["crit"].format(**combat).capitalize()
-                )
-
-                if _is_crit:
-                    attacker.location.msg_contents("    " + _msgC)
-                else:
-                    attacker.location.msg_contents("    " + _msgH)
             else:
-                attacker.location.msg_contents("    ... Miss!")
+                if x == 0:
+                    attacker.location.msg_contents("    ... Miss!")
+                    attacker.events.receive("miss")
                 break
+
+        # outro messaging
+        if was_hit:
+            # total damage message
+            if total_damage:
+                total_msg = "      = {dmg} total damage!"
+                attacker.location.msg_contents(total_msg.format(dmg=total_damage))
+
+            # hit messaging
+            hit_msg = DEFAULT_ATTACK_MSG["bullet"]["hit"]
+            crit_msg = DEFAULT_ATTACK_MSG["bullet"]["crit"]
+            invuln_msg = DEFAULT_ATTACK_MSG["bullet"]["invuln"]
+            _msgH = hit_msg.format(**combat).capitalize()
+            _msgC = crit_msg.format(**combat).capitalize()
+            _msgI = invuln_msg.format(**combat).capitalize()
+
+            if not total_damage:
+                attacker.location.msg_contents("    " + _msgI)
+            elif was_crit:
+                attacker.location.msg_contents("    " + _msgC)
+            else:
+                attacker.location.msg_contents("    " + _msgH)
+
         attacker.location.msg_contents("|n\n")
 
     def reload_weapon(self) -> int:

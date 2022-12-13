@@ -1,6 +1,12 @@
 from content.workshop import RapidHit
 import content.bufflist as bl
-from content.perklist import ExploitPerk, LeechRoundPerk, RampagePerk, ThornsPerk, WeakenPerk
+from content.perklist import (
+    ExploitPerk,
+    LeechRoundPerk,
+    RampagePerk,
+    ThornsPerk,
+    WeakenPerk,
+)
 from typeclasses.context import Context
 from evennia import lockfuncs
 from evennia import Command as BaseCommand
@@ -8,6 +14,7 @@ from world import rules
 from typeclasses import characters as Character
 from evennia import utils
 import time
+
 
 class CmdAlter(BaseCommand):
     """
@@ -25,8 +32,9 @@ class CmdAlter(BaseCommand):
     You can also use "set target\msg['type'] = '<message>'"
     as that is functionally similar. The difference is this
     command won't allow you to add new messages, only
-    change existing ones.    
+    change existing ones.
     """
+
     key = "alter"
     aliases = []
     locks = "cmd: perm(Builder)"
@@ -44,30 +52,34 @@ class CmdAlter(BaseCommand):
         target = caller.search(args[0])
 
         if len(args) == 1:
-            caller.msg('Error: You must pick a type of message to alter.')
+            caller.msg("Error: You must pick a type of message to alter.")
             return
         msg_type = args[1]
         msg_str = ""
 
         if len(args) == 2:
-            caller.msg('Error: You must include a message to change to.')
+            caller.msg("Error: You must include a message to change to.")
             return
 
         for x in range(2, len(args)):
             msg_str += args[x] + " "
-        
+
         msg_str.rstrip()
 
-        try: 
+        try:
             test = target.db.msg[msg_type]
             target.db.msg[msg_type] = msg_str
-            caller.msg('You successfully changed the %s message on %s to "|w%s"|n' % (msg_type, target, msg_str))
+            caller.msg(
+                'You successfully changed the %s message on %s to "|w%s"|n'
+                % (msg_type, target, msg_str)
+            )
             return
         except:
-            caller.msg('Error: Pick an existing message type.')
+            caller.msg("Error: Pick an existing message type.")
             return
 
         return
+
 
 class CmdNPCState(BaseCommand):
     """
@@ -80,8 +92,9 @@ class CmdNPCState(BaseCommand):
     depending on the type of NPC. This command allows
     builders to change an NPC state on the fly.
 
-    Functionally identical to set npc/state = <value>  
+    Functionally identical to set npc/state = <value>
     """
+
     key = "npcstate"
     aliases = ["state"]
     locks = "cmd: perm(Builder)"
@@ -95,6 +108,7 @@ class CmdNPCState(BaseCommand):
 
         return
 
+
 class CmdBuff(BaseCommand):
     """
     Buff a target.
@@ -102,27 +116,29 @@ class CmdBuff(BaseCommand):
     Usage:
       buff <target> <buff reference>
 
-    Applies the specified buff to the target. All buffs are defined in bufflist.py   
+    Applies the specified buff to the target. All buffs are defined in bufflist.py
     """
+
     key = "buff"
     aliases = ["buff"]
-    help_category = 'builder'
+    help_category = "builder"
 
     bufflist = {
-        'rampage' : bl.RampageBuff,
-        'exploited' : bl.Exploited,
-        'exploit' : bl.Exploit,
-        'leeching' : bl.Leeching,
-        'poison' : bl.Poison,
-        'ptest' : bl.PropertyBuffTest,
-        'ttest': bl.TestBuff
+        "rampage": bl.RampageBuff,
+        "exploited": bl.Exploited,
+        "exploit": bl.Exploit,
+        "leeching": bl.Leeching,
+        "poison": bl.Poison,
+        "ptest": bl.PropertyBuffTest,
+        "ttest": bl.TestBuff,
+        "invuln": bl.Invulnerable,
     }
 
     def parse(self):
         self.args = self.args.split()
 
     def func(self):
-        caller = self.caller    
+        caller = self.caller
         target = None
         now = time.time()
 
@@ -143,6 +159,7 @@ class CmdBuff(BaseCommand):
             target.buffs.add(self.bufflist[self.args[1]], source=caller)
             pass
 
+
 class CmdPerk(BaseCommand):
     """
     Add perk to a target.
@@ -150,25 +167,26 @@ class CmdPerk(BaseCommand):
     Usage:
       perk <target> <perk> <slot>
 
-    Applies the specified perk to the target. If slot is included, will use that instead of the perk id for the dictionary key. 
+    Applies the specified perk to the target. If slot is included, will use that instead of the perk id for the dictionary key.
     """
+
     key = "perk"
     aliases = ["perk"]
-    help_category = 'builder'
+    help_category = "builder"
 
     perklist = {
-        'rampage' : RampagePerk,
-        'exploit' : ExploitPerk,
-        'weaken' : WeakenPerk,
-        'leech' : LeechRoundPerk,
-        'thorns' : ThornsPerk
+        "rampage": RampagePerk,
+        "exploit": ExploitPerk,
+        "weaken": WeakenPerk,
+        "leech": LeechRoundPerk,
+        "thorns": ThornsPerk,
     }
-    
+
     def parse(self):
         self.args = self.args.split()
 
     def func(self):
-        caller = self.caller    
+        caller = self.caller
         target = None
         now = time.time()
         slot = None
@@ -185,10 +203,13 @@ class CmdPerk(BaseCommand):
             caller.msg("You need to pick a target.")
             return
 
-        if length == 3: slot = self.args[2]
+        if length == 3:
+            slot = self.args[2]
 
         _perk = self.perklist.get(self.args[1])
-        caller.msg('Debug: Perk applied = ' + str(_perk))
+        caller.msg("Debug: Perk applied = " + str(_perk))
 
-        if target and _perk: target.perks.add(_perk, slot)
-        else: caller.msg("Invalid perk.")
+        if target and _perk:
+            target.perks.add(_perk, slot)
+        else:
+            caller.msg("Invalid perk.")

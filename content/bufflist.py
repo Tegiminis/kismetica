@@ -193,6 +193,19 @@ class TestBuff(BaseBuff):
         print("Triggered test buff!")
 
 
+class Invulnerable(BaseBuff):
+    key = "invuln"
+    name = "Invulnerable"
+    flavor = "This character is immune to damage"
+
+    mods = [Mod("injury", "custom", 0)]
+
+    def custom_modifier(self, value, *args, **kwargs):
+        _value = value
+        _value *= 0
+        return _value
+
+
 class BuffList:
     """Initialization of buff and effect typeclasses used to apply buffs to players.
 
