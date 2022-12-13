@@ -71,3 +71,11 @@ See the `@spawn` command and `evennia.utils.spawner` for more info.
 # "key": "goblin archwizard",
 # "prototype_parent" : ("GOBLIN_WIZARD", "ARCHWIZARD_MIXIN")
 # }
+
+HALFDAN = {"key": "Halfdan-D", "typeclass": "typeclasses.weapon.Weapon"}
+
+WORLD_DROP = {
+    "key": "engram",
+    "typeclass": "typeclasses.engram.Engram",
+    "drop": HALFDAN,
+}
