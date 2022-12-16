@@ -1,4 +1,5 @@
 from evennia.contrib.rpg.buffs.buff import BuffHandler
+from typeclasses.components.events import EventContext
 
 
 class BuffHandlerExtended(BuffHandler):
@@ -12,5 +13,5 @@ class BuffHandlerExtended(BuffHandler):
         else:
             return
 
-    def event_parse(self, context):
-        self.trigger(context["eventid"], context)
+    def event_parse(self, event: EventContext):
+        self.trigger(event.eid, event.context)

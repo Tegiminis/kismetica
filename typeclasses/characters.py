@@ -101,14 +101,15 @@ class Character(DefaultCharacter):
         self,
         value: float,
         stat: str,
-        loud=True,
-        context=None,
-        trigger=False,
-        strongest=False,
+        loud: bool = True,
+        context: object = None,
+        trigger: bool = False,
+        strongest: bool = False,
     ):
         _value = value
         _value = self.buffs.check(value, stat, loud, context, trigger, strongest)
         _value = self.perks.check(value, stat, loud, context, trigger, strongest)
+        return _value
 
     # endregion
 

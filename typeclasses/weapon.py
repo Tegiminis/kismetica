@@ -358,121 +358,17 @@ class Weapon(Object):
     # endregion
 
     # region methods
-    def attack(self, defender, context=None):
+    def attack(self, defender):
         """
         Performs an attack against a defender, according to the weapon's various stats
 
         Args:
             defender:   The target you are attacking
-            context:    (optional) The context you want to feed into the attack method
         """
         # initial context
-        combat = make_context(context)
         defender: Character = defender
         attacker: Character = self.location
-        _basics = {
-            "attacker": attacker,
-            "defender": defender,
-            "weapon": self,
-            "damage_instances": [],
-        }
-        combat.update(_basics)
-
-        # variable assignments
-        _acc = attacker.buffs.check(self.accuracy, "accuracy")
-        _eva = defender.evasion
-
-        # variable assignment
-        _crit = self.crit
-        base_msg = self.db.msg["self"].format(**combat)
-        room_msg = self.db.msg["attack"].format(**combat)
-
-        attacker.msg(base_msg)
-        attacker.location.msg_contents(room_msg, exclude=attacker)
-        _shots = self.shots
-        was_hit = False
-        was_crit = False
-        total_damage = 0
-        dmg_instances = []
-
-        for x in range(max(1, _shots)):
-            # roll to hit and update variables
-            combat = attacker.combat.opposed_hit(_acc, _eva, _crit, combat)
-            _is_hit = combat.get("is_hit", False)
-
-            _hit = combat.get("hit").get("total")
-            _dodge = combat.get("dodge").get("total")
-
-            if x == 0:
-                roll_msg = "  HIT: +{hit} vs EVA: +{dodge}"
-                attacker.msg(roll_msg.format(hit=_hit, dodge=_dodge))
-
-            if _is_hit:
-                # precision check
-                was_hit = True
-                combat.update({"damage": self.randomized_damage})
-                _is_crit = combat.get("is_crit", False)
-
-                # crit multiply
-                if _is_crit:
-                    was_crit = True
-                    _damage = combat.get("damage", 0)
-                    _prec = attacker.buffs.check(self.precision, "precision")
-                    _critdmg = _damage * _prec
-                    combat.update({"damage": _critdmg})
-
-                attacker.events.receive(self, "hit", combat)
-
-                # damage application
-                _damage = combat.get("damage", 0)
-                combat = defender.combat.calc_damage(attacker, _damage, context=combat)
-
-            else:
-                if x == 0:
-                    attacker.location.msg_contents("    ... Miss!")
-                    attacker.events.receive(self, "miss", combat)
-                break
-
-        # outro messaging
-        if was_hit:
-
-            # damage messaging
-            for x in combat["damage_instances"]:
-                dmg_msg = "    ... {dmg} damage!"
-                dmg_ = x
-                if dmg_ == 0:
-                    dmg_msg = "    ... no damage!"
-                attacker.location.msg_contents(dmg_msg.format(dmg=dmg_))
-                total_damage += dmg_
-
-            # apply total damage buffs
-            total_damage = self.buffs.check(total_damage, "total_damage")
-
-            # total damage message
-            if total_damage:
-                total_msg = "      = {dmg} total damage!"
-                attacker.location.msg_contents(total_msg.format(dmg=total_damage))
-
-            # hit messaging
-            hit_msg = DEFAULT_ATTACK_MSG["bullet"]["hit"]
-            crit_msg = DEFAULT_ATTACK_MSG["bullet"]["crit"]
-            invuln_msg = DEFAULT_ATTACK_MSG["bullet"]["invuln"]
-            _msgH = hit_msg.format(**combat).capitalize()
-            _msgC = crit_msg.format(**combat).capitalize()
-            _msgI = invuln_msg.format(**combat).capitalize()
-
-            if not total_damage:
-                attacker.location.msg_contents("    " + _msgI)
-            elif was_crit:
-                attacker.location.msg_contents("    " + _msgC)
-            else:
-                attacker.location.msg_contents("    " + _msgH)
-
-            combat = defender.combat.take_damage(
-                total_damage, source=attacker, context=combat
-            )
-
-        attacker.location.msg_contents("|n\n")
+        attacker.combat.weapon_attack(self, defender)
 
     def reload_weapon(self) -> int:
         """Reloads this weapon and returns the amount of ammo that was reloaded."""

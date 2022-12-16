@@ -57,20 +57,11 @@ class ThornsPerk(BaseBuff):
 
     triggers = ["injury"]
 
-    def at_trigger(self, trigger, attacker, damage_taken, *args, **kwargs):
-        _context = {
-            "attacker": self.owner,
-            "defender": attacker,
-            "damage_taken": damage_taken,
-        }
-        _up = dict(kwargs)
-        _context.update(_up)
-        thorns = round(damage_taken * 0.1)
+    def at_trigger(self, trigger, attacker, total, *args, **kwargs):
+        thorns = round(total * 0.1)
         if not thorns:
             return
-        attacker.combat.take_damage(
-            thorns, loud=False, source=attacker, context=_context
-        )
+        attacker.combat.injure(thorns, loud=False, event=False, attacker=attacker)
         attacker.msg("You take {dmg} thorns damage!".format(dmg=thorns))
 
 

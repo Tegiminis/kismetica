@@ -1,9 +1,18 @@
 import time
+from dataclasses import dataclass, asdict, is_dataclass, fields
 from typeclasses.objects import Object
 from world.rules import make_context
 from evennia.utils import search, utils
 
 EVENT = {"source": None, "timestamp": None, "context": None}
+
+
+@dataclass
+class EventContext:
+    eid: str
+    source: Object
+    timestamp: float
+    context: dict
 
 
 class EventManager(object):
@@ -35,24 +44,28 @@ class EventManager(object):
             self.subs.remove(subscriber)
         return
 
-    def receive(self, source, name: str, context: dict = None):
-        event = {
-            "eventid": name,
-            "eventsource": source,
-            "eventtimestamp": time.time(),
-        }
-        _context = make_context(context)
-        event.update(_context)
+    def publish(self, name: str, source, context=None):
+        is_dc = is_dataclass(context)
+
+        _c = (
+            dict(
+                (field.name, getattr(context, field.name)) for field in fields(context)
+            )
+            if is_dc
+            else context
+        )
+        event: EventContext = EventContext(name, source, time.time(), _c)
         for sub in self.subs:
             sub.event_parse(event)
 
     def send(self, target, name: str, context: dict = None):
-        target.events.receive(self.owner, name, context)
+        if hasattr(target, "events"):
+            target.events.publish(name, self.owner, context)
 
     def broadcast(self, name: str, context: dict = None):
         _owner = self.owner
         _contents = _owner.location
-        _filtered = [x for x in _contents if x != self.owner if hasattr(x, "events")]
+        _filtered = [x for x in _contents if hasattr(x, "events")]
         for obj in _filtered:
             self.send(obj, name, context)
 
