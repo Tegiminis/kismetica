@@ -14,11 +14,11 @@ from typing import TYPE_CHECKING
 from evennia.utils import utils, lazy_property
 
 # Handlers
-from typeclasses.components.combat import CombatHandler
+from components.combat import CombatHandler
 from evennia.contrib.rpg.buffs.buff import BuffableProperty
-from typeclasses.components.buffsextended import BuffHandlerExtended
-from typeclasses.components.cooldowns import CooldownHandler
-from typeclasses.components.events import EventManager
+from components.buffsextended import BuffHandlerExtended
+from components.cooldowns import CooldownHandler
+from components.events import EventHandler
 
 # Commands
 import commands.default_cmdsets as default
@@ -38,8 +38,8 @@ class Character(DefaultCharacter):
 
     # Buff and perk handlers
     @lazy_property
-    def events(self) -> EventManager:
-        return EventManager(self)
+    def events(self) -> EventHandler:
+        return EventHandler(self)
 
     @lazy_property
     def buffs(self) -> BuffHandlerExtended:

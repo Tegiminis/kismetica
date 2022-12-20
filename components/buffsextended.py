@@ -1,8 +1,14 @@
 from evennia.contrib.rpg.buffs.buff import BuffHandler
-from typeclasses.components.events import EventContext
+from components.events import EventContext
 
 
 class BuffHandlerExtended(BuffHandler):
+    """An extended version of the contrib/rpg/buff handler.
+
+    Changes:
+        - Implements the `event_parse` method for use by the handler.
+        - Automatically subscribes when initialized."""
+
     def __init__(self, owner=None, dbkey="buffs", autopause=False):
         super().__init__(owner, dbkey, autopause)
         self.sub()

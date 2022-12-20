@@ -112,12 +112,11 @@ class Leeching(BaseBuff):
 
     triggers = ["injury"]
 
-    def at_trigger(self, trigger: str, attacker, damage, *args, **kwargs):
-        if not attacker or not damage:
+    def at_trigger(self, trigger: str, attacker, total, *args, **kwargs):
+        if not (attacker and total):
             return
-        attacker.msg("Debug: Attempting leech.")
-        heal = damage * 0.1
-        attacker.heal(heal)
+        heal = round(total * 0.1)
+        attacker.combat.heal(heal)
 
 
 class Poison(BaseBuff):
@@ -151,16 +150,18 @@ class Poison(BaseBuff):
         )
 
     def at_tick(self, initial=True, *args, **kwargs):
-        _dmg = self.damage * self.stacks
-        if initial:
-            self.owner.msg("Initial poison tick")
+        _s = str(self.cache)
+        poison = self.damage * self.stacks
         if not initial:
-            self.owner.location.msg_contents(
-                "Poison courses through {actor}'s body, dealing {damage} damage.".format(
-                    actor=self.owner, damage=_dmg
-                )
+
+            # self.owner.location.msg_contents("Debug: buff cache - " + _s)
+            self.owner.combat.injure(
+                poison, attacker=self.source, buffcheck=False, event=False
             )
-            self.owner.combat.damage(_dmg, quiet=True)
+            mesg = "Poison courses through {actor}'s body, dealing {damage} damage."
+            self.owner.location.msg_contents(
+                mesg.format(actor=self.owner, damage=poison)
+            )
             self.damage += 1
 
 

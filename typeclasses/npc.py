@@ -1,6 +1,6 @@
 from evennia.utils.utils import lazy_property
 from typeclasses.characters import Character
-from typeclasses.components.ai import AIHandler
+from components.ai import BrainHandler
 
 
 import random
@@ -49,8 +49,8 @@ class NPCWeapon:
 
 class NPC(Character):
     @lazy_property
-    def ai(self) -> AIHandler:
-        return AIHandler(self)
+    def ai(self) -> BrainHandler:
+        return BrainHandler(self)
 
     def at_object_creation(self):
         super().at_object_creation()

@@ -10,7 +10,7 @@ class RampagePerk(BaseBuff):
     triggers = ["hit"]
 
     def at_trigger(self, trigger, *args, **kwargs):
-        self.owner.buffs.add(bl.RampageBuff)
+        self.owner.buffs.add(bl.RampageBuff, source=self.owner)
 
 
 class ExploitPerk(BaseBuff):
@@ -19,8 +19,6 @@ class ExploitPerk(BaseBuff):
     flavor = "Shooting an enemy with this weapon allows you to find their weakness."
 
     triggers = ["hit"]
-
-    trigger_msg = ""
 
     def at_trigger(self, trigger, *args, **kwargs):
         if self.owner.buffs.has(bl.Exploited):
@@ -36,7 +34,7 @@ class WeakenPerk(BaseBuff):
     triggers = ["hit"]
 
     def at_trigger(self, trigger, defender, *args, **kwargs):
-        defender.buffs.add(bl.Poison)
+        defender.buffs.add(bl.Poison, source=self.owner.location)
 
 
 class LeechRoundPerk(BaseBuff):
@@ -47,7 +45,7 @@ class LeechRoundPerk(BaseBuff):
     triggers = ["hit"]
 
     def at_trigger(self, trigger, defender, *args, **kwargs):
-        defender.buffs.add(bl.Leeching)
+        defender.buffs.add(bl.Leeching, source=self.owner.location)
 
 
 class ThornsPerk(BaseBuff):

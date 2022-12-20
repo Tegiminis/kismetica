@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 import random
 import inflect
 from dataclasses import dataclass, field, fields, is_dataclass
+from components.context import StatContext, congen
 from typeclasses.objects import Object
 import evennia.utils as utils
 from world.rules import make_context
@@ -22,24 +23,11 @@ DEFAULT_ATTACK_MSG = {
 
 
 @dataclass
-class StatContext:
-    base: int | float = 0
-    bonus: int | float = 0
-    total: int | float = 0
-
-
-@dataclass
-class DamageContext:
-    amount: int | float = 0
-    modified: int | float = 0
-
-
-@dataclass
 class AttackContext:
     div: int | float
     hit: StatContext = field(default_factory=StatContext)
     dodge: StatContext = field(default_factory=StatContext)
-    damage: DamageContext = field(default_factory=DamageContext)
+    damage: int | float = 0
     isHit: bool = False
     isCrit: bool = False
 
@@ -56,6 +44,8 @@ class CombatContext:
 
 
 class CombatHandler(object):
+    """Performs various combat-related tasks."""
+
     owner = None
 
     def __init__(self, owner) -> None:
@@ -92,6 +82,7 @@ class CombatHandler(object):
         combat: CombatContext = None,
         attacker: Object = None,
         element: str = "neutral",
+        buffcheck: bool = True,
         loud: bool = True,
         event: bool = True,
     ):
@@ -111,7 +102,7 @@ class CombatHandler(object):
         overkill = max(damage - taken, 0)
 
         # basic damage context in case there's no active combat
-        basic = {
+        context = {
             "attacker": attacker,
             "defender": self.owner,
             "total": taken,
@@ -122,11 +113,7 @@ class CombatHandler(object):
         # context updating and dict conversion (or basic values)
         if combat:
             combat.total, combat.overkill = taken, overkill
-        _c = (
-            dict((field.name, getattr(combat, field.name)) for field in fields(combat))
-            if combat
-            else basic
-        )
+            context = congen([combat])
 
         # deal damage
         self.hp = max(self.hp - taken, 0)
@@ -135,13 +122,13 @@ class CombatHandler(object):
 
         # fire injury event
         if event:
-            self.owner.events.publish("injury", attacker, context=_c)
+            self.owner.events.publish("injury", attacker, context)
 
         # If you are out of life, you are out of luck
         was_kill = self.hp <= 0
         if was_kill:
             self.die()
-            self.owner.events.publish("death", attacker, context=_c)
+            self.owner.events.publish("death", attacker, context)
 
     def die(self, context=None):
         """Die! Marks you as dead."""
@@ -155,6 +142,8 @@ class CombatHandler(object):
         Args:
             heal:   The amount you want to heal for (will be converted to an int)
         """
+        if not heal:
+            return
         self.hp = min(self.hp + heal, self.maxhp)
         self.owner.msg("You healed by %i!" % heal)
 
@@ -168,12 +157,8 @@ class CombatHandler(object):
             acc:    The attacker's accuracy modifier.(default: 0)
             eva:    The defender's evasion modifier. (default: 0)
             crit:   The attacker's crit modifier (default: 2)
-            context:    (optional) The context dictionary you wish to update with this method's values
 
-        Returns a context dictionary updated with the following values:
-            hit/dodge:  nested dictionary of {base, bonus, total}
-            is_hit:     if this was a hit
-            hit_div:    hit total divided by dodge total
+        Returns an AttackContext object
         """
         # Roll two d100s
         _hit = int(random.random() * 100)
@@ -254,26 +239,23 @@ class CombatHandler(object):
             if attack.isHit:
                 # precision check
                 was_hit = True
-                attack.damage.amount = weapon.randomized_damage
+                attack.damage = weapon.randomized_damage
 
                 # crit multiply
                 if attack.isCrit:
                     was_crit = True
                     _prec = attacker.buffs.check(weapon.precision, "precision")
-                    _critdmg = attack.damage.amount * _prec
-                    attack.damage.amount = _critdmg
+                    _critdmg = attack.damage * _prec
+                    attack.damage = _critdmg
 
-                attacker.events.publish("hit", weapon, combat)
+                # creating combined context dictionary
+                context = congen([attack, combat])
+
+                attacker.events.publish("hit", weapon, context)
 
                 # damage modification
-                attack.damage.modified = defender.combat.deflect(attack.damage.amount)
+                attack.damage = defender.combat.deflect(attack.damage)
                 combat.attacks.append(attack)
-
-            else:
-                if x == 0:
-                    attacker.location.msg_contents("    ... Miss!")
-                    attacker.events.publish("miss", weapon, combat)
-                break
 
         # outro
         if was_hit:
@@ -285,13 +267,13 @@ class CombatHandler(object):
             dmglist = ""
 
             for atk in combat.attacks:
-                dmg = atk.damage.modified
-                if atk.damage.modified <= 0:
+                dmg = atk.damage
+                if atk.damage <= 0:
                     dmg = "no"
 
                 # damage application
                 dmglist += message.format(dmg=dmg)
-                combat.total += atk.damage.modified
+                combat.total += atk.damage
 
             # attacks message
             attacker.location.msg_contents(indent + prefix + dmglist)
@@ -321,5 +303,8 @@ class CombatHandler(object):
                 attacker.location.msg_contents("    " + _msgH)
 
             defender.combat.injure(combat.total, combat)
+        else:
+            attacker.location.msg_contents("    ... Miss!")
+            attacker.events.publish("miss", weapon, combat)
 
         attacker.location.msg_contents("|n\n")

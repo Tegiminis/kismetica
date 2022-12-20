@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING
 from evennia.typeclasses.attributes import AttributeProperty
 from evennia.typeclasses.tags import TagHandler
 
-from typeclasses.components.cooldowns import CooldownHandler
+from components.cooldowns import CooldownHandler
 from typeclasses.objects import Object
 from evennia.contrib.rpg.buffs.buff import BaseBuff, BuffableProperty
-from typeclasses.components.buffsextended import BuffHandlerExtended
+from components.buffsextended import BuffHandlerExtended
 from evennia.utils import lazy_property, utils
 from evennia import Command as BaseCommand
 from evennia import CmdSet
