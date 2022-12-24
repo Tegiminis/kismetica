@@ -1,50 +1,15 @@
+from components.context import congen
 from evennia.utils.utils import lazy_property
 from typeclasses.characters import Character
 from components.ai import BrainHandler
-
-
+from dataclasses import dataclass
 import random
+from components.combat import WeaponStats
 
 
-class NPCWeapon:
-    name = "Template"
-
-    accuracy = 1.0
-    damage = 10
-    crit = 2.0
-    mult = 2.0
-    spread = 1.0
-    mult = 1.0
-
-    element = "neutral"
-    msg = "%s shoots %s with %s."
-    cooldown = 6
-
-    def __init__(
-        self, name, accuracy, damage, crit, mult, spread, combo, element, msg, cooldown
-    ) -> None:
-
-        self.name = name
-        self.accuracy = accuracy
-        self.damage = damage
-        self.crit = crit
-        self.mult = mult
-        self.spread = spread
-        self.combo = combo
-        self.element = element
-        self.msg = msg
-        self.cooldown = cooldown
-
-    @property
-    def WeaponData(self):
-        dict = {
-            "damage": random.randint(self.damage * 0.5, self.damage * 1.5),
-            "critChance": self.crit,
-            "critMult": self.mult,
-            "accuracy": self.accuracy,
-            "spread": self.spread,
-            "shots": self.shots,
-        }
+@dataclass
+class NPCWeapon(WeaponStats):
+    pass
 
 
 class NPC(Character):
@@ -52,42 +17,19 @@ class NPC(Character):
     def ai(self) -> BrainHandler:
         return BrainHandler(self)
 
+    @property
+    def weapon(self) -> NPCWeapon:
+        return self.db.weapon
+
     def at_object_creation(self):
         super().at_object_creation()
-
-        # Various types of messaging
-        self.db.msg = {
-            "idle": [
-                "%s stomps their feet impatiently." % self.named,
-                "%s bares their teeth menacingly." % self.named,
-            ],
-            "despawn": "%s crumbles away into a fine dust." % self.named,
-            "respawn": "%s revives in a glittering beam of light." % self.named,
-            "retreat": "%s backs up to find a better position." % self.named,
-        }
-
-        self.db.lootable = True  # Can this mob be looted?
-
-        # Various AI timers and things
-        self.db.timer = {
-            "idle": 5,
-            "search": 3,  # How long after searching before thinking again
-            "attack": 3,  # How long after attacking before thinking again
-            "patrol": 3,  # How long after patrolling before thinking again
-            "dead": 30,  # How long this AI remains dead before it respawns
-            "respawn": 10,  # How long after respawn before thinking again
-        }
 
         # The template weapon for all NPCs.
         self.db.weapon = NPCWeapon
 
-        self.db.range = 4
-
-        # States for the state machine
-        self.db.state = "active"
-
-        # The AI's current target
-        self.db.target = None
+    def at_init(self):
+        _ai = self.ai
+        return super().at_init()
 
     def find_targets(self, location):
         """
@@ -150,39 +92,14 @@ class NPC(Character):
             # no exits! teleport to home to get away.
             self.move_to(self.home)
 
-    def npc_attack(self, defender):
+    def npc_attack(self, defender: Character):
         """
         Attacks the specified target with the NPC's default weapon
         The most basic form of attack an NPC can do.
         """
-        weapon: NPCWeapon = self.db.weapon
-        combat = {"attacker": self, "defender": defender}
+        weapon: WeaponStats = self.db.weapon()
 
-        self.location.msg_contents("Debug: Attacking a target in this room.")
-
-        weapon_stats = weapon.WeaponData
-        combat = self.single_attack(defender, *weapon_stats, context=combat)
-
-        self.location.msg_contents(
-            f"Hit: {combat.hit} | Crit: {combat.crit} | Damage: {combat.damage}"
+        weapon.damage = random.randint(
+            round(weapon.damage * 0.5), round(weapon.damage * 1.5)
         )
-
-        if combat.hit:
-            defender.damage(combat.damage, context=combat)
-            msg_damage = f"{combat.damage} damage!"
-        else:
-            msg_damage = "Miss!"
-
-        defender.msg(
-            ("\n|n" + (weapon.msg % (self.name, "you", weapon.name)).capitalize())
-            + ("\n|n" + msg_damage)
-        )
-
-        self.location.msg_contents(
-            (
-                "\n|n"
-                + (weapon.msg % (self.name, defender.named, weapon.name)).capitalize()
-            )
-            + ("\n|n" + msg_damage),
-            exclude=(self, defender),
-        )
+        self.combat.basic_attack(weapon, defender)

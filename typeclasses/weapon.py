@@ -6,6 +6,7 @@ from evennia.typeclasses.attributes import AttributeProperty
 from evennia.typeclasses.tags import TagHandler
 
 from components.cooldowns import CooldownHandler
+from components.combat import WeaponStats
 from typeclasses.objects import Object
 from evennia.contrib.rpg.buffs.buff import BaseBuff, BuffableProperty
 from components.buffsextended import BuffHandlerExtended
@@ -18,6 +19,7 @@ p = inflect.engine()
 
 if TYPE_CHECKING:
     from typeclasses.characters import Character
+
 
 DEFAULT_ATTACK_MSG = {
     "bullet": {
@@ -274,8 +276,7 @@ class Weapon(Object):
         # Most weapons only have self (what you see when you attack) and attack (what the room sees when you attack)
         # Exotics and altered weapons might have unique messages
         self.db.msg = {
-            "self": "You shoot your {weapon} at {defender}.",
-            "attack": "{attacker} shoots their {weapon} at {defender}.",
+            "attack": "{attacker} shoots their {name} at {defender}.",
         }
 
         # Gun's rarity. Common, Uncommon, Rare, Legendary, Unique, Exotic. Dictates number of perks when gun is rolled on.
@@ -366,9 +367,21 @@ class Weapon(Object):
             defender:   The target you are attacking
         """
         # initial context
+        weapon: WeaponStats = WeaponStats(
+            self.key,
+            self.accuracy,
+            self.randomized_damage,
+            self.crit,
+            self.precision,
+            self.shots,
+            self.rpm,
+            "neutral",
+            self.db.msg["attack"],
+            True,
+        )
         defender: Character = defender
         attacker: Character = self.location
-        attacker.combat.weapon_attack(self, defender)
+        attacker.combat.basic_attack(weapon, defender)
 
     def reload_weapon(self) -> int:
         """Reloads this weapon and returns the amount of ammo that was reloaded."""

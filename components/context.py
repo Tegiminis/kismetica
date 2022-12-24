@@ -23,7 +23,7 @@ def asdict_shallow(dc) -> dict:
     return r
 
 
-def congen(dclist: list) -> dict:
+def congen(clist: list) -> dict:
     """Performs asdict_shallow on a list of dataclasses, and then combines them.
 
     Will overwrite values of the same name so you should use this mainly for dataclasses
@@ -31,8 +31,8 @@ def congen(dclist: list) -> dict:
 
     Used here to generate "contexts" for use in game systems"""
 
-    r_dict = {}
-    for dc in dclist:
-        r_dict.update(asdict_shallow(dc))
+    return_dict = {}
+    for context in clist:
+        return_dict.update(asdict_shallow(context))
 
-    return r_dict
+    return return_dict

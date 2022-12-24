@@ -43,6 +43,20 @@ class CombatContext:
     overkill: int | float = 0
 
 
+@dataclass
+class WeaponStats:
+    name: str = "Template"
+    accuracy: int | float = 1.0
+    damage: int | float = 10
+    crit: int | float = 2.0
+    mult: int | float = 2.0
+    shots: int | float = 1.0
+    cooldown: int | float = 6
+    element: str = "neutral"
+    msg: str = "{attacker} shoots {defender} with {name}."
+    is_object: bool = False
+
+
 class CombatHandler(object):
     """Performs various combat-related tasks."""
 
@@ -72,20 +86,22 @@ class CombatHandler(object):
 
         # calc damage
         _d = damage
+        # apply buffs
         if not raw:
             _d = self.buffs.check(_d, "injury")
+
         return _d
 
     def injure(
         self,
         damage: int | float,
-        combat: CombatContext = None,
         attacker: Object = None,
         element: str = "neutral",
         buffcheck: bool = True,
         loud: bool = True,
         event: bool = True,
-    ):
+        context: CombatContext = None,
+    ) -> CombatContext:
         """
         Applies damage. Affected by "injury" buffs.
 
@@ -98,22 +114,22 @@ class CombatHandler(object):
 
         # calculate damage
         damage = self.owner.check_buffs(damage, "injury")
-        taken = round(damage) if damage < self.hp else self.hp
+        _hp = int(self.hp)
+        taken = round(damage) if damage < _hp else _hp
         overkill = max(damage - taken, 0)
 
-        # basic damage context in case there's no active combat
-        context = {
-            "attacker": attacker,
-            "defender": self.owner,
-            "total": taken,
-            "element": element,
-            "overkill": overkill,
-        }
-
         # context updating and dict conversion (or basic values)
-        if combat:
-            combat.total, combat.overkill = taken, overkill
-            context = congen([combat])
+        if context:
+            context.total, context.overkill = taken, overkill
+            context = congen([context])
+        else:
+            context = {
+                "attacker": attacker,
+                "defender": self.owner,
+                "total": taken,
+                "element": element,
+                "overkill": overkill,
+            }
 
         # deal damage
         self.hp = max(self.hp - taken, 0)
@@ -129,6 +145,9 @@ class CombatHandler(object):
         if was_kill:
             self.die()
             self.owner.events.publish("death", attacker, context)
+
+        # return the combat context
+        return CombatContext(**context)
 
     def die(self, context=None):
         """Die! Marks you as dead."""
@@ -147,7 +166,7 @@ class CombatHandler(object):
         self.hp = min(self.hp + heal, self.maxhp)
         self.owner.msg("You healed by %i!" % heal)
 
-    def opposed_hit(self, acc=0.0, eva=0.0, crit=2.0) -> AttackContext:
+    def opposed_hit(self, acc=0.0, eva=0.0, crit=2.0, damage=0) -> AttackContext:
         """
         Performs an "opposed hit roll". An example of this would be an accuracy
         vs evasion roll, or an awareness vs spread roll. Each roll is
@@ -176,6 +195,7 @@ class CombatHandler(object):
             "hit": hit,
             "dodge": dodge,
             "div": (_hit + accuracy) / (_dodge + evasion),
+            "damage": damage,
             "isHit": (_hit + accuracy) > (_dodge + evasion),
             "isCrit": _hit > _dodge * crit,
         }
@@ -184,13 +204,13 @@ class CombatHandler(object):
         context: AttackContext = AttackContext(**update)
         return context
 
-    def weapon_attack(self, weapon, defender: Object):
+    def basic_attack(self, weapon: WeaponStats, defender: Object):
         """
         Performs an attack against a defender, according to the weapon's various stats
 
         Args:
+            weapon:     The weapon you are using. WeaponStats dataclass
             defender:   The target you are attacking
-            context:    (optional) The context you want to feed into the attack method
         """
         # initial context
         attacker: Object = self.owner
@@ -204,54 +224,48 @@ class CombatHandler(object):
         combat: CombatContext = CombatContext(**_basics)
 
         # variable assignments
-        _acc = attacker.buffs.check(weapon.accuracy, "accuracy")
-        _eva = defender.evasion
+        accuracy_modified = attacker.buffs.check(weapon.accuracy, "accuracy")
+        evasion = defender.evasion
 
         # Message queues, for sending out after the function completes
         msg_queue = []
         cast_queue = []
 
-        # variable assignment
-        _cdict = dict(
-            (field.name, getattr(combat, field.name)) for field in fields(combat)
-        )
-        _crit = weapon.crit
-        base_msg = weapon.db.msg["self"].format(**_cdict)
-        room_msg = weapon.db.msg["attack"].format(**_cdict)
-
-        attacker.msg(base_msg)
-        attacker.location.msg_contents(room_msg, exclude=attacker)
+        # opening damage message
+        _format = congen([combat])
+        _format.update({"name": weapon.name})
+        room_msg = weapon.msg.format(**_format)
+        attacker.location.msg_contents("|n\n")
+        attacker.location.msg_contents(room_msg)
         _shots = weapon.shots
         was_hit = False
         was_crit = False
-        dmg_total = 0
 
         for x in range(max(1, _shots)):
             # roll to hit and update variables
-            attack: AttackContext = self.opposed_hit(_acc, _eva, _crit)
+            attack: AttackContext = self.opposed_hit(
+                accuracy_modified, evasion, weapon.crit, weapon.damage
+            )
 
             if x == 0:
+                _format = {"hit": attack.hit.total, "dodge": attack.dodge.total}
                 roll_msg = "  HIT: +{hit} vs EVA: +{dodge}"
-                attacker.msg(
-                    roll_msg.format(hit=attack.hit.total, dodge=attack.dodge.total)
-                )
+                attacker.msg(roll_msg.format(**_format))
 
             if attack.isHit:
                 # precision check
                 was_hit = True
-                attack.damage = weapon.randomized_damage
 
                 # crit multiply
                 if attack.isCrit:
                     was_crit = True
-                    _prec = attacker.buffs.check(weapon.precision, "precision")
-                    _critdmg = attack.damage * _prec
-                    attack.damage = _critdmg
+                    precision_mult = attacker.buffs.check(weapon.mult, "precision")
+                    attack.damage *= precision_mult
 
                 # creating combined context dictionary
                 context = congen([attack, combat])
 
-                attacker.events.publish("hit", weapon, context)
+                attacker.events.publish("hit", attacker, context)
 
                 # damage modification
                 attack.damage = defender.combat.deflect(attack.damage)
@@ -264,7 +278,7 @@ class CombatHandler(object):
             indent = "    "
             prefix = "... "
             message = "{dmg} damage!"
-            dmglist = ""
+            dmglist_msg = ""
 
             for atk in combat.attacks:
                 dmg = atk.damage
@@ -272,14 +286,17 @@ class CombatHandler(object):
                     dmg = "no"
 
                 # damage application
-                dmglist += message.format(dmg=dmg)
+                dmglist_msg += message.format(dmg=dmg)
                 combat.total += atk.damage
 
             # attacks message
-            attacker.location.msg_contents(indent + prefix + dmglist)
+            attacker.location.msg_contents(indent + prefix + dmglist_msg)
 
             # apply total damage buffs
-            combat.total = weapon.buffs.check(combat.total, "total_damage")
+            weapon_object = attacker.attributes.get("held", None)
+            if weapon_object:
+                combat.total = weapon_object.buffs.check(combat.total, "total_damage")
+            combat.total = attacker.check_buffs(combat.total, "total_damage")
 
             # total damage message
             prefix = "  = "
@@ -287,13 +304,15 @@ class CombatHandler(object):
             if combat.total:
                 attacker.location.msg_contents(indent + prefix + message)
 
+            _format = congen([combat])
+
             # hit messaging
             hit_msg = DEFAULT_ATTACK_MSG["bullet"]["hit"]
             crit_msg = DEFAULT_ATTACK_MSG["bullet"]["crit"]
             invuln_msg = DEFAULT_ATTACK_MSG["bullet"]["invuln"]
-            _msgH = hit_msg.format(**_cdict).capitalize()
-            _msgC = crit_msg.format(**_cdict).capitalize()
-            _msgI = invuln_msg.format(**_cdict).capitalize()
+            _msgH = hit_msg.format(**_format).capitalize()
+            _msgC = crit_msg.format(**_format).capitalize()
+            _msgI = invuln_msg.format(**_format).capitalize()
 
             if not combat.total:
                 attacker.location.msg_contents("    " + _msgI)
@@ -302,7 +321,7 @@ class CombatHandler(object):
             else:
                 attacker.location.msg_contents("    " + _msgH)
 
-            defender.combat.injure(combat.total, combat)
+            defender.combat.injure(combat.total, context=combat)
         else:
             attacker.location.msg_contents("    ... Miss!")
             attacker.events.publish("miss", weapon, combat)
