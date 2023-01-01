@@ -6,31 +6,26 @@ from evennia.typeclasses.attributes import AttributeProperty
 from evennia.typeclasses.tags import TagHandler
 
 from components.cooldowns import CooldownHandler
-from components.combat import WeaponStats
+import components.combat as com
+from components.combat import CombatHandler, WeaponStats
 from typeclasses.objects import Object
 from evennia.contrib.rpg.buffs.buff import BaseBuff, BuffableProperty
 from components.buffsextended import BuffHandlerExtended
 from evennia.utils import lazy_property, utils
 from evennia import Command as BaseCommand
 from evennia import CmdSet
-from world.rules import make_context
+from world.rules import verify_context
 
 p = inflect.engine()
 
 if TYPE_CHECKING:
     from typeclasses.characters import Character
 
-
-DEFAULT_ATTACK_MSG = {
-    "bullet": {
-        "invuln": "Bullets glance harmlessly off {defender}!",
-        "hit": "{defender} staggers under the flurry of bullets.",
-        "crit": "Blood spurts uncontrollably from newly-apportioned wounds!",
-    },
-    "fusion": {
-        "hit": "Bolts of multicolored plasma strike {defender}'s armor.",
-        "crit": "Molten matter fuses to flesh amidst screams of agony!",
-    },
+DEFAULT_MESSAGING = {
+    "attack": com.DEFAULT_ATTACK_MSG,
+    "ready": com.DEFAULT_READY_MSG,
+    "hit": com.DEFAULT_HIT_MSG,
+    "crit": com.DEFAULT_CRIT_MSG,
 }
 
 
@@ -67,18 +62,18 @@ class FusionCharged(BaseBuff):
 
     def at_expire(self, *args, **kwargs):
         player: Character = self.owner.location
-        _dmg = round(player.maxhp * 0.75)
+        damage = round(player.maxhp * 0.75)
         player.msg(
             "\n|nYour {weapon} explodes, filling your lungs with searing plasma!".format(
                 weapon=self.owner
             )
         )
-        player.combat.take_damage(_dmg)
+        player.combat.injure(damage, player, buffcheck=False, event=False)
 
     def at_tick(self, *args, **kwargs):
-        _tn = self.ticknum
-        if _tn in self.tick_msg.keys():
-            self.owner.location.msg(self.tick_msg[_tn] % self.owner)
+        ticknum = self.ticknum
+        if ticknum in self.tick_msg.keys():
+            self.owner.location.msg(self.tick_msg[ticknum] % self.owner)
 
 
 class CmdReload(BaseCommand):
@@ -120,6 +115,12 @@ class CmdShoot(BaseCommand):
     key = "shoot"
     locks = ""
 
+    def at_pre_cmd(self):
+        active = self.caller.cooldowns.active("global")
+        if active:
+            self.caller.msg("You cannot act again so quickly!")
+        return active
+
     def parse(self):
         self.args = self.args.strip()
 
@@ -136,12 +137,12 @@ class CmdShoot(BaseCommand):
             caller.msg("You need to pick a target to attack.")
             return
 
-        if target.db.state == "dead":
+        if target.tags.has("dead", category="combat"):
             caller.msg("You cannot attack a dead target.")
             return
 
-        if caller.cooldowns.find("attack"):
-            caller.msg("You cannot act again so quickly!")
+        if caller.cooldowns.active("attack"):
+
             return
 
         if target:
@@ -273,10 +274,11 @@ class Weapon(Object):
         self.precision
 
         # Messages for your weapon.
-        # Most weapons only have self (what you see when you attack) and attack (what the room sees when you attack)
+        # Most weapons only have attack (what the rooms sees when you attack) and ready (what you see when cooldown expires)
         # Exotics and altered weapons might have unique messages
-        self.db.msg = {
+        self.db.messaging = {
             "attack": "{attacker} shoots their {name} at {defender}.",
+            "ready": "You seat the weapon against your shoulder, ready to fire.",
         }
 
         # Gun's rarity. Common, Uncommon, Rare, Legendary, Unique, Exotic. Dictates number of perks when gun is rolled on.
@@ -320,15 +322,13 @@ class Weapon(Object):
         return _ret
 
     @property
-    def shots(self):
+    def shots(self) -> int:
         """Returns the number of shots this weapon will fire. Based on combo stat."""
-        _combo = self.combo
-        _shots = (
-            round(random.random() * _combo)
-            if not self.tags.has("burst", category="weapon")
-            else int(self.combo)
-        )
-        return _shots
+        combo = self.combo
+        rand_hit = round(random.random() * combo)
+        is_burst = self.tags.has("burst", category="weapon")
+        shots = rand_hit if not is_burst else int(combo)
+        return max(1, shots)
 
     @property
     def ammo(self):
@@ -345,6 +345,11 @@ class Weapon(Object):
         weapon skill multiplied by the accuracy bonus."""
 
         return 100 * min(self.accuracy / 100, 1)
+
+    @property
+    def holder(self):
+        """Returns this weapon's holder, if it is being held."""
+        return self.location
 
     def at_init(self):
         owner: Object = self.location
@@ -367,6 +372,8 @@ class Weapon(Object):
             defender:   The target you are attacking
         """
         # initial context
+        messaging = dict(self.attributes.get("messaging", DEFAULT_MESSAGING))
+        rdy_msg = messaging.get("ready", com.DEFAULT_READY_MSG)
         weapon: WeaponStats = WeaponStats(
             self.key,
             self.accuracy,
@@ -376,12 +383,13 @@ class Weapon(Object):
             self.shots,
             self.rpm,
             "neutral",
-            self.db.msg["attack"],
+            messaging,
             True,
         )
         defender: Character = defender
         attacker: Character = self.location
-        attacker.combat.basic_attack(weapon, defender)
+        attacker.combat.weapon_attack(weapon, defender)
+        attacker.cooldowns.add("global", weapon.cooldown, None, rdy_msg)
 
     def reload_weapon(self) -> int:
         """Reloads this weapon and returns the amount of ammo that was reloaded."""

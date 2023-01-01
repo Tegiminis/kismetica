@@ -27,6 +27,9 @@ class NPC(Character):
         # The template weapon for all NPCs.
         self.db.weapon = NPCWeapon
 
+        # XP gained on killing this enemy
+        self.db.gain = 10
+
     def at_init(self):
         _ai = self.ai
         return super().at_init()
@@ -102,4 +105,4 @@ class NPC(Character):
         weapon.damage = random.randint(
             round(weapon.damage * 0.5), round(weapon.damage * 1.5)
         )
-        self.combat.basic_attack(weapon, defender)
+        self.combat.weapon_attack(weapon, defender)

@@ -9,7 +9,7 @@ creation commands.
 """
 import time
 import random
-from world.rules import make_context
+from world.rules import verify_context
 from typing import TYPE_CHECKING
 from evennia.utils import utils, lazy_property
 
@@ -26,6 +26,7 @@ import commands.destiny_cmdsets as destiny
 
 from evennia import TICKER_HANDLER, DefaultCharacter
 from typeclasses.item import Item
+import evennia.prototypes.spawner as spawner
 
 if TYPE_CHECKING:
     from typeclasses.npc import NPC
@@ -140,14 +141,19 @@ class PlayerCharacter(Character):
 
     # The module we use for all player characters. This contains player-specific stats.
 
+    # base player stats
     mobility = BuffableProperty(3)
     resilience = BuffableProperty(3)
     strength = BuffableProperty(3)
     discipline = BuffableProperty(3)
     recovery = BuffableProperty(3)
     intellect = BuffableProperty(3)
-    xpcap = BuffableProperty(1000)
-    xpgain = BuffableProperty(10)
+
+    # player xp stats
+    limit = BuffableProperty(1000)
+    """The cap for experience you can earn"""
+    learning = BuffableProperty(10)
+    """The amount of experience earned per tick"""
 
     def at_object_creation(self):
 
@@ -155,7 +161,7 @@ class PlayerCharacter(Character):
         self.cmdset.add(destiny.DestinyBuilderCmdSet, permanent=True)
 
         # TickerHandler that fires off the "learn" function
-        # TICKER_HANDLER.add(15, self.learn_xp)
+        TICKER_HANDLER.add(15, self.learn)
 
         # Are you a "Named" character? Players start out as true.
         self.tags.add("named")
@@ -165,9 +171,8 @@ class PlayerCharacter(Character):
 
         # XP stats. Current and cap XP.
         self.db.xp = 0
-        self.db.xpcap = 1000
-        self.db.xpgain = 10
-        self.db.level = 1
+        self.db.permxp = 0
+        self.limit, self.learning
         return super().at_object_creation()
 
     def at_init(self):
@@ -189,22 +194,37 @@ class PlayerCharacter(Character):
         return _weight
 
     @property
-    def xpGain(self):
-        """The amount of XP you learn from your cap with each tick."""
-        _gain = self.buffs.check(self.level * 50, "gain")
-        return _gain
-
-    @property
-    def xpCap(self):
-        """The amount of XP you can have "stored". It is "learned" with each tick."""
-        _cap = self.buffs.check(self.level * 1000, "cap")
-        return _cap
-
-    @property
     def level(self):
         """The combined levels of all a player's subclasses."""
         subclasses: dict = self.db.subclasses
-        _lvl = 0
+        _lvl = 1
         for x in subclasses.values():
             _lvl += x.get("level", 1)
         return _lvl
+
+    def learn(self):
+        """Converts temporary XP to permanent XP"""
+        # get the variables
+        xp, learn = self.db.xp, self.learning
+        to_learn = xp if learn >= xp else learn
+
+        # apply the learning
+        self.db.permxp += to_learn
+        self.db.xp -= to_learn
+
+        # messaging
+        if to_learn:
+            # self.msg("Debug: {num} XP gained".format(num=to_learn))
+            pass
+
+        # default level-up
+        if self.db.permxp >= 1000:
+            self.db.permxp -= 1000
+            self.msg("You feel stronger...")
+            objs = spawner.spawn("WORLD_DROP")
+            for obj in objs:
+                obj.move_to(self.location, True)
+                obj.location.msg_contents("An engram coalesces from strands of energy!")
+
+    def add_xp(self, value):
+        pass

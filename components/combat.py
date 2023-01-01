@@ -5,21 +5,31 @@ from dataclasses import dataclass, field, fields, is_dataclass
 from components.context import StatContext, congen
 from typeclasses.objects import Object
 import evennia.utils as utils
-from world.rules import make_context
+from world.rules import verify_context, capitalize
 
 p = inflect.engine()
 
-DEFAULT_ATTACK_MSG = {
+DEFAULT_TEMP_MSG = {
     "bullet": {
         "invuln": "Bullets glance harmlessly off {defender}!",
-        "hit": "{defender} staggers under the flurry of bullets.",
-        "crit": "Blood spurts uncontrollably from newly-apportioned wounds!",
     },
     "fusion": {
         "hit": "Bolts of multicolored plasma strike {defender}'s armor.",
         "crit": "Molten matter fuses to flesh amidst screams of agony!",
     },
 }
+
+DEFAULT_ATTACK_MSG = "{attacker} shoots {name} at {defender}"
+DEFAULT_READY_MSG = "You shoulder your {name}, ready to fire."
+DEFAULT_HIT_MSG = "{defender} staggers under the flurry of bullets."
+DEFAULT_CRIT_MSG = "Blood spurts uncontrollably from newly-apportioned wounds!"
+
+DEFAULT_DEATH_MSG = "{owner} collapses in a heap!"
+DEFAULT_REVIVE_MSG = "{owner} suddenly begins breathing again!"
+
+INDENT = "    "
+PREFIX = "..."
+NEWLINE = "|n\n"
 
 
 @dataclass
@@ -53,7 +63,7 @@ class WeaponStats:
     shots: int | float = 1.0
     cooldown: int | float = 6
     element: str = "neutral"
-    msg: str = "{attacker} shoots {defender} with {name}."
+    messaging: dict = field(default_factory=dict)
     is_object: bool = False
 
 
@@ -84,12 +94,14 @@ class CombatHandler(object):
     def deflect(self, damage, raw=False):
         """Returns damage modified by armor, buffs, and other normal combat modifiers"""
 
-        # calc damage
+        # calculate damage
         _d = damage
-        # apply buffs
+
+        # apply buffs (flat damage resistance)
         if not raw:
             _d = self.buffs.check(_d, "injury")
 
+        # return damage
         return _d
 
     def injure(
@@ -113,7 +125,8 @@ class CombatHandler(object):
         """
 
         # calculate damage
-        damage = self.owner.check_buffs(damage, "injury")
+        if buffcheck:
+            damage = self.owner.check_buffs(damage, "injury")
         _hp = int(self.hp)
         taken = round(damage) if damage < _hp else _hp
         overkill = max(damage - taken, 0)
@@ -133,17 +146,24 @@ class CombatHandler(object):
 
         # deal damage
         self.hp = max(self.hp - taken, 0)
+        was_kill = self.hp <= 0
         if loud:
-            self.owner.msg("  ... You take %i damage!" % int(taken))
+            self.owner.msg(INDENT + PREFIX + " You take %i damage!" % int(taken))
 
         # fire injury event
         if event:
             self.owner.events.publish("injury", attacker, context)
 
-        # If you are out of life, you are out of luck
-        was_kill = self.hp <= 0
+        # no life, no luck
         if was_kill:
-            self.die()
+            # if this object grants xp, and the attacker can gain it, transfer xp
+            gain = self.owner.attributes.get("gain", None)
+            xp = attacker.attributes.has("xp")
+            if gain and xp:
+                attacker.db.xp = min(gain + xp, attacker.limit)
+
+            # die and publish death event
+            self.die(context)
             self.owner.events.publish("death", attacker, context)
 
         # return the combat context
@@ -151,9 +171,35 @@ class CombatHandler(object):
 
     def die(self, context=None):
         """Die! Marks you as dead."""
-        context = make_context(context)
+        # tag and buff stuff
         self.owner.tags.clear(category="combat")
         self.owner.tags.add("dead", category="combat")
+        self.owner.buffs.super_remove(tag="remove_on_death")
+
+        # messaging
+        die_msg = self.owner.attributes.get("messaging", {}).get("death", None)
+        if not die_msg:
+            die_msg = DEFAULT_DEATH_MSG
+        formatted = die_msg.format(owner=self.owner).capitalize()
+
+        # send message and delay revive
+        self.owner.location.msg_contents(formatted)
+        utils.delay(10, self.revive)
+
+    def revive(self):
+        """Revive! You aren't dead anymore!"""
+        # tag stuff
+        self.owner.tags.clear(category="combat")
+        self.hp = self.maxhp
+
+        # messaging
+        rev_msg = self.owner.attributes.get("messaging", {}).get("revive", None)
+        if not rev_msg:
+            rev_msg = DEFAULT_REVIVE_MSG
+        formatted = rev_msg.format(owner=self.owner).capitalize()
+
+        # send revive message
+        self.owner.location.msg_contents(formatted)
 
     def heal(self, heal: int, msg=None) -> int:
         """Heals you.
@@ -173,9 +219,9 @@ class CombatHandler(object):
         d100 + random(acc/eva), and a hit is made if the hit value is higher.
 
         Args:
-            acc:    The attacker's accuracy modifier.(default: 0)
-            eva:    The defender's evasion modifier. (default: 0)
-            crit:   The attacker's crit modifier (default: 2)
+            acc:    (default: 0) The attacker's accuracy modifier.
+            eva:    (default: 0) The defender's evasion modifier.
+            crit:   (default: 2) The attacker's crit modifier
 
         Returns an AttackContext object
         """
@@ -204,7 +250,7 @@ class CombatHandler(object):
         context: AttackContext = AttackContext(**update)
         return context
 
-    def basic_attack(self, weapon: WeaponStats, defender: Object):
+    def weapon_attack(self, weapon: WeaponStats, defender: Object):
         """
         Performs an attack against a defender, according to the weapon's various stats
 
@@ -225,38 +271,43 @@ class CombatHandler(object):
 
         # variable assignments
         accuracy_modified = attacker.buffs.check(weapon.accuracy, "accuracy")
-        evasion = defender.evasion
+        evasion = getattr(defender, "evasion", 0)
 
-        # Message queues, for sending out after the function completes
-        msg_queue = []
-        cast_queue = []
+        # opening damage message formatting
+        mapping = congen([combat])
+        mapping.update({"name": weapon.name})
+        room_msg = weapon.messaging.get("attack", DEFAULT_ATTACK_MSG).capitalize()
+        formatted = room_msg.format(**mapping)
 
-        # opening damage message
-        _format = congen([combat])
-        _format.update({"name": weapon.name})
-        room_msg = weapon.msg.format(**_format)
-        attacker.location.msg_contents("|n\n")
-        attacker.location.msg_contents(room_msg)
-        _shots = weapon.shots
+        # send message
+        attacker.location.msg_contents(NEWLINE)
+        attacker.location.msg_contents(formatted)
+
+        # attack prep
+        shots = weapon.shots
         was_hit = False
         was_crit = False
 
-        for x in range(max(1, _shots)):
+        # roll to hit based on number of shots
+        for x in range(shots):
+
             # roll to hit and update variables
             attack: AttackContext = self.opposed_hit(
                 accuracy_modified, evasion, weapon.crit, weapon.damage
             )
 
+            # if this is the first shot, send the initial hit roll numbers
             if x == 0:
-                _format = {"hit": attack.hit.total, "dodge": attack.dodge.total}
+                mapping = {"hit": attack.hit.total, "dodge": attack.dodge.total}
                 roll_msg = "  HIT: +{hit} vs EVA: +{dodge}"
-                attacker.msg(roll_msg.format(**_format))
+                formatted = roll_msg.format(**mapping)
+                attacker.location.msg_contents(formatted)
 
+            # if attack was successful
             if attack.isHit:
-                # precision check
                 was_hit = True
 
-                # crit multiply
+                # if crit (hit > evasion * crit), multiply damage
                 if attack.isCrit:
                     was_crit = True
                     precision_mult = attacker.buffs.check(weapon.mult, "precision")
@@ -265,32 +316,30 @@ class CombatHandler(object):
                 # creating combined context dictionary
                 context = congen([attack, combat])
 
+                # attacker publishes event
                 attacker.events.publish("hit", attacker, context)
 
                 # damage modification
                 attack.damage = defender.combat.deflect(attack.damage)
                 combat.attacks.append(attack)
 
-        # outro
+        # hit (at least one successful hit)
         if was_hit:
 
             # damage messaging setup
-            indent = "    "
-            prefix = "... "
-            message = "{dmg} damage!"
+            message = " {dmg} damage!"
             dmglist_msg = ""
 
+            # individual attack messages and damage totaling
             for atk in combat.attacks:
                 dmg = atk.damage
                 if atk.damage <= 0:
                     dmg = "no"
-
-                # damage application
                 dmglist_msg += message.format(dmg=dmg)
                 combat.total += atk.damage
 
             # attacks message
-            attacker.location.msg_contents(indent + prefix + dmglist_msg)
+            attacker.location.msg_contents(INDENT + PREFIX + dmglist_msg)
 
             # apply total damage buffs
             weapon_object = attacker.attributes.get("held", None)
@@ -299,31 +348,34 @@ class CombatHandler(object):
             combat.total = attacker.check_buffs(combat.total, "total_damage")
 
             # total damage message
-            prefix = "  = "
+            TOTAL = "  = "
             message = "{dmg} total damage!".format(dmg=combat.total)
             if combat.total:
-                attacker.location.msg_contents(indent + prefix + message)
+                attacker.location.msg_contents(INDENT + TOTAL + message)
 
-            _format = congen([combat])
+            mapping = congen([combat])
 
             # hit messaging
-            hit_msg = DEFAULT_ATTACK_MSG["bullet"]["hit"]
-            crit_msg = DEFAULT_ATTACK_MSG["bullet"]["crit"]
-            invuln_msg = DEFAULT_ATTACK_MSG["bullet"]["invuln"]
-            _msgH = hit_msg.format(**_format).capitalize()
-            _msgC = crit_msg.format(**_format).capitalize()
-            _msgI = invuln_msg.format(**_format).capitalize()
+            formatted, msg = "", ""
 
             if not combat.total:
-                attacker.location.msg_contents("    " + _msgI)
+                msg = DEFAULT_TEMP_MSG["bullet"]["invuln"]
             elif was_crit:
-                attacker.location.msg_contents("    " + _msgC)
+                msg = weapon.messaging.get("crit", DEFAULT_CRIT_MSG)
             else:
-                attacker.location.msg_contents("    " + _msgH)
+                msg = weapon.messaging.get("hit", DEFAULT_HIT_MSG)
 
-            defender.combat.injure(combat.total, context=combat)
+            formatted = msg.format(**mapping)
+            capitalized = capitalize(formatted)
+            attacker.location.msg_contents(INDENT + capitalized)
+
+            # injury
+            defender.combat.injure(combat.total, attacker, context=combat)
+
+        # miss
         else:
-            attacker.location.msg_contents("    ... Miss!")
+            attacker.location.msg_contents(INDENT + PREFIX + " Miss!")
             attacker.events.publish("miss", weapon, combat)
 
+        # newline
         attacker.location.msg_contents("|n\n")

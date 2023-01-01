@@ -1,6 +1,6 @@
 from world import loot
 import evennia.prototypes.spawner as spawner
-from evennia import CmdSet, Command as BaseCommand
+from evennia import CmdSet, Command as BaseCommand, DefaultObject
 from typeclasses.item import Item
 
 
@@ -32,7 +32,7 @@ class CmdDecrypt(BaseCommand):
         caller = self.caller
         engram: Engram = self.obj
         result = engram.decrypt()
-        caller.msg("You successfully decrypt the engram into a " + result + "!")
+        engram.delete()
         return
 
 
@@ -74,8 +74,11 @@ class Engram(Item):
 
     def decrypt(self):
         drop = self.db.drop
-        spawner.spawn(drop)
-        return drop["key"]
+        objs = spawner.spawn(drop)
+        for obj in objs:
+            obj.move_to(self.location, True)
+            obj.location.msg_contents("A {obj} forms out of thin air!".format(obj=obj))
+        return objs
 
     def guess(self):
         pass
