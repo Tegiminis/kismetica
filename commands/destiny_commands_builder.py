@@ -94,8 +94,8 @@ class CmdNPCState(BaseCommand):
     Functionally identical to set npc/state = <value>
     """
 
-    key = "npcstate"
-    aliases = ["state"]
+    key = "brain"
+    aliases = ["brain"]
     locks = "cmd: perm(Builder)"
 
     def parse(self):
@@ -104,7 +104,6 @@ class CmdNPCState(BaseCommand):
     def func(self):
         caller = self.caller
         args = self.args
-
         return
 
 

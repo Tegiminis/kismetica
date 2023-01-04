@@ -91,6 +91,10 @@ class CombatHandler(object):
     def buffs(self):
         return self.owner.buffs
 
+    @property
+    def dead(self):
+        return self.owner.tags.has("dead", category="combat")
+
     def deflect(self, damage, raw=False):
         """Returns damage modified by armor, buffs, and other normal combat modifiers"""
 
@@ -148,7 +152,7 @@ class CombatHandler(object):
         self.hp = max(self.hp - taken, 0)
         was_kill = self.hp <= 0
         if loud:
-            self.owner.msg(INDENT + PREFIX + " You take %i damage!" % int(taken))
+            self.owner.msg(PREFIX + " You take %i damage!" % int(taken))
 
         # fire injury event
         if event:
@@ -276,7 +280,7 @@ class CombatHandler(object):
         # opening damage message formatting
         mapping = congen([combat])
         mapping.update({"name": weapon.name})
-        room_msg = weapon.messaging.get("attack", DEFAULT_ATTACK_MSG).capitalize()
+        room_msg = capitalize(weapon.messaging.get("attack", DEFAULT_ATTACK_MSG))
         formatted = room_msg.format(**mapping)
 
         # send message
@@ -284,7 +288,7 @@ class CombatHandler(object):
         attacker.location.msg_contents(formatted)
 
         # attack prep
-        shots = weapon.shots
+        shots = int(weapon.shots)
         was_hit = False
         was_crit = False
 
@@ -376,6 +380,3 @@ class CombatHandler(object):
         else:
             attacker.location.msg_contents(INDENT + PREFIX + " Miss!")
             attacker.events.publish("miss", weapon, combat)
-
-        # newline
-        attacker.location.msg_contents("|n\n")

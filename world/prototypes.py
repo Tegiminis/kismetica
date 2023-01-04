@@ -72,10 +72,36 @@ See the `@spawn` command and `evennia.utils.spawner` for more info.
 # "prototype_parent" : ("GOBLIN_WIZARD", "ARCHWIZARD_MIXIN")
 # }
 
+from components.combat import WeaponStats
+from components.ai import PatrolBrain
+
+
 GNAWING = {"key": "Gnawing Hunger", "typeclass": "typeclasses.weapon.Weapon"}
 
 WORLD_DROP = {
     "key": "engram",
     "typeclass": "typeclasses.engram.Engram",
     "drop": GNAWING,
+}
+
+HIVE_BOOMER = {
+    "name": "Hive Boomer",
+    "accuracy": 1.0,
+    "damage": 10,
+    "crit": 2.0,
+    "mult": 2.0,
+    "shots": 1,
+    "cooldown": 5,
+    "element": "arc",
+    "messaging": {
+        "attack": "{attacker} lobs a bomb of electrifying energy at {defender}!"
+    },
+    "is_object": False,
+}
+
+HIVE_KNIGHT = {
+    "key": "hive knight",
+    "typeclass": "typeclasses.npc.NPC",
+    "weapon": WeaponStats(**HIVE_BOOMER),
+    "brain": PatrolBrain,
 }

@@ -116,7 +116,7 @@ class CmdShoot(BaseCommand):
     locks = ""
 
     def at_pre_cmd(self):
-        active = self.caller.cooldowns.active("global")
+        active = self.caller.cooldowns.get("global")
         if active:
             self.caller.msg("You cannot act again so quickly!")
         return active
@@ -141,8 +141,7 @@ class CmdShoot(BaseCommand):
             caller.msg("You cannot attack a dead target.")
             return
 
-        if caller.cooldowns.active("attack"):
-
+        if caller.cooldowns.get("attack"):
             return
 
         if target:

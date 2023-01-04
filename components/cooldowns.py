@@ -15,6 +15,16 @@ class Cooldown:
     message: str
     context: dict
 
+    @property
+    def timeleft(self):
+        """Returns time left in the cooldown"""
+        return max(0, self.duration - (time.time() - self.start))
+
+    @property
+    def ready(self):
+        """Boolean for if this cooldown is ready"""
+        return time.time() - self.start > self.duration
+
 
 class CooldownHandler(object):
     """
@@ -46,46 +56,29 @@ class CooldownHandler(object):
         return self.owner.attributes.get(self.dbkey)
 
     def get(self, key) -> Cooldown:
-        """Returns a Cooldown dataclass if its key is on the handler.
+        """
+        Gets a cooldown.
 
         Args:
             key:    The cooldown key to look up
+
+        Returns either None (if expired or absent) or a cooldown dataclass for access.
+        You should do truthy checks with this function.
         """
         if key in self.db:
             cd_cache = dict(self.db[key])
-            return Cooldown(key=key, **cd_cache)
+            cooldown = Cooldown(key=key, **cd_cache)
+
+            # ready check (delete cooldown if ready)
+            if cooldown.ready:
+                self.remove(key)
+                del cooldown
+                return None
+
+            # return cooldown if still active + exists
+            return cooldown
+
         return None
-
-    def ready(self, key) -> bool:
-        """Validates if a cooldown is ready.
-
-        Args:
-            key:    Key string of the cooldown to check
-
-        Returns `True` if cooldown is ready (expired) or doesn't exist, `False` if otherwise"""
-
-        cooldown = self.get(key)
-
-        # Cooldown not found
-        if not cooldown:
-            return True
-
-        # Cooldown expired
-        if time.time() - cooldown.start > cooldown.duration:
-            self.remove(key)
-            return True
-
-        # Cooldown found and not expired
-        return False
-
-    def active(self, key) -> bool:
-        """Validates if a cooldown is active. Opposite of `handler.ready`
-
-        Args:
-            key:    Key string of the cooldown to check
-
-        Returns `True` if cooldown is active (exists on handler), `False` if otherwise"""
-        return not self.ready(key)
 
     def add(
         self, key: str, duration=1, added=None, finished=None, stifle=False, **kwargs
@@ -96,8 +89,8 @@ class CooldownHandler(object):
         Args:
             key:        The key string the cooldown goes by (for example, "attack")
             duration:   The duration in seconds
-            added:      The message to display when the cooldown is added (default: )
-            finished:    The message you wish to display when the cooldown expires
+            added:      The message to display when the cooldown is added (default: Key:Seconds)
+            finished:   The message you wish to display when the cooldown expires
             echo:       (default: `False`) If `True`, sends the cooldown message to the attached object.
         """
         # dictionary creation and application
@@ -116,7 +109,7 @@ class CooldownHandler(object):
             formatted = message.format(key=key, **cooldown).capitalize()
             self.owner.msg(formatted)
 
-        utils.delay(duration, self.active, key)
+        utils.delay(duration, self.cleanup)
 
     def extend(self, key, amount):
         """Extends an existing cooldown's duration"""
@@ -139,7 +132,7 @@ class CooldownHandler(object):
             echo:   (default: `False`) If `True`, sends the cooldown message to the attached object.
         """
         # Message the object the cooldown is being removed from, if it is puppeted
-        cooldown = self.get(key)
+        cooldown = Cooldown(key, **self.db[key])
         if cooldown.message:
             if self.owner.has_account:
                 self.owner.msg(cooldown.message)
@@ -149,8 +142,13 @@ class CooldownHandler(object):
 
     def time_left(self, key) -> float:
         """Checks to see how much time is left on cooldown with the specified key."""
-        if self.active(key):
-            cooldown = self.get(key)
-            elapsed = time.time() - cooldown.start
-            return max(0, cooldown.duration - elapsed)
+        cooldown = self.get(key)
+        if cooldown:
+            return cooldown.timeleft
         return 0
+
+    def cleanup(self):
+        """Does a quick cleanup of cooldowns to ensure they are still valid/active, removing any that aren't"""
+        for key in self.db:
+            instance = self.get(key)
+            del instance
