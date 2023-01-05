@@ -31,6 +31,11 @@ class Command(BaseCommand):
 
     """
 
+    @property
+    def dead(self) -> bool:
+        """Returns True if the calling object is dead."""
+        return self.caller.tags.has("dead", "combat")
+
     pass
 
 

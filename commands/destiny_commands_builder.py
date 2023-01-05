@@ -13,6 +13,7 @@ from world import rules
 from typeclasses import characters as Character
 from evennia import utils
 import time
+from typeclasses.weapon import FusionCharged
 
 
 class CmdAlter(BaseCommand):
@@ -130,6 +131,8 @@ class CmdBuff(BaseCommand):
         "ptest": bl.PropertyBuffTest,
         "ttest": bl.TestBuff,
         "invuln": bl.Invulnerable,
+        "expire": bl.ExpireBuff,
+        "fusion": FusionCharged,
     }
 
     def parse(self):
@@ -211,3 +214,28 @@ class CmdPerk(BaseCommand):
             target.perks.add(_perk, slot)
         else:
             caller.msg("Invalid perk.")
+
+
+class CmdBrainTap(BaseCommand):
+    """
+    Taps on the AI fishbowl to make the fish swim again.
+    Restarts the thinking thread for target AI-enabled object.
+
+    Usage:
+      braintap <target>
+
+    Sometimes the AI think thread gets a hiccup from a server restart. This fixes it.
+    """
+
+    key = "braintap"
+    aliases = "bt"
+    help_category = "builder"
+
+    def parse(self):
+        self.args = self.args.split()
+
+    def func(self):
+        caller = self.caller
+        target = caller.search(self.args[0])
+        if hasattr(target, "ai"):
+            target.ai.act()

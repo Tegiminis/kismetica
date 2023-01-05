@@ -23,3 +23,4 @@ class DestinyBuilderCmdSet(CmdSet):
         self.add(builder.CmdAlter())
         self.add(builder.CmdBuff())
         self.add(builder.CmdPerk())
+        self.add(builder.CmdBrainTap())

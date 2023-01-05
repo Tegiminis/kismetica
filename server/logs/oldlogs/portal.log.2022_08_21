@@ -1,0 +1,506 @@
+|Portal| 2022-08-02 10:53:54 [..] Loaded.
+|Portal| 2022-08-02 10:53:53 [..] Loading c:\muddev\evennia\evennia\server\portal\portal.py...
+|Portal| 2022-08-02 10:53:54 [EE] Could not find file-help module world.help_entries (skipping).
+|Portal| 2022-08-02 10:53:54 [..] Loaded.
+|Portal| 2022-08-02 10:53:54 [..] twistd 21.7.0 (C:\muddev\evenv\Scripts\python.exe 3.9.2) starting up.
+|Portal| 2022-08-02 10:53:54 [..] reactor class: twisted.internet.selectreactor.SelectReactor.
+|Portal| 2022-08-02 10:53:54 [..] AMP starting on 4006
+|Portal| 2022-08-02 10:53:54 [..] Telnet starting on 4000
+|Portal| 2022-08-02 10:53:54 [..] Websocket starting on 4002
+|Portal| 2022-08-02 10:53:54 [..] Webserver-proxy starting on 4001
+|Portal| 2022-08-02 10:53:54 [..] Portal starting server ... 
+|Portal| 2022-08-02 10:53:55 [EE] AMP Error from AdminPortal2Server: Traceback (most recent call last):
+|Portal| 2022-08-02 10:53:55 [EE] Failure: builtins.Exception: No module named 'evennia.contrib.game_systems.buffs' (error logged on other side)
+|Portal| 2022-08-02 10:53:55 [EE]  No module named 'evennia.contrib.game_systems.buffs' (error logged on other side)
+|Portal| 2022-08-05 15:05:14 [..] Portal starting server ... 
+|Portal| 2022-08-05 15:06:02 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=62402)
+|Portal| 2022-08-05 15:06:02 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=62405)
+|Portal| 2022-08-05 15:06:02 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=62408)
+|Portal| 2022-08-05 15:06:02 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=62409)
+|Portal| 2022-08-05 15:06:02 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=62411)
+|Portal| 2022-08-05 15:06:03 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=62407)
+|Portal| 2022-08-07 16:27:55 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=61038)
+|Portal| 2022-08-07 16:27:55 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=61040)
+|Portal| 2022-08-07 16:27:55 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=61043)
+|Portal| 2022-08-07 16:27:55 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=61044)
+|Portal| 2022-08-07 16:27:55 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=61045)
+|Portal| 2022-08-07 16:27:55 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=61042)
+|Portal| 2022-08-07 16:38:55 [..] Portal starting server ... 
+|Portal| 2022-08-07 16:39:05 [..] Portal starting server ... 
+|Portal| 2022-08-07 16:58:10 [..] Portal starting server ... 
+|Portal| 2022-08-07 17:15:54 [..] Portal starting server ... 
+|Portal| 2022-08-07 17:21:56 [..] Portal starting server ... 
+|Portal| 2022-08-07 17:22:44 [..] Portal starting server ... 
+|Portal| 2022-08-07 17:23:09 [..] Portal starting server ... 
+|Portal| 2022-08-07 17:26:06 [..] Portal starting server ... 
+|Portal| 2022-08-07 17:32:56 [..] Portal starting server ... 
+|Portal| 2022-08-07 17:33:20 [..] Portal starting server ... 
+|Portal| 2022-08-07 17:35:17 [..] Portal starting server ... 
+|Portal| 2022-08-07 17:36:06 [..] Portal starting server ... 
+|Portal| 2022-08-07 17:40:46 [..] Portal starting server ... 
+|Portal| 2022-08-07 17:55:54 [..] (TCP Port 4001 Closed)
+|Portal| 2022-08-07 17:55:54 [..] (TCP Port 4000 Closed)
+|Portal| 2022-08-07 17:55:54 [..] (TCP Port 4006 Closed)
+|Portal| 2022-08-07 17:55:54 [..] (TCP Port 4002 Closed)
+|Portal| 2022-08-07 17:55:54 [..] Main loop terminated.
+|Portal| 2022-08-07 17:55:54 [..] Server Shut Down.
+|Portal| 2022-08-07 17:55:54 [..] Server Shut Down.
+|Portal| 2022-08-07 18:02:24 [..] Loaded.
+|Portal| 2022-08-07 18:02:23 [..] Loading c:\muddev\evennia\evennia\server\portal\portal.py...
+|Portal| 2022-08-07 18:02:24 [EE] Could not find file-help module world.help_entries (skipping).
+|Portal| 2022-08-07 18:02:24 [..] Loaded.
+|Portal| 2022-08-07 18:02:24 [..] twistd 21.7.0 (C:\muddev\evenv\Scripts\python.exe 3.9.2) starting up.
+|Portal| 2022-08-07 18:02:24 [..] reactor class: twisted.internet.selectreactor.SelectReactor.
+|Portal| 2022-08-07 18:02:24 [..] AMP starting on 4006
+|Portal| 2022-08-07 18:02:24 [..] Telnet starting on 4000
+|Portal| 2022-08-07 18:02:24 [..] Websocket starting on 4002
+|Portal| 2022-08-07 18:02:24 [..] Webserver-proxy starting on 4001
+|Portal| 2022-08-07 18:02:24 [..] Portal starting server ... 
+|Portal| 2022-08-07 18:02:34 [!!] Unhandled Error
+	Traceback (most recent call last):
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 101, in callWithLogger
+	    return callWithContext({"system": lp}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 85, in callWithContext
+	    return context.call({ILogContext: newCtx}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 118, in callWithContext
+	    return self.currentContext().callWithContext(ctx, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 83, in callWithContext
+	    return func(*args, **kw)
+	--- <exception caught here> ---
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\selectreactor.py", line 149, in _doReadOrWrite
+	    why = getattr(selectable, method)()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 247, in doRead
+	    return self._dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 252, in _dataReceived
+	    rval = self.protocol.dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\protocols\basic.py", line 554, in dataReceived
+	    why = self.rawDataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 706, in rawDataReceived
+	    self.handleResponseEnd()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\proxy.py", line 82, in handleResponseEnd
+	    self.father.finish()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\server.py", line 279, in finish
+	    return http.Request.finish(self)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 1131, in finish
+	    raise RuntimeError(
+	builtins.RuntimeError: Request.finish called on a request after its connection was lost; use Request.notifyFinish to keep track of this.
+	
+|Portal| 2022-08-07 18:04:02 [..] Portal starting server ... 
+|Portal| 2022-08-07 18:19:09 [..] Portal starting server ... 
+|Portal| 2022-08-07 18:20:50 [..] Portal starting server ... 
+|Portal| 2022-08-07 18:24:55 [..] Portal starting server ... 
+|Portal| 2022-08-07 18:28:15 [..] Portal starting server ... 
+|Portal| 2022-08-07 18:39:34 [..] Portal starting server ... 
+|Portal| 2022-08-07 18:41:16 [..] Portal starting server ... 
+|Portal| 2022-08-07 18:42:38 [..] Portal starting server ... 
+|Portal| 2022-08-07 18:44:58 [..] Portal starting server ... 
+|Portal| 2022-08-07 18:46:00 [..] Portal starting server ... 
+|Portal| 2022-08-07 19:14:00 [..] Portal starting server ... 
+|Portal| 2022-08-07 19:34:13 [..] Portal starting server ... 
+|Portal| 2022-08-07 22:27:51 [..] Portal starting server ... 
+|Portal| 2022-08-07 22:28:42 [..] Portal starting server ... 
+|Portal| 2022-08-07 22:31:56 [..] Portal starting server ... 
+|Portal| 2022-08-08 00:26:58 [..] Portal starting server ... 
+|Portal| 2022-08-08 00:48:03 [..] Portal starting server ... 
+|Portal| 2022-08-08 01:07:12 [..] Portal starting server ... 
+|Portal| 2022-08-08 01:11:17 [..] Portal starting server ... 
+|Portal| 2022-08-08 11:46:50 [..] (TCP Port 4001 Closed)
+|Portal| 2022-08-08 11:46:50 [..] (TCP Port 4000 Closed)
+|Portal| 2022-08-08 11:46:50 [..] (TCP Port 4006 Closed)
+|Portal| 2022-08-08 11:46:50 [..] (TCP Port 4002 Closed)
+|Portal| 2022-08-08 11:46:50 [..] Main loop terminated.
+|Portal| 2022-08-08 11:46:50 [..] Server Shut Down.
+|Portal| 2022-08-08 11:46:50 [..] Server Shut Down.
+|Portal| 2022-08-08 14:51:49 [..] Loaded.
+|Portal| 2022-08-08 14:51:48 [..] Loading c:\muddev\evennia\evennia\server\portal\portal.py...
+|Portal| 2022-08-08 14:51:49 [EE] Could not find file-help module world.help_entries (skipping).
+|Portal| 2022-08-08 14:51:49 [..] Loaded.
+|Portal| 2022-08-08 14:51:49 [..] twistd 21.7.0 (C:\muddev\evenv\Scripts\python.exe 3.9.2) starting up.
+|Portal| 2022-08-08 14:51:49 [..] reactor class: twisted.internet.selectreactor.SelectReactor.
+|Portal| 2022-08-08 14:51:49 [..] AMP starting on 4006
+|Portal| 2022-08-08 14:51:49 [..] Telnet starting on 4000
+|Portal| 2022-08-08 14:51:49 [..] Websocket starting on 4002
+|Portal| 2022-08-08 14:51:49 [..] Webserver-proxy starting on 4001
+|Portal| 2022-08-08 14:51:49 [..] Portal starting server ... 
+|Portal| 2022-08-08 16:17:17 [..] Portal starting server ... 
+|Portal| 2022-08-08 16:19:01 [..] Portal starting server ... 
+|Portal| 2022-08-08 17:32:56 [..] Portal starting server ... 
+|Portal| 2022-08-08 17:34:47 [..] Portal starting server ... 
+|Portal| 2022-08-08 17:42:31 [..] Portal starting server ... 
+|Portal| 2022-08-08 17:43:41 [..] Portal starting server ... 
+|Portal| 2022-08-08 17:46:16 [..] Portal starting server ... 
+|Portal| 2022-08-08 17:51:13 [..] Portal starting server ... 
+|Portal| 2022-08-08 17:56:05 [..] Portal starting server ... 
+|Portal| 2022-08-08 17:58:47 [..] Portal starting server ... 
+|Portal| 2022-08-08 19:52:27 [..] Portal starting server ... 
+|Portal| 2022-08-08 19:59:46 [..] Portal starting server ... 
+|Portal| 2022-08-08 20:03:32 [..] Portal starting server ... 
+|Portal| 2022-08-08 20:07:43 [..] Portal starting server ... 
+|Portal| 2022-08-09 00:53:30 [..] Portal starting server ... 
+|Portal| 2022-08-09 01:19:08 [..] Portal starting server ... 
+|Portal| 2022-08-09 03:33:20 [..] Portal starting server ... 
+|Portal| 2022-08-09 03:37:18 [..] Portal starting server ... 
+|Portal| 2022-08-09 03:41:12 [..] Portal starting server ... 
+|Portal| 2022-08-09 03:45:57 [..] Portal starting server ... 
+|Portal| 2022-08-10 23:02:21 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=49175)
+|Portal| 2022-08-10 23:02:21 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=49177)
+|Portal| 2022-08-10 23:02:21 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=49180)
+|Portal| 2022-08-10 23:02:21 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=49182)
+|Portal| 2022-08-10 23:02:21 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=49181)
+|Portal| 2022-08-10 23:02:21 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=49179)
+|Portal| 2022-08-14 15:46:12 [..] Portal starting server ... 
+|Portal| 2022-08-15 10:22:53 [..] (TCP Port 4001 Closed)
+|Portal| 2022-08-15 10:22:53 [..] (TCP Port 4002 Closed)
+|Portal| 2022-08-15 10:22:53 [..] (TCP Port 4000 Closed)
+|Portal| 2022-08-15 10:22:53 [..] (TCP Port 4006 Closed)
+|Portal| 2022-08-15 10:22:53 [..] Main loop terminated.
+|Portal| 2022-08-15 10:22:53 [..] Server Shut Down.
+|Portal| 2022-08-15 10:22:53 [..] Server Shut Down.
+|Portal| 2022-08-15 10:23:00 [..] Loaded.
+|Portal| 2022-08-15 10:22:59 [..] Loading c:\muddev\evennia\evennia\server\portal\portal.py...
+|Portal| 2022-08-15 10:23:00 [EE] Could not find file-help module world.help_entries (skipping).
+|Portal| 2022-08-15 10:23:00 [..] Loaded.
+|Portal| 2022-08-15 10:23:00 [..] twistd 21.7.0 (C:\muddev\evenv\Scripts\python.exe 3.9.2) starting up.
+|Portal| 2022-08-15 10:23:00 [..] reactor class: twisted.internet.selectreactor.SelectReactor.
+|Portal| 2022-08-15 10:23:00 [..] AMP starting on 4006
+|Portal| 2022-08-15 10:23:00 [..] Telnet starting on 4000
+|Portal| 2022-08-15 10:23:00 [..] Websocket starting on 4002
+|Portal| 2022-08-15 10:23:00 [..] Webserver-proxy starting on 4001
+|Portal| 2022-08-15 10:23:00 [..] Portal starting server ... 
+|Portal| 2022-08-15 10:24:55 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=59999)
+|Portal| 2022-08-15 10:24:55 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=60001)
+|Portal| 2022-08-15 10:24:55 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=60005)
+|Portal| 2022-08-15 10:24:55 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=60008)
+|Portal| 2022-08-15 10:24:55 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=60007)
+|Portal| 2022-08-15 10:24:56 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=60004)
+|Portal| 2022-08-15 14:08:39 [!!] Unhandled Error
+	Traceback (most recent call last):
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 101, in callWithLogger
+	    return callWithContext({"system": lp}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 85, in callWithContext
+	    return context.call({ILogContext: newCtx}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 118, in callWithContext
+	    return self.currentContext().callWithContext(ctx, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 83, in callWithContext
+	    return func(*args, **kw)
+	--- <exception caught here> ---
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\selectreactor.py", line 149, in _doReadOrWrite
+	    why = getattr(selectable, method)()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 247, in doRead
+	    return self._dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 252, in _dataReceived
+	    rval = self.protocol.dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\protocols\basic.py", line 554, in dataReceived
+	    why = self.rawDataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 706, in rawDataReceived
+	    self.handleResponseEnd()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\proxy.py", line 82, in handleResponseEnd
+	    self.father.finish()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\server.py", line 279, in finish
+	    return http.Request.finish(self)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 1131, in finish
+	    raise RuntimeError(
+	builtins.RuntimeError: Request.finish called on a request after its connection was lost; use Request.notifyFinish to keep track of this.
+	
+|Portal| 2022-08-15 14:08:39 [!!] Unhandled Error
+	Traceback (most recent call last):
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 101, in callWithLogger
+	    return callWithContext({"system": lp}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 85, in callWithContext
+	    return context.call({ILogContext: newCtx}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 118, in callWithContext
+	    return self.currentContext().callWithContext(ctx, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 83, in callWithContext
+	    return func(*args, **kw)
+	--- <exception caught here> ---
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\selectreactor.py", line 149, in _doReadOrWrite
+	    why = getattr(selectable, method)()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 247, in doRead
+	    return self._dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 252, in _dataReceived
+	    rval = self.protocol.dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\protocols\basic.py", line 554, in dataReceived
+	    why = self.rawDataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 706, in rawDataReceived
+	    self.handleResponseEnd()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\proxy.py", line 82, in handleResponseEnd
+	    self.father.finish()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\server.py", line 279, in finish
+	    return http.Request.finish(self)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 1131, in finish
+	    raise RuntimeError(
+	builtins.RuntimeError: Request.finish called on a request after its connection was lost; use Request.notifyFinish to keep track of this.
+	
+|Portal| 2022-08-15 14:08:39 [!!] Unhandled Error
+	Traceback (most recent call last):
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 101, in callWithLogger
+	    return callWithContext({"system": lp}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 85, in callWithContext
+	    return context.call({ILogContext: newCtx}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 118, in callWithContext
+	    return self.currentContext().callWithContext(ctx, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 83, in callWithContext
+	    return func(*args, **kw)
+	--- <exception caught here> ---
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\selectreactor.py", line 149, in _doReadOrWrite
+	    why = getattr(selectable, method)()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 247, in doRead
+	    return self._dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 252, in _dataReceived
+	    rval = self.protocol.dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\protocols\basic.py", line 554, in dataReceived
+	    why = self.rawDataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 706, in rawDataReceived
+	    self.handleResponseEnd()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\proxy.py", line 82, in handleResponseEnd
+	    self.father.finish()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\server.py", line 279, in finish
+	    return http.Request.finish(self)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 1131, in finish
+	    raise RuntimeError(
+	builtins.RuntimeError: Request.finish called on a request after its connection was lost; use Request.notifyFinish to keep track of this.
+	
+|Portal| 2022-08-15 14:08:39 [!!] Unhandled Error
+	Traceback (most recent call last):
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 101, in callWithLogger
+	    return callWithContext({"system": lp}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 85, in callWithContext
+	    return context.call({ILogContext: newCtx}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 118, in callWithContext
+	    return self.currentContext().callWithContext(ctx, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 83, in callWithContext
+	    return func(*args, **kw)
+	--- <exception caught here> ---
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\selectreactor.py", line 149, in _doReadOrWrite
+	    why = getattr(selectable, method)()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 247, in doRead
+	    return self._dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 252, in _dataReceived
+	    rval = self.protocol.dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\protocols\basic.py", line 554, in dataReceived
+	    why = self.rawDataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 706, in rawDataReceived
+	    self.handleResponseEnd()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\proxy.py", line 82, in handleResponseEnd
+	    self.father.finish()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\server.py", line 279, in finish
+	    return http.Request.finish(self)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 1131, in finish
+	    raise RuntimeError(
+	builtins.RuntimeError: Request.finish called on a request after its connection was lost; use Request.notifyFinish to keep track of this.
+	
+|Portal| 2022-08-15 14:08:39 [!!] Unhandled Error
+	Traceback (most recent call last):
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 101, in callWithLogger
+	    return callWithContext({"system": lp}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 85, in callWithContext
+	    return context.call({ILogContext: newCtx}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 118, in callWithContext
+	    return self.currentContext().callWithContext(ctx, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 83, in callWithContext
+	    return func(*args, **kw)
+	--- <exception caught here> ---
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\selectreactor.py", line 149, in _doReadOrWrite
+	    why = getattr(selectable, method)()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 247, in doRead
+	    return self._dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 252, in _dataReceived
+	    rval = self.protocol.dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\protocols\basic.py", line 554, in dataReceived
+	    why = self.rawDataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 706, in rawDataReceived
+	    self.handleResponseEnd()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\proxy.py", line 82, in handleResponseEnd
+	    self.father.finish()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\server.py", line 279, in finish
+	    return http.Request.finish(self)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 1131, in finish
+	    raise RuntimeError(
+	builtins.RuntimeError: Request.finish called on a request after its connection was lost; use Request.notifyFinish to keep track of this.
+	
+|Portal| 2022-08-15 14:08:39 [!!] Unhandled Error
+	Traceback (most recent call last):
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 101, in callWithLogger
+	    return callWithContext({"system": lp}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 85, in callWithContext
+	    return context.call({ILogContext: newCtx}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 118, in callWithContext
+	    return self.currentContext().callWithContext(ctx, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 83, in callWithContext
+	    return func(*args, **kw)
+	--- <exception caught here> ---
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\selectreactor.py", line 149, in _doReadOrWrite
+	    why = getattr(selectable, method)()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 247, in doRead
+	    return self._dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 252, in _dataReceived
+	    rval = self.protocol.dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\protocols\basic.py", line 554, in dataReceived
+	    why = self.rawDataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 706, in rawDataReceived
+	    self.handleResponseEnd()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\proxy.py", line 82, in handleResponseEnd
+	    self.father.finish()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\server.py", line 279, in finish
+	    return http.Request.finish(self)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 1131, in finish
+	    raise RuntimeError(
+	builtins.RuntimeError: Request.finish called on a request after its connection was lost; use Request.notifyFinish to keep track of this.
+	
+|Portal| 2022-08-15 14:08:39 [!!] Unhandled Error
+	Traceback (most recent call last):
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 101, in callWithLogger
+	    return callWithContext({"system": lp}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 85, in callWithContext
+	    return context.call({ILogContext: newCtx}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 118, in callWithContext
+	    return self.currentContext().callWithContext(ctx, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 83, in callWithContext
+	    return func(*args, **kw)
+	--- <exception caught here> ---
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\selectreactor.py", line 149, in _doReadOrWrite
+	    why = getattr(selectable, method)()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 247, in doRead
+	    return self._dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 252, in _dataReceived
+	    rval = self.protocol.dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\protocols\basic.py", line 554, in dataReceived
+	    why = self.rawDataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 706, in rawDataReceived
+	    self.handleResponseEnd()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\proxy.py", line 82, in handleResponseEnd
+	    self.father.finish()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\server.py", line 279, in finish
+	    return http.Request.finish(self)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 1131, in finish
+	    raise RuntimeError(
+	builtins.RuntimeError: Request.finish called on a request after its connection was lost; use Request.notifyFinish to keep track of this.
+	
+|Portal| 2022-08-15 14:08:39 [!!] Unhandled Error
+	Traceback (most recent call last):
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 101, in callWithLogger
+	    return callWithContext({"system": lp}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\log.py", line 85, in callWithContext
+	    return context.call({ILogContext: newCtx}, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 118, in callWithContext
+	    return self.currentContext().callWithContext(ctx, func, *args, **kw)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\python\context.py", line 83, in callWithContext
+	    return func(*args, **kw)
+	--- <exception caught here> ---
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\selectreactor.py", line 149, in _doReadOrWrite
+	    why = getattr(selectable, method)()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 247, in doRead
+	    return self._dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\internet\tcp.py", line 252, in _dataReceived
+	    rval = self.protocol.dataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\protocols\basic.py", line 554, in dataReceived
+	    why = self.rawDataReceived(data)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 706, in rawDataReceived
+	    self.handleResponseEnd()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\proxy.py", line 82, in handleResponseEnd
+	    self.father.finish()
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\server.py", line 279, in finish
+	    return http.Request.finish(self)
+	  File "C:\muddev\evenv\Lib\site-packages\twisted\web\http.py", line 1131, in finish
+	    raise RuntimeError(
+	builtins.RuntimeError: Request.finish called on a request after its connection was lost; use Request.notifyFinish to keep track of this.
+	
+|Portal| 2022-08-15 14:09:56 [..] Portal starting server ... 
+|Portal| 2022-08-15 15:44:42 [..] (TCP Port 4001 Closed)
+|Portal| 2022-08-15 15:44:42 [..] (TCP Port 4000 Closed)
+|Portal| 2022-08-15 15:44:42 [..] (TCP Port 4006 Closed)
+|Portal| 2022-08-15 15:44:42 [..] (TCP Port 4002 Closed)
+|Portal| 2022-08-15 15:44:42 [..] Main loop terminated.
+|Portal| 2022-08-15 15:44:42 [..] Server Shut Down.
+|Portal| 2022-08-15 15:44:42 [..] Server Shut Down.
+|Portal| 2022-08-16 01:23:56 [..] Loaded.
+|Portal| 2022-08-16 01:23:55 [..] Loading c:\muddev\evennia\evennia\server\portal\portal.py...
+|Portal| 2022-08-16 01:23:55 [EE] Could not find file-help module world.help_entries (skipping).
+|Portal| 2022-08-16 01:23:56 [..] Loaded.
+|Portal| 2022-08-16 01:23:56 [..] twistd 21.7.0 (C:\muddev\evenv\Scripts\python.exe 3.9.2) starting up.
+|Portal| 2022-08-16 01:23:56 [..] reactor class: twisted.internet.selectreactor.SelectReactor.
+|Portal| 2022-08-16 01:23:56 [..] AMP starting on 4006
+|Portal| 2022-08-16 01:23:56 [..] Telnet starting on 4000
+|Portal| 2022-08-16 01:23:56 [..] Websocket starting on 4002
+|Portal| 2022-08-16 01:23:56 [..] Webserver-proxy starting on 4001
+|Portal| 2022-08-16 01:23:56 [..] Portal starting server ... 
+|Portal| 2022-08-16 01:28:45 [..] Portal starting server ... 
+|Portal| 2022-08-16 01:32:41 [..] Portal starting server ... 
+|Portal| 2022-08-16 01:34:16 [..] Portal starting server ... 
+|Portal| 2022-08-16 01:35:08 [..] Portal starting server ... 
+|Portal| 2022-08-16 01:38:06 [..] Portal starting server ... 
+|Portal| 2022-08-16 01:42:03 [..] Portal starting server ... 
+|Portal| 2022-08-16 01:42:45 [..] Portal starting server ... 
+|Portal| 2022-08-16 01:44:10 [..] Portal starting server ... 
+|Portal| 2022-08-16 01:45:59 [..] Portal starting server ... 
+|Portal| 2022-08-16 01:46:30 [..] Portal starting server ... 
+|Portal| 2022-08-16 01:47:18 [..] Portal starting server ... 
+|Portal| 2022-08-16 01:52:27 [..] Portal starting server ... 
+|Portal| 2022-08-16 01:53:11 [..] Portal starting server ... 
+|Portal| 2022-08-16 01:55:03 [..] Portal starting server ... 
+|Portal| 2022-08-16 01:55:43 [..] Portal starting server ... 
+|Portal| 2022-08-16 01:56:14 [..] Portal starting server ... 
+|Portal| 2022-08-16 01:56:40 [..] Portal starting server ... 
+|Portal| 2022-08-16 01:57:18 [..] Portal starting server ... 
+|Portal| 2022-08-16 01:57:44 [..] Portal starting server ... 
+|Portal| 2022-08-16 01:58:25 [..] Portal starting server ... 
+|Portal| 2022-08-16 01:59:10 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:00:13 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:02:20 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:17:55 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:18:20 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:22:54 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:24:04 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:25:15 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:26:08 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:27:09 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:35:56 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:38:51 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:39:45 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:44:30 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:45:02 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:46:44 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:47:30 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:48:25 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:49:27 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:50:05 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:50:29 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:51:12 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:51:58 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:54:18 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:54:36 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:55:26 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:57:43 [..] Portal starting server ... 
+|Portal| 2022-08-16 02:59:38 [..] Portal starting server ... 
+|Portal| 2022-08-16 03:00:33 [..] Portal starting server ... 
+|Portal| 2022-08-16 03:01:48 [..] Portal starting server ... 
+|Portal| 2022-08-16 03:02:17 [..] Portal starting server ... 
+|Portal| 2022-08-16 03:02:44 [..] Portal starting server ... 
+|Portal| 2022-08-16 03:03:19 [..] Portal starting server ... 
+|Portal| 2022-08-16 03:03:48 [..] Portal starting server ... 
+|Portal| 2022-08-16 03:04:42 [..] Portal starting server ... 
+|Portal| 2022-08-16 03:05:49 [..] Portal starting server ... 
+|Portal| 2022-08-16 03:07:47 [..] Portal starting server ... 
+|Portal| 2022-08-16 03:07:59 [..] Portal starting server ... 
+|Portal| 2022-08-16 03:08:39 [..] Portal starting server ... 
+|Portal| 2022-08-16 03:10:37 [..] Portal starting server ... 
+|Portal| 2022-08-16 03:11:31 [..] Portal starting server ... 
+|Portal| 2022-08-16 03:12:22 [..] Portal starting server ... 
+|Portal| 2022-08-21 12:11:31 [..] Loaded.
+|Portal| 2022-08-21 12:11:30 [..] Loading c:\muddev\evennia\evennia\server\portal\portal.py...
+|Portal| 2022-08-21 12:11:30 [EE] Could not find file-help module world.help_entries (skipping).
+|Portal| 2022-08-21 12:11:31 [..] Loaded.
+|Portal| 2022-08-21 12:11:31 [..] twistd 21.7.0 (C:\muddev\evenv\Scripts\python.exe 3.9.2) starting up.
+|Portal| 2022-08-21 12:11:31 [..] reactor class: twisted.internet.selectreactor.SelectReactor.
+|Portal| 2022-08-21 12:11:31 [..] AMP starting on 4006
+|Portal| 2022-08-21 12:11:31 [..] Telnet starting on 4000
+|Portal| 2022-08-21 12:11:31 [..] Websocket starting on 4002
+|Portal| 2022-08-21 12:11:31 [..] Webserver-proxy starting on 4001
+|Portal| 2022-08-21 12:11:31 [..] Portal starting server ... 
+|Portal| 2022-08-21 12:12:38 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=53072)
+|Portal| 2022-08-21 12:12:38 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=53074)
+|Portal| 2022-08-21 12:12:38 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=53078)
+|Portal| 2022-08-21 12:12:38 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=53080)
+|Portal| 2022-08-21 12:12:38 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=53081)
+|Portal| 2022-08-21 12:12:38 [..] Timing out client: IPv4Address(type='TCP', host='127.0.0.1', port=53077)
+|Portal| 2022-08-21 15:26:06 [..] Portal starting server ... 

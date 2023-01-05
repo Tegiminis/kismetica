@@ -15,6 +15,7 @@ DEFAULT_THINK_MESSAGE = "{owner} looks lost in thought."
 DEFAULT_PATROL_MESSAGE = "{owner} considers where to go next."
 DEFAULT_TARGET_MESSAGE = "{owner} sets their sights on {target}."
 DEFAULT_STALK_MESSAGE = "{owner} tracks {target} to an adjacent room."
+DEFAULT_DEAD_MESSAGE = "{owner} stews silently in non-existence."
 
 
 class BaseBehavior:
@@ -236,11 +237,11 @@ class BehaviorAttack(BaseBehavior):
             self.queue(**{"target": self.target})
         else:
             self.handler.think(**kwargs)
-            owner.location.msg_contents("Debug: Attack failed")
 
 
 class BehaviorMove(BaseBehavior):
     destination = None
+    delay = 3
 
     def at_queue(self, destination=None, *args, **kwargs):
         self.destination = destination
@@ -258,26 +259,36 @@ class PatrolBrain(BaseBrain):
         owner = self.owner
         place = self.owner.location
         messaging: dict = self.owner.attributes.get("messaging", {})
-        message = messaging.get("think", DEFAULT_THINK_MESSAGE)
-        destination = None
 
-        found = self.scan(self.target)
+        if not self.owner.tags.has("dead", "combat"):
 
-        # did not find any targets in current room
-        if not found:
-            destination = self.search(self.target)
-            if destination:
-                message = messaging.get("stalk", DEFAULT_STALK_MESSAGE)
-                self.queue(BehaviorMove, **{"destination": destination})
-            else:
-                destination = self.patrol()
-                message = messaging.get("patrol", DEFAULT_PATROL_MESSAGE)
-                self.queue(BehaviorMove, **{"destination": destination})
-        # found targets in current room, either current or new targets
-        elif found:
-            self.target = found[0]
-            message = messaging.get("target", DEFAULT_TARGET_MESSAGE)
-            self.queue(BehaviorAttack, **{"target": self.target})
+            message = messaging.get("think", DEFAULT_THINK_MESSAGE)
+            destination = None
+
+            found = self.scan(self.target)
+
+            # did not find any targets in current room
+            if not found:
+                destination = self.search(self.target)
+                # found either existing or new targets in nearby room, stalk
+                if destination:
+                    self.target = self.scan(self.target, destination)[0]
+                    message = messaging.get("stalk", DEFAULT_STALK_MESSAGE)
+                    self.target.msg("You feel eyes on your back...")
+                    self.queue(BehaviorMove, **{"destination": destination})
+                # no target found, patrol
+                else:
+                    self.target = None
+                    destination = self.patrol()
+                    message = messaging.get("patrol", DEFAULT_PATROL_MESSAGE)
+                    self.queue(BehaviorMove, **{"destination": destination})
+            # found targets in current room, either current or new targets
+            elif found:
+                self.target = found[0]
+                message = messaging.get("target", DEFAULT_TARGET_MESSAGE)
+                self.queue(BehaviorAttack, **{"target": self.target})
+        else:
+            message = messaging.get("dead", DEFAULT_DEAD_MESSAGE)
 
         # send ye message
         mapping = {"owner": self.owner, "target": self.target}
@@ -304,7 +315,9 @@ class PatrolBrain(BaseBrain):
         targets = {
             obj
             for obj in place.contents_get(exclude=self.owner)
-            if obj.has_account and not obj.is_superuser
+            if obj.has_account
+            if not obj.is_superuser
+            if not obj.tags.has("dead", category="combat")
         }
         target = set([target]) if target else set([])
 
@@ -333,8 +346,12 @@ class PatrolBrain(BaseBrain):
         dest = None
         exits = self.find_exits()
 
-        if exits:
-            dest = next((exi for exi in exits if self.scan(target, exi)), None)
+        for exi in exits:
+            targets = self.scan(target, exi.destination)
+            if targets:
+                self.target = targets[0]
+                dest = exi.destination
+                break
         return dest
 
     def patrol(self):
@@ -425,7 +442,7 @@ class BrainHandler:
         if not self.queue:
             self.think(**kwargs)
             self.owner.cooldowns.add("think", idle)
-        else:
+        elif not self.owner.tags.has("dead", "combat"):
             # behavior instance
             instance: BaseBehavior = self.queue[0]
 
@@ -441,7 +458,7 @@ class BrainHandler:
                 self.queue.popleft()
 
         # keep this thread going
-        delay(_delay, self.act)
+        delay(_delay, act_thread, self.owner, persistent=True)
 
     def think(self, *args, **kwargs):
         """No act, only think"""
@@ -504,3 +521,8 @@ class BrainHandler:
     def _clear(self):
         """Clears all db behaviors"""
         self.db.behaviors = []
+
+
+def act_thread(owner):
+    """Maintains the act thread by being pickleable"""
+    owner.ai.act()

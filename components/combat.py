@@ -65,6 +65,7 @@ class WeaponStats:
     element: str = "neutral"
     messaging: dict = field(default_factory=dict)
     is_object: bool = False
+    prototype_key: str = ""
 
 
 class CombatHandler(object):
@@ -188,22 +189,7 @@ class CombatHandler(object):
 
         # send message and delay revive
         self.owner.location.msg_contents(formatted)
-        utils.delay(10, self.revive)
-
-    def revive(self):
-        """Revive! You aren't dead anymore!"""
-        # tag stuff
-        self.owner.tags.clear(category="combat")
-        self.hp = self.maxhp
-
-        # messaging
-        rev_msg = self.owner.attributes.get("messaging", {}).get("revive", None)
-        if not rev_msg:
-            rev_msg = DEFAULT_REVIVE_MSG
-        formatted = rev_msg.format(owner=self.owner).capitalize()
-
-        # send revive message
-        self.owner.location.msg_contents(formatted)
+        utils.delay(10, revive, self.owner, persistent=True)
 
     def heal(self, heal: int, msg=None) -> int:
         """Heals you.
@@ -280,8 +266,8 @@ class CombatHandler(object):
         # opening damage message formatting
         mapping = congen([combat])
         mapping.update({"name": weapon.name})
-        room_msg = capitalize(weapon.messaging.get("attack", DEFAULT_ATTACK_MSG))
-        formatted = room_msg.format(**mapping)
+        room_msg = weapon.messaging.get("attack", DEFAULT_ATTACK_MSG)
+        formatted = capitalize(room_msg.format(**mapping))
 
         # send message
         attacker.location.msg_contents(NEWLINE)
@@ -336,9 +322,9 @@ class CombatHandler(object):
 
             # individual attack messages and damage totaling
             for atk in combat.attacks:
-                dmg = atk.damage
+                dmg = round(atk.damage)
                 if atk.damage <= 0:
-                    dmg = "no"
+                    dmg = "No"
                 dmglist_msg += message.format(dmg=dmg)
                 combat.total += atk.damage
 
@@ -353,7 +339,7 @@ class CombatHandler(object):
 
             # total damage message
             TOTAL = "  = "
-            message = "{dmg} total damage!".format(dmg=combat.total)
+            message = "{dmg} total damage!".format(dmg=round(combat.total))
             if combat.total:
                 attacker.location.msg_contents(INDENT + TOTAL + message)
 
@@ -380,3 +366,19 @@ class CombatHandler(object):
         else:
             attacker.location.msg_contents(INDENT + PREFIX + " Miss!")
             attacker.events.publish("miss", weapon, combat)
+
+
+def revive(target):
+    """Revive! You aren't dead anymore!"""
+    # tag stuff
+    target.tags.clear(category="combat")
+    target.db.hp = target.db.maxhp
+
+    # messaging
+    rev_msg = target.attributes.get("messaging", {}).get("revive", None)
+    if not rev_msg:
+        rev_msg = DEFAULT_REVIVE_MSG
+    formatted = capitalize(rev_msg.format(owner=target))
+
+    # send revive message
+    target.location.msg_contents(formatted)

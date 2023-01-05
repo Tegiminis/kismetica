@@ -2,6 +2,17 @@ import random
 from evennia.contrib.rpg.buffs.buff import BaseBuff, Mod
 
 
+class ExpireBuff(BaseBuff):
+    key = "expiretest"
+    name = "Expire"
+
+    def at_apply(self, *args, **kwargs):
+        self.owner.msg("Applied expiry buff")
+
+    def at_expire(self, *args, **kwargs):
+        self.owner.msg("Testing expire")
+
+
 class RampageBuff(BaseBuff):
     key = "rampage"
     name = "Rampage"

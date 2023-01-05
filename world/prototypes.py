@@ -73,8 +73,7 @@ See the `@spawn` command and `evennia.utils.spawner` for more info.
 # }
 
 from components.combat import WeaponStats
-from components.ai import PatrolBrain
-
+from components.ai import PatrolBrain, TestBrain
 
 GNAWING = {"key": "Gnawing Hunger", "typeclass": "typeclasses.weapon.Weapon"}
 
@@ -94,7 +93,9 @@ HIVE_BOOMER = {
     "cooldown": 5,
     "element": "arc",
     "messaging": {
-        "attack": "{attacker} lobs a bomb of electrifying energy at {defender}!"
+        "attack": "{attacker} lobs a bomb of electrifying energy at {defender}!",
+        "hit": "{defender} is shocked by electric current!",
+        "crit": "{defender} is knocked back by explosive force!",
     },
     "is_object": False,
 }
@@ -102,6 +103,7 @@ HIVE_BOOMER = {
 HIVE_KNIGHT = {
     "key": "hive knight",
     "typeclass": "typeclasses.npc.NPC",
-    "weapon": WeaponStats(**HIVE_BOOMER),
+    "evasion": 10,
     "brain": PatrolBrain,
+    "weapon": HIVE_BOOMER,
 }

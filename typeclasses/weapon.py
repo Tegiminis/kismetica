@@ -12,7 +12,7 @@ from typeclasses.objects import Object
 from evennia.contrib.rpg.buffs.buff import BaseBuff, BuffableProperty
 from components.buffsextended import BuffHandlerExtended
 from evennia.utils import lazy_property, utils
-from evennia import Command as BaseCommand
+from commands.command import Command as BaseCommand
 from evennia import CmdSet
 from world.rules import verify_context
 
@@ -50,9 +50,9 @@ class FusionCharging(BaseBuff):
 class FusionCharged(BaseBuff):
     key = "fusioncharged"
 
-    duration = 30
+    duration = 5
     unique = True
-    tickrate = 5
+    tickrate = 1
 
     tick_msg = {
         1: "Your %s vibrates in your hands, ready to unleash.",
@@ -63,11 +63,9 @@ class FusionCharged(BaseBuff):
     def at_expire(self, *args, **kwargs):
         player: Character = self.owner.location
         damage = round(player.maxhp * 0.75)
-        player.msg(
-            "\n|nYour {weapon} explodes, filling your lungs with searing plasma!".format(
-                weapon=self.owner
-            )
-        )
+        message = "Your {0} explodes, filling your lungs with searing plasma!"
+        formatted = message.format(self.owner)
+        player.msg(formatted)
         player.combat.injure(damage, player, buffcheck=False, event=False)
 
     def at_tick(self, *args, **kwargs):
@@ -116,10 +114,14 @@ class CmdShoot(BaseCommand):
     locks = ""
 
     def at_pre_cmd(self):
-        active = self.caller.cooldowns.get("global")
-        if active:
+        cooldown = self.caller.cooldowns.get("global")
+        dead = self.caller.tags.get("dead", "combat")
+
+        if cooldown:
             self.caller.msg("You cannot act again so quickly!")
-        return active
+        if self.dead:
+            self.caller.msg("You cannot act while dead!")
+        return cooldown or self.dead
 
     def parse(self):
         self.args = self.args.strip()
@@ -139,6 +141,10 @@ class CmdShoot(BaseCommand):
 
         if target.tags.has("dead", category="combat"):
             caller.msg("You cannot attack a dead target.")
+            return
+
+        if target.has_account:
+            caller.msg("You cannot attack other players!")
             return
 
         if caller.cooldowns.get("attack"):
@@ -424,10 +430,12 @@ class Weapon(Object):
 
     def _unequip(self):
         owner = self.location
-        owner.events.unsubscribe(self.buffs)
+        if hasattr(owner, "events"):
+            owner.events.unsubscribe(self.buffs)
 
     def _equip(self):
         owner = self.location
-        owner.events.subscribe(self.buffs)
+        if hasattr(owner, "events"):
+            owner.events.subscribe(self.buffs)
 
     # endregion
