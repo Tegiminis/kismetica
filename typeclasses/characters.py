@@ -226,5 +226,6 @@ class PlayerCharacter(Character):
                 obj.move_to(self.location, True)
                 obj.location.msg_contents("An engram coalesces from strands of energy!")
 
-    def add_xp(self, value):
-        pass
+    def get_display_name(self, looker=None, **kwargs):
+        supername = super().get_display_name(looker, **kwargs)
+        return "|c" + supername + "|n"

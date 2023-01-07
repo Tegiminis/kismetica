@@ -59,3 +59,7 @@ class NPC(Character):
             round(weapon.damage * 0.5), round(weapon.damage * 1.5)
         )
         self.combat.weapon_attack(weapon, defender)
+
+    def get_display_name(self, looker=None, **kwargs):
+        supername = super().get_display_name(looker, **kwargs)
+        return "|y" + supername + "|n"
