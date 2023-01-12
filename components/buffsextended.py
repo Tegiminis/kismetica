@@ -1,4 +1,4 @@
-from evennia.contrib.rpg.buffs.buff import BuffHandler
+from evennia.contrib.rpg.buffs.buff import BuffHandler, BaseBuff, Mod
 from components.events import EventContext
 
 

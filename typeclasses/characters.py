@@ -108,8 +108,8 @@ class Character(DefaultCharacter):
         strongest: bool = False,
     ):
         _value = value
-        _value = self.buffs.check(value, stat, loud, context, trigger, strongest)
-        _value = self.perks.check(value, stat, loud, context, trigger, strongest)
+        _value = self.buffs.check(_value, stat, loud, context, trigger, strongest)
+        _value = self.perks.check(_value, stat, loud, context, trigger, strongest)
         return _value
 
     # endregion

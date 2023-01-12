@@ -109,7 +109,7 @@ class CooldownHandler(object):
             formatted = message.format(key=key, **cooldown).capitalize()
             self.owner.msg(formatted)
 
-        utils.delay(duration, self.cleanup)
+        utils.delay(duration, cleanup, self, persistent=True)
 
     def extend(self, key, amount):
         """Extends an existing cooldown's duration"""
@@ -147,8 +147,9 @@ class CooldownHandler(object):
             return cooldown.timeleft
         return 0
 
-    def cleanup(self):
-        """Does a quick cleanup of cooldowns to ensure they are still valid/active, removing any that aren't"""
-        for key in self.db:
-            instance = self.get(key)
-            del instance
+
+def cleanup(handler: CooldownHandler):
+    """Does a quick cleanup of cooldowns to ensure they are still valid/active, removing any that aren't"""
+    for key in handler.db:
+        instance = handler.get(key)
+        del instance

@@ -1,4 +1,3 @@
-from typeclasses.components.job import Subclass
 from evennia.contrib.rpg.buffs.buff import BaseBuff, Mod
 
 
@@ -10,7 +9,7 @@ class SoldierMarksman(BaseBuff):
     mods = [Mod("accuracy", "add", 2.0)]
 
 
-class Soldier(Subclass):
+class Soldier:
     """The most basic subclass. Gives you access to realistic (read: non-magic) abilities."""
 
     id = "soldier"

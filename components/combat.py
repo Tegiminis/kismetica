@@ -19,8 +19,8 @@ DEFAULT_TEMP_MSG = {
     },
 }
 
-DEFAULT_ATTACK_MSG = "{attacker} shoots {name} at {defender}"
-DEFAULT_READY_MSG = "You shoulder your {name}, ready to fire."
+DEFAULT_ATTACK_MSG = "{attacker} shoots {weapon} at {defender}"
+DEFAULT_READY_MSG = "You shoulder your {weapon}, ready to fire."
 DEFAULT_HIT_MSG = "{defender} staggers under the flurry of bullets."
 DEFAULT_CRIT_MSG = "Blood spurts uncontrollably from newly-apportioned wounds!"
 
@@ -38,6 +38,7 @@ class AttackContext:
     hit: StatContext = field(default_factory=StatContext)
     dodge: StatContext = field(default_factory=StatContext)
     damage: int | float = 0
+    deflected: int | float = 0
     isHit: bool = False
     isCrit: bool = False
 
@@ -48,14 +49,15 @@ class CombatContext:
     defender: Object = None
     weapon: Object = None
     attacks: list[AttackContext] = field(default_factory=list)
-    total: int | float = 0
+    damage: int | float = 0
+    taken: int | float = 0
     element: str = "neutral"
     overkill: int | float = 0
 
 
 @dataclass
 class WeaponStats:
-    name: str = "Template"
+    weapon: str = "Template"
     accuracy: int | float = 1.0
     damage: int | float = 10
     crit: int | float = 2.0
@@ -131,10 +133,10 @@ class CombatHandler(object):
 
         # calculate damage
         if buffcheck:
-            damage = self.owner.check_buffs(damage, "injury")
+            buffeddamage = self.owner.check_buffs(damage, "injury")
         _hp = int(self.hp)
-        taken = round(damage) if damage < _hp else _hp
-        overkill = max(damage - taken, 0)
+        taken = round(buffeddamage) if buffeddamage < _hp else _hp
+        overkill = max(buffeddamage - taken, 0)
 
         # context updating and dict conversion (or basic values)
         if context:
@@ -144,7 +146,7 @@ class CombatHandler(object):
             context = {
                 "attacker": attacker,
                 "defender": self.owner,
-                "total": damage,
+                "damage": damage,
                 "taken": taken,
                 "element": element,
                 "overkill": overkill,
@@ -164,9 +166,10 @@ class CombatHandler(object):
         if was_kill:
             # if this object grants xp, and the attacker can gain it, transfer xp
             gain = self.owner.attributes.get("gain", None)
-            xp = attacker.attributes.has("xp")
-            if gain and xp:
-                attacker.db.xp = min(gain + xp, attacker.limit)
+            if attacker:
+                xp = attacker.attributes.has("xp")
+                if gain and xp:
+                    attacker.db.xp = min(gain + xp, attacker.limit)
 
             # die and publish death event
             self.die(context)
@@ -189,22 +192,11 @@ class CombatHandler(object):
 
         # send message and delay revive
         self.owner.location.msg_contents(formatted)
-        utils.delay(10, revive, self.owner, persistent=True)
+        utils.delay(10, _revive, self.owner, persistent=True)
 
     def revive(self):
         """Revive! You aren't dead anymore!"""
-        # tag stuff
-        self.owner.tags.clear(category="combat")
-        self.owner.db.hp = self.owner.db.maxhp
-
-        # messaging
-        rev_msg = self.owner.attributes.get("messaging", {}).get("revive", None)
-        if not rev_msg:
-            rev_msg = DEFAULT_REVIVE_MSG
-        formatted = capitalize(rev_msg.format(owner=self.owner))
-
-        # send revive message
-        self.owner.location.msg_contents(formatted)
+        _revive(self.owner)
 
     def heal(self, heal: int, msg=None) -> int:
         """Heals you.
@@ -282,7 +274,7 @@ class CombatHandler(object):
         mapping = congen([combat])
         mapping.update(
             {
-                "weapon": weapon.name,
+                "weapon": weapon.weapon,
                 "attacker": attacker.get_display_name(),
                 "defender": defender.get_display_name(),
             }
@@ -331,7 +323,7 @@ class CombatHandler(object):
                 attacker.events.publish("hit", attacker, context)
 
                 # damage modification
-                attack.damage = defender.combat.deflect(attack.damage)
+                attack.deflected = defender.combat.deflect(attack.damage)
                 combat.attacks.append(attack)
 
         # hit (at least one successful hit)
@@ -343,13 +335,14 @@ class CombatHandler(object):
 
             # individual attack messages and damage totaling
             for atk in combat.attacks:
-                dmg = round(atk.damage)
-                if atk.damage <= 0:
+                dmg = round(atk.deflected)
+                if dmg <= 0:
                     dmg = "No"
                 if atk.isCrit:
                     dmg = "|520" + str(dmg)
                 dmglist_msg += message.format(dmg) + "|n"
-                combat.total += atk.damage
+                combat.damage += atk.damage
+                combat.taken += atk.deflected
 
             # attacks message
             attacker.location.msg_contents(INDENT + PREFIX + dmglist_msg)
@@ -357,13 +350,13 @@ class CombatHandler(object):
             # apply total damage buffs
             weapon_object = attacker.attributes.get("held", None)
             if weapon_object:
-                combat.total = weapon_object.buffs.check(combat.total, "total_damage")
-            combat.total = attacker.check_buffs(combat.total, "total_damage")
+                combat.damage = weapon_object.buffs.check(combat.damage, "total_damage")
+            combat.damage = attacker.check_buffs(combat.damage, "total_damage")
 
             # total damage message
             TOTAL = "  = "
-            message = "{0} total damage!".format(round(combat.total))
-            if combat.total:
+            message = "{0} total damage!".format(round(combat.taken))
+            if combat.damage:
                 attacker.location.msg_contents(INDENT + TOTAL + message)
 
             # hit messaging
@@ -371,7 +364,7 @@ class CombatHandler(object):
 
             mapping = congen([combat])
 
-            if not combat.total:
+            if not combat.taken:
                 msg = DEFAULT_TEMP_MSG["bullet"]["invuln"]
             elif was_crit:
                 msg = weapon.messaging.get("crit", DEFAULT_CRIT_MSG)
@@ -383,15 +376,17 @@ class CombatHandler(object):
             attacker.location.msg_contents("|520" + INDENT + capitalized)
 
             # injury
-            defender.combat.injure(combat.total, attacker, context=combat)
+            defender.combat.injure(combat.damage, attacker, context=combat)
 
         # miss
         else:
             attacker.location.msg_contents(INDENT + PREFIX + " Miss!")
             attacker.events.publish("miss", weapon, combat)
 
+        return combat
 
-def revive(target):
+
+def _revive(target):
     """Revive! You aren't dead anymore!"""
     # tag stuff
     target.tags.clear(category="combat")
@@ -405,3 +400,11 @@ def revive(target):
 
     # send revive message
     target.location.msg_contents(formatted)
+
+
+def rainbowfy(string: str):
+    colortable = ["|r", "|520", "|y", "|g", "|b", "|i", "|b", "|g", "|y", "|520", "|r"]
+    split: list = string.split()
+    rainbow = [colortable[i % 12] + stri for i, stri in enumerate(split)]
+    joined = "".join(rainbow)
+    return joined

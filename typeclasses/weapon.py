@@ -2,6 +2,7 @@ import random
 import time
 import inflect
 from typing import TYPE_CHECKING
+from components.context import congen
 from evennia.typeclasses.attributes import AttributeProperty
 from evennia.typeclasses.tags import TagHandler
 
@@ -281,10 +282,7 @@ class Weapon(Object):
         # Messages for your weapon.
         # Most weapons only have attack (what the rooms sees when you attack) and ready (what you see when cooldown expires)
         # Exotics and altered weapons might have unique messages
-        self.db.messaging = {
-            "attack": "{attacker} shoots their {name} at {defender}.",
-            "ready": "You seat the weapon against your shoulder, ready to fire.",
-        }
+        self.db.messaging = DEFAULT_MESSAGING
 
         # Gun's rarity. Common, Uncommon, Rare, Legendary, Unique, Exotic. Dictates number of perks when gun is rolled on.
         self.db.rarity = 1
@@ -393,8 +391,18 @@ class Weapon(Object):
         )
         defender: Character = defender
         attacker: Character = self.location
-        attacker.combat.weapon_attack(weapon, defender)
-        attacker.cooldowns.add("global", weapon.cooldown, None, rdy_msg)
+        combat = attacker.combat.weapon_attack(weapon, defender)
+
+        # context cleanup and messaging
+        mapping = congen([combat])
+        mapping.update({"weapon": self.get_display_name()})
+        formatted = rdy_msg.format(**mapping)
+        attacker.cooldowns.add(
+            "global",
+            weapon.cooldown,
+            None,
+            formatted,
+        )
 
     def reload_weapon(self) -> int:
         """Reloads this weapon and returns the amount of ammo that was reloaded."""

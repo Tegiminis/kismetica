@@ -41,13 +41,18 @@ class CmdCheck(BaseCommand):
 
         target = caller.search(self.args)
         buffs = target.buffs.view()
+        msg = ""
         if buffs:
-            msg = target.name.capitalize() + " is currently buffed by: \n|n"
-            for x in buffs:
-                msg += x + "\n|n"
+            flavorlist = list(buffs.values())
+            for x in flavorlist:
+                msg += ": ".join(x) + "|n\n"
             caller.msg(msg)
         else:
             caller.msg("There are no buffs on the target.")
+
+    def view_buffs(self):
+        """Formats buffs for sending to the caller"""
+        pass
 
 
 class CmdPTest(BaseCommand):

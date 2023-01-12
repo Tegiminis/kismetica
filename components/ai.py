@@ -458,7 +458,7 @@ class BrainHandler:
                 self.queue.popleft()
 
         # keep this thread going
-        delay(_delay, act_thread, self.owner, persistent=True)
+        delay(_delay, act_thread, self.owner)
 
     def think(self, *args, **kwargs):
         """No act, only think"""
