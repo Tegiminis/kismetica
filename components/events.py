@@ -13,7 +13,7 @@ class EventContext:
     source: Object
     timestamp: float
     context: dict
-    events: list[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
 
 
 class EventHandler(object):
@@ -47,6 +47,9 @@ class EventHandler(object):
         else:
             return None
 
+    def queue(self, source, context, tags):
+        pass
+
     def subscribe(self, subscriber):
         """Subscribes to this event manager. Subscribing objects must implement
         the "event_parse" method for publishing to be successful.
@@ -70,7 +73,7 @@ class EventHandler(object):
             self.subs.remove(subscriber)
         return
 
-    def publish(self, name: str, source, context=None):
+    def publish(self, name: str, source, context=None, tags=[]):
         """Publish an event to this handler's subscribers.
 
         Args:
@@ -83,21 +86,25 @@ class EventHandler(object):
         _c = asdict_shallow(context) if is_dc else context
 
         # create event context
-        event: EventContext = EventContext(name, source, time.time(), _c)
+        event: EventContext = EventContext(name, source, time.time(), _c, tags)
 
         # event parsing
         for sub in self.subs:
             # any objects subscribing to an event manager should implement this method
             sub.event_parse(event)
 
-    def send(self, target, name: str, context: dict = None):
-        """Sends an event to another object for publishing to its subscribers.
+    def send(self, targets, name: str, context: dict = None):
+        """Sends an event to another object (or multiple) for publishing to its subscribers.
+        This counts as originating from the object this handler is assigned to.
 
         Args:
-            target: The target object. Requires an EventHandler assigned to "events" property
+            targets: The list of targets. Requires an EventHandler assigned to "events" property
             name:   The event string, used for triggering stuff
             context:    The dataclass or dictionary holding our event's context."""
-        if hasattr(target, "events"):
+        if not isinstance(targets, list):
+            targets = [targets]
+        aware_targets = [obj for obj in targets if hasattr(obj, "events")]
+        for target in aware_targets:
             target.events.publish(name, self.owner, context)
 
     def broadcast(self, name: str, context: dict = None, include=False):
@@ -115,5 +122,4 @@ class EventHandler(object):
 
 
 def event_parse(event):
-
     pass

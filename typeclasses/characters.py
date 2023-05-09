@@ -19,6 +19,7 @@ from evennia.contrib.rpg.buffs.buff import BuffableProperty
 from components.buffsextended import BuffHandlerExtended
 from components.cooldowns import CooldownHandler
 from components.events import EventHandler
+from components.quests import QuestHandler
 
 # Commands
 import commands.default_cmdsets as default
@@ -34,7 +35,6 @@ if TYPE_CHECKING:
 
 
 class Character(DefaultCharacter):
-
     # Character class inherited by all characters in the MUD, including NPCs
 
     # Buff and perk handlers
@@ -138,7 +138,6 @@ class Character(DefaultCharacter):
 
 
 class PlayerCharacter(Character):
-
     # The module we use for all player characters. This contains player-specific stats.
 
     # base player stats
@@ -155,8 +154,11 @@ class PlayerCharacter(Character):
     learning = BuffableProperty(10)
     """The amount of experience earned per tick"""
 
-    def at_object_creation(self):
+    @lazy_property
+    def quests(self) -> QuestHandler:
+        return QuestHandler(self, dbkey="quests")
 
+    def at_object_creation(self):
         self.cmdset.add(destiny.DestinyBasicCmdSet, permanent=True)
         self.cmdset.add(destiny.DestinyBuilderCmdSet, permanent=True)
 
@@ -202,7 +204,11 @@ class PlayerCharacter(Character):
             _lvl += x.get("level", 1)
         return _lvl
 
-    def learn(self):
+    def gain_xp(self, xp=0):
+        """Gain specified XP amount straight to permanent amount."""
+        self.db.permxp += xp
+
+    def learn(self, xp=0):
         """Converts temporary XP to permanent XP"""
         # get the variables
         xp, learn = self.db.xp, self.learning

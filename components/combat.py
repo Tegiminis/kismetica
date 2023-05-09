@@ -174,6 +174,7 @@ class CombatHandler(object):
             # die and publish death event
             self.die(context)
             self.owner.events.publish("death", attacker, context)
+            self.owner.events.send("kill", attacker, context)
 
         # return the combat context
         return CombatContext(**context)
@@ -293,7 +294,6 @@ class CombatHandler(object):
 
         # roll to hit based on number of shots
         for x in range(shots):
-
             # roll to hit and update variables
             attack: AttackContext = self.opposed_hit(
                 accuracy_modified, evasion, weapon.crit, weapon.damage
@@ -328,7 +328,6 @@ class CombatHandler(object):
 
         # hit (at least one successful hit)
         if was_hit:
-
             # damage messaging setup
             message = " {0} damage!"
             dmglist_msg = ""
