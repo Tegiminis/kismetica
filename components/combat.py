@@ -11,17 +11,17 @@ p = inflect.engine()
 
 DEFAULT_TEMP_MSG = {
     "bullet": {
-        "invuln": "Bullets glance harmlessly off {defender}!",
+        "invuln": "Bullets glance harmlessly off {target}!",
     },
     "fusion": {
-        "hit": "Bolts of multicolored plasma strike {defender}'s armor.",
+        "hit": "Bolts of multicolored plasma strike {target}'s armor.",
         "crit": "Molten matter fuses to flesh amidst screams of agony!",
     },
 }
 
-DEFAULT_ATTACK_MSG = "{attacker} shoots {weapon} at {defender}"
+DEFAULT_ATTACK_MSG = "{attacker} shoots {weapon} at {target}"
 DEFAULT_READY_MSG = "You shoulder your {weapon}, ready to fire."
-DEFAULT_HIT_MSG = "{defender} staggers under the flurry of bullets."
+DEFAULT_HIT_MSG = "{target} staggers under the flurry of bullets."
 DEFAULT_CRIT_MSG = "Blood spurts uncontrollably from newly-apportioned wounds!"
 
 DEFAULT_DEATH_MSG = "{owner} collapses in a heap!"
@@ -36,7 +36,7 @@ NEWLINE = "|n\n"
 class AttackContext:
     div: int | float
     hit: StatContext = field(default_factory=StatContext)
-    dodge: StatContext = field(default_factory=StatContext)
+    eva: StatContext = field(default_factory=StatContext)
     damage: int | float = 0
     deflected: int | float = 0
     isHit: bool = False
@@ -46,13 +46,22 @@ class AttackContext:
 @dataclass
 class CombatContext:
     attacker: Object = None
-    defender: Object = None
+    target: Object = None
     weapon: Object = None
     attacks: list[AttackContext] = field(default_factory=list)
     damage: int | float = 0
     taken: int | float = 0
     element: str = "neutral"
     overkill: int | float = 0
+
+
+@dataclass
+class OffenseStats:
+    accuracy: int | float = 1.0
+    opposing: str = "evasion"
+    damage: int | float = 10
+    crit: int | float = 2.0
+    mult: int | float = 2.0
 
 
 @dataclass
@@ -145,7 +154,7 @@ class CombatHandler(object):
         else:
             context = {
                 "attacker": attacker,
-                "defender": self.owner,
+                "target": self.owner,
                 "damage": damage,
                 "taken": taken,
                 "element": element,
@@ -213,12 +222,13 @@ class CombatHandler(object):
     def opposed_hit(self, acc=0.0, eva=0.0, crit=2.0, damage=0) -> AttackContext:
         """
         Performs an "opposed hit roll". An example of this would be an accuracy
-        vs evasion roll, or an awareness vs spread roll. Each roll is
+        vs evasion roll, or a blast vs awareness roll. Each roll is
         d100 + random(acc/eva), and a hit is made if the hit value is higher.
+        Crits require that the hit roll be greater than the evasion roll by the specified multiplier.
 
         Args:
             acc:    (default: 0) The attacker's accuracy modifier.
-            eva:    (default: 0) The defender's evasion modifier.
+            eva:    (default: 0) The target's evasion modifier.
             crit:   (default: 2) The attacker's crit modifier
 
         Returns an AttackContext object
@@ -233,11 +243,11 @@ class CombatHandler(object):
 
         _h = {"base": _hit, "bonus": accuracy, "total": round(_hit + accuracy)}
         _d = {"base": _dodge, "bonus": evasion, "total": round(_dodge + evasion)}
-        hit, dodge = StatContext(**_h), StatContext(**_d)
+        hit, eva = StatContext(**_h), StatContext(**_d)
 
         update = {
             "hit": hit,
-            "dodge": dodge,
+            "eva": eva,
             "div": (_hit + accuracy) / (_dodge + evasion),
             "damage": damage,
             "isHit": (_hit + accuracy) > (_dodge + evasion),
@@ -248,19 +258,140 @@ class CombatHandler(object):
         context: AttackContext = AttackContext(**update)
         return context
 
-    def weapon_attack(self, weapon: WeaponStats, defender: Object):
+    # region attack types
+    def basic_attack(
+        self,
+        stats: OffenseStats,
+        target,
+    ) -> AttackContext:
         """
-        Performs an attack against a defender, according to the weapon's various stats
+        Performs a basic attack against the target. This is the building block of all other attacks.
+        This is an opposed hit against the specified defense stat, then modified by armor and crit.
+
+        Args:
+            stats:      The offensive stats to use. OffenseStats dataclass
+            target:     The defending object
+
+        Returns an AttackContext.
+
+        """
+
+        evasion = getattr(target, stats.opposing, 0)
+        attack = self.opposed_hit(stats.accuracy, evasion)
+
+        # if attack was successful
+        if attack.isHit:
+            # if crit (hit > evasion * crit), multiply damage
+            if attack.isCrit:
+                precision_mult = self.buffs.check(stats.mult, "precision")
+                attack.damage *= precision_mult
+
+            # damage modification
+            attack.deflected = target.combat.deflect(attack.damage)
+
+        return attack
+
+    def aoe(
+        self,
+        stats: OffenseStats,
+        targets: list,
+        exclude: list = None,
+        hurt=False,
+    ):
+        """Performs an AoE attack, which attempts to hit all specified targets once.
+
+        Args:
+            stats:      The offensive stats to use. OffenseStats dataclass
+            targets:    The list of targets
+            exclude:    The list of objects to exclude from the target pool (default: None)
+            hurt:       If this AoE hurts the attacker too (default: False)
+
+        """
+        if not targets:
+            return
+        attacks = []
+
+        # find targets via set comparison
+        _t = set(targets)
+        _e = set(exclude)
+        if not hurt:
+            _e.add(self.owner)
+        valids = _t.difference(_e)
+
+        # attempt a basic attack on each target
+        for target in valids:
+            attack = self.basic_attack(stats, target)
+
+    def rapid(
+        self,
+        stats: OffenseStats,
+        defender,
+        shots: int = 1,
+        burst=False,
+    ):
+        """
+        Performs a rapid attack, which attempts to attack a single target multiple times until it misses.
+
+        Args:
+            stats:      The offensive stats to use. OffenseStats dataclass
+            defender:   The defending object
+            shots:      How many attacks to make (default: 1)
+            burst:      If this attack continues even if a miss occurs (default: False)
+
+        """
+        messaging = ""
+
+        attacker = self.owner
+        total = 0
+
+        # for each shot
+        for x in range(shots):
+            # perform a basic attack
+            attack: AttackContext = self.basic_attack(stats, defender, "awareness")
+            damagelist = ""
+
+            # if this is the first shot, create the initial messaging
+            if x == 0:
+                hitmapping = {"hit": attack.hit.total, "eva": attack.eva.total}
+                rollmsg = "  HIT: +{hit} vs EVA: +{eva}".format(**hitmapping)
+                messaging += rollmsg + NEWLINE
+
+            # if we miss
+            if not attack.isHit:
+                damagelist += " Miss!"
+                # only burst weapons continue firing after a miss
+                if not burst:
+                    break
+
+            # if we hit
+            if attack.isHit:
+                m = " {0} damage!".format(attack.deflected)
+                if attack.isCrit:
+                    m = "|520" + m + "|n"
+                damagelist += m
+                total += attack.deflected
+
+            messaging += INDENT + PREFIX + damagelist + NEWLINE
+
+        # apply total damage buffs
+        total = _enhance_total(total, attacker)
+
+        messaging += (INDENT + "  = {0} total damage!").format(*total) + NEWLINE
+        attacker.location.msg_contents(messaging)
+
+    def weapon_attack(self, weapon: WeaponStats, target: Object):
+        """
+        Performs an attack against a target, according to the weapon's various stats
 
         Args:
             weapon:     The weapon you are using. WeaponStats dataclass
-            defender:   The target you are attacking
+            target:   The target you are attacking
         """
         # initial context
         attacker: Object = self.owner
         _basics = {
             "attacker": attacker,
-            "defender": defender,
+            "target": target,
             "weapon": weapon,
             "attacks": [],
             "element": "neutral",
@@ -269,7 +400,7 @@ class CombatHandler(object):
 
         # variable assignments
         accuracy_modified = attacker.buffs.check(weapon.accuracy, "accuracy")
-        evasion = getattr(defender, "evasion", 0)
+        evasion = getattr(target, "evasion", 0)
 
         # opening damage message formatting
         mapping = congen([combat])
@@ -277,7 +408,7 @@ class CombatHandler(object):
             {
                 "weapon": weapon.weapon,
                 "attacker": attacker.get_display_name(),
-                "defender": defender.get_display_name(),
+                "target": target.get_display_name(),
             }
         )
         room_msg = weapon.messaging.get("attack", DEFAULT_ATTACK_MSG)
@@ -301,8 +432,8 @@ class CombatHandler(object):
 
             # if this is the first shot, send the initial hit roll numbers
             if x == 0:
-                hitmapping = {"hit": attack.hit.total, "dodge": attack.dodge.total}
-                roll_msg = "  HIT: +{hit} vs EVA: +{dodge}"
+                hitmapping = {"hit": attack.hit.total, "eva": attack.eva.total}
+                roll_msg = "  HIT: +{hit} vs EVA: +{eva}"
                 formatted = roll_msg.format(**hitmapping)
                 attacker.location.msg_contents(formatted)
 
@@ -323,7 +454,7 @@ class CombatHandler(object):
                 attacker.events.publish("hit", attacker, context)
 
                 # damage modification
-                attack.deflected = defender.combat.deflect(attack.damage)
+                attack.deflected = target.combat.deflect(attack.damage)
                 combat.attacks.append(attack)
 
         # hit (at least one successful hit)
@@ -375,7 +506,7 @@ class CombatHandler(object):
             attacker.location.msg_contents("|520" + INDENT + capitalized)
 
             # injury
-            defender.combat.injure(combat.damage, attacker, context=combat)
+            target.combat.injure(combat.damage, attacker, context=combat)
 
         # miss
         else:
@@ -383,6 +514,8 @@ class CombatHandler(object):
             attacker.events.publish("miss", weapon, combat)
 
         return combat
+
+    # endregion
 
 
 def _revive(target):
@@ -407,3 +540,12 @@ def rainbowfy(string: str):
     rainbow = [colortable[i % 12] + stri for i, stri in enumerate(split)]
     joined = "".join(rainbow)
     return joined
+
+
+def _enhance_total(value, attacker):
+    """Enhances total damage via buffs for weapon (if applicable) and character"""
+    weapon_object = attacker.attributes.get("held", None)
+    if weapon_object:
+        total = weapon_object.buffs.check(value, "total_damage")
+    total = attacker.check_buffs(value, "total_damage")
+    return total

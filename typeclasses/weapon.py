@@ -8,7 +8,7 @@ from evennia.typeclasses.tags import TagHandler
 
 from components.cooldowns import CooldownHandler
 import components.combat as com
-from components.combat import CombatHandler, WeaponStats
+from components.combat import CombatHandler, WeaponStats, OffenseStats
 from typeclasses.objects import Object
 from evennia.contrib.rpg.buffs.buff import BaseBuff, BuffableProperty
 from components.buffsextended import BuffHandlerExtended
@@ -199,7 +199,6 @@ class CmdCharge(BaseCommand):
 
 
 class WeaponCmdSet(CmdSet):
-
     key = "WeaponCmds"
 
     def at_cmdset_creation(self):
@@ -269,6 +268,7 @@ class Weapon(Object):
         self.accuracy  # Percent of weapon proficiency used for accuracy
         self.spread  # Chance to attack multiple targets
         self.combo  # Chance to attack the first target multiple times
+        self.db.opposing = "evasion"  # Stat to use as opposition for the defense roll
 
         # Speed stats for doing particular actions (forces cooldown)
         self.equip
@@ -377,6 +377,7 @@ class Weapon(Object):
         # initial context
         messaging = dict(self.attributes.get("messaging", DEFAULT_MESSAGING))
         rdy_msg = messaging.get("ready", com.DEFAULT_READY_MSG)
+
         weapon: WeaponStats = WeaponStats(
             self.key,
             self.accuracy,
@@ -403,6 +404,27 @@ class Weapon(Object):
             None,
             formatted,
         )
+
+    def new_attack(self, defender):
+        """
+        Performs an attack against a defender, according to the weapon's various stats
+
+        Args:
+            defender:   The target you are attacking
+        """
+        # initial context
+        messaging = dict(self.attributes.get("messaging", DEFAULT_MESSAGING))
+        rdy_msg = messaging.get("ready", com.DEFAULT_READY_MSG)
+
+        stats: OffenseStats = OffenseStats(
+            self.accuracy,
+            self.db.opposing,
+            self.randomized_damage,
+            self.crit,
+            self.precision,
+        )
+        defender: Character = defender
+        attacker: Character = self.location
 
     def reload_weapon(self) -> int:
         """Reloads this weapon and returns the amount of ammo that was reloaded."""

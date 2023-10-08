@@ -54,6 +54,16 @@ class QuestKill(BaseQuest):
     goals = {"kill": 2}
 
 
+class QuestHiveKill(QuestKill):
+    """Test quest to kill a hive knight. Randomizes amount on application"""
+
+    key = "hivekill"
+    goals = {"kill": 1}
+
+    def conditional(self, *args, **kwargs):
+        return super().conditional(*args, **kwargs)
+
+
 class QuestHandler(BuffHandlerExtended):
     """
     A handler for all quests and bounties. Uses the buff system under the hood, so utilizes all standard buff methods and behaviors.
