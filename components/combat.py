@@ -3,6 +3,7 @@ import random
 import inflect
 from dataclasses import dataclass, field, fields, is_dataclass
 from components.context import StatContext, congen
+from components.events import GameEvent
 from typeclasses.objects import Object
 import evennia.utils as utils
 from world.rules import verify_context, capitalize
@@ -75,7 +76,6 @@ class WeaponStats:
     cooldown: int | float = 6
     element: str = "neutral"
     messaging: dict = field(default_factory=dict)
-    is_object: bool = False
     prototype_key: str = ""
 
 
@@ -107,6 +107,19 @@ class CombatHandler(object):
     def dead(self):
         return self.owner.tags.has("dead", category="combat")
 
+    @property
+    def attackers(self) -> list:
+        _a = self.owner.ndb.attackers
+        if _a:
+            return _a
+        else:
+            return None
+
+    def end_combat(self):
+        """Ends combat on this object"""
+        self.owner.tags.clear(category="combat")
+        self.owner.ndb.attackers = []
+
     def deflect(self, damage, raw=False):
         """Returns damage modified by armor, buffs, and other normal combat modifiers"""
 
@@ -127,7 +140,7 @@ class CombatHandler(object):
         element: str = "neutral",
         buffcheck: bool = True,
         loud: bool = True,
-        event: bool = True,
+        is_event: bool = True,
         context: CombatContext = None,
     ) -> CombatContext:
         """
@@ -140,12 +153,19 @@ class CombatHandler(object):
             context:    Context to update
         """
 
+        # setting up the game event tags
+        defender_tags = []
+        attacker_tags = []
+
         # calculate damage
         if buffcheck:
             buffeddamage = self.owner.check_buffs(damage, "injury")
         _hp = int(self.hp)
         taken = round(buffeddamage) if buffeddamage < _hp else _hp
         overkill = max(buffeddamage - taken, 0)
+        defender_tags.append("attacked")
+        if taken > 0:
+            defender_tags.append("injured")
 
         # context updating and dict conversion (or basic values)
         if context:
@@ -167,11 +187,13 @@ class CombatHandler(object):
         if loud:
             self.owner.msg("|rYou take {0} damage!|n".format(taken))
 
-        # fire injury event
-        if event:
-            self.owner.events.publish("injury", attacker, context)
+        # assign attacker to this object's ndb
+        if self.owner.ndb.attackers:
+            self.owner.ndb.attackers.append(attacker)
+        else:
+            self.owner.ndb.attackers = [attacker]
 
-        # no life, no luck
+        # death
         if was_kill:
             # if this object grants xp, and the attacker can gain it, transfer xp
             gain = self.owner.attributes.get("gain", None)
@@ -180,10 +202,17 @@ class CombatHandler(object):
                 if gain and xp:
                     attacker.db.xp = min(gain + xp, attacker.limit)
 
-            # die and publish death event
+            # die and publish death event for all attackers
             self.die(context)
-            self.owner.events.publish("death", attacker, context)
-            self.owner.events.send("kill", attacker, context)
+            defender_tags.append("death")
+            attacker_tags.append("kill")
+
+        # fire events
+        if is_event:
+            if defender_tags:
+                self.owner.events.publish(defender_tags, attacker, context)
+            if attacker_tags:
+                self.owner.events.send(attacker_tags, attacker, context)
 
         # return the combat context
         return CombatContext(**context)
@@ -191,7 +220,7 @@ class CombatHandler(object):
     def die(self, context=None):
         """Die! Marks you as dead."""
         # tag and buff stuff
-        self.owner.tags.clear(category="combat")
+        self.end_combat()
         self.owner.tags.add("dead", category="combat")
         self.owner.buffs.super_remove(tag="remove_on_death")
 
@@ -384,11 +413,12 @@ class CombatHandler(object):
         Performs an attack against a target, according to the weapon's various stats
 
         Args:
-            weapon:     The weapon you are using. WeaponStats dataclass
+            weapon:   The weapon you are using. WeaponStats dataclass
             target:   The target you are attacking
         """
         # initial context
         attacker: Object = self.owner
+        weapon_object = attacker.attributes.get("held", None)
         _basics = {
             "attacker": attacker,
             "target": target,
@@ -451,7 +481,7 @@ class CombatHandler(object):
                 context = congen([attack, combat])
 
                 # attacker publishes event
-                attacker.events.publish("hit", attacker, context)
+                attacker.events.publish(["hit"], attacker, context)
 
                 # damage modification
                 attack.deflected = target.combat.deflect(attack.damage)
@@ -478,7 +508,6 @@ class CombatHandler(object):
             attacker.location.msg_contents(INDENT + PREFIX + dmglist_msg)
 
             # apply total damage buffs
-            weapon_object = attacker.attributes.get("held", None)
             if weapon_object:
                 combat.damage = weapon_object.buffs.check(combat.damage, "total_damage")
             combat.damage = attacker.check_buffs(combat.damage, "total_damage")
@@ -511,7 +540,7 @@ class CombatHandler(object):
         # miss
         else:
             attacker.location.msg_contents(INDENT + PREFIX + " Miss!")
-            attacker.events.publish("miss", weapon, combat)
+            attacker.events.publish(["miss"], weapon_object, combat)
 
         return combat
 

@@ -388,7 +388,6 @@ class Weapon(Object):
             self.rpm,
             "neutral",
             messaging,
-            True,
         )
         defender: Character = defender
         attacker: Character = self.location

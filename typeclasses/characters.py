@@ -69,7 +69,7 @@ class Character(DefaultCharacter):
         # self.combat
         self.maxhp, self.evasion
 
-        self.cmdset.add(default.CharacterCmdSet, permanent=True)
+        self.cmdset.add(default.CharacterCmdSet, persistent=True)
         self.db.hp = 100  # Current hp
 
         return super().at_object_creation()
@@ -159,8 +159,8 @@ class PlayerCharacter(Character):
         return QuestHandler(self, dbkey="quests")
 
     def at_object_creation(self):
-        self.cmdset.add(destiny.DestinyBasicCmdSet, permanent=True)
-        self.cmdset.add(destiny.DestinyBuilderCmdSet, permanent=True)
+        self.cmdset.add(destiny.DestinyBasicCmdSet, persistent=True)
+        self.cmdset.add(destiny.DestinyBuilderCmdSet, persistent=True)
 
         # TickerHandler that fires off the "learn" function
         TICKER_HANDLER.add(15, self.learn)

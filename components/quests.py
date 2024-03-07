@@ -1,8 +1,8 @@
-from components.buffsextended import BuffHandlerExtended, BaseBuff
-from components.events import EventContext
+from components.buffsextended import BuffHandlerExtended, BaseBuffExtended
+from components.events import GameEvent
 
 
-class BaseQuest(BaseBuff):
+class BaseQuest(BaseBuffExtended):
     """
     A quest class. Uses the buff class as a base, causing it to trigger off the same events.
 
@@ -21,13 +21,15 @@ class BaseQuest(BaseBuff):
         progress = {goal: 0 for goal in self.goals}
         self.update_cache({"progress": progress})
 
-    def at_trigger(self, trigger: str, *args, **kwargs):
+    def at_trigger(self, triggers: list[str], *args, **kwargs):
         """
         Hook method for when a quest's progress advances. Defaults to 1 point of progress per event.
         """
         progress = dict(self.progress)
-        if trigger in self.triggers:
-            progress[trigger] += 1
+        s_triggers = set(triggers) & set(self.triggers)
+        if s_triggers:
+            for t in s_triggers:
+                progress[t] += 1
 
         completed = [progress[goal] >= self.goals[goal] for goal in self.triggers]
         print(progress)

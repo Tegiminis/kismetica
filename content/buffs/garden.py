@@ -1,4 +1,4 @@
-from components.buffsextended import BaseBuff, BuffHandlerExtended, Mod
+from components.buffsextended import BaseBuffExtended, BuffHandlerExtended, Mod
 
 
 def rainbowfy(string: str):
@@ -34,7 +34,7 @@ def rainbowfy(string: str):
     return joined
 
 
-class ConsecratedEyes(BaseBuff):
+class ConsecratedEyes(BaseBuffExtended):
     key = "consecratedeyes"
     name = "Eyes of Consecration"
     flavor = "The intense red eyes gaze upon morbid ontologies."
@@ -42,12 +42,12 @@ class ConsecratedEyes(BaseBuff):
     stacks = 13
     maxstacks = 13
 
-    triggers = ["injury"]
+    triggers = ["attacked"]
 
     vulnerable = False
     cache = {"vulnerable": False}
 
-    def at_trigger(self, trigger: str, damage=0, attacker=None, *args, **kwargs):
+    def at_trigger(self, triggers: list[str], damage=0, attacker=None, *args, **kwargs):
         kwargs.update({"attacker": attacker, "damage": damage})
         if not self.vulnerable:
             if self.stacks > 1:
@@ -57,6 +57,7 @@ class ConsecratedEyes(BaseBuff):
                 self.vulnerable = True
                 message = "|035" + "A burst of energy shatters calcified steel!"
                 attacker.location.msg_contents(message)
+                self.owner.buffs.add(ConsecratedRegenerating)
         else:
             return
 
@@ -65,7 +66,7 @@ class ConsecratedEyes(BaseBuff):
         attacker.location.msg_contents(message)
 
 
-class ConsecratedImmune(BaseBuff):
+class ConsecratedImmune(BaseBuffExtended):
     key = "consecratedimmune"
     name = "Armor of Consecration"
     flavor = "Steel laid still for eons."
@@ -79,3 +80,17 @@ class ConsecratedImmune(BaseBuff):
     def custom_modifier(self, value, *args, **kwargs):
         val = value * 0
         return val
+
+
+class ConsecratedRegenerating(BaseBuffExtended):
+    key = "consecratedregen"
+    name = "Consecrated Armoring"
+    flavor = "Steel grows like vines around vulnerable components."
+
+    duration = 30
+
+    def at_expire(self, *args, **kwargs):
+        self.owner.location.msg_contents(
+            "Rigid plating regrows to cover the Consecrated Mind!"
+        )
+        self.owner.buffs.add(ConsecratedEyes, stacks=12)

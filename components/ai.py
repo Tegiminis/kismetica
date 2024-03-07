@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 from dataclasses import dataclass, field
-from components.events import EventContext
+from components.events import GameEvent
 from world.rules import capitalize
 from typeclasses.objects import Object
 from evennia.utils import search, delay
@@ -261,7 +261,6 @@ class PatrolBrain(BaseBrain):
         messaging: dict = self.owner.attributes.get("messaging", {})
 
         if not self.owner.tags.has("dead", "combat"):
-
             message = messaging.get("think", DEFAULT_THINK_MESSAGE)
             destination = None
 
@@ -515,7 +514,7 @@ class BrainHandler:
     def change_state(self, state: str):
         pass
 
-    def event_parse(self, event: EventContext):
+    def event_parse(self, event: GameEvent):
         self.react(event.eid, event.context)
 
     def _clear(self):
