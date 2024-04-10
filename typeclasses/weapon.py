@@ -287,6 +287,7 @@ class Weapon(Object):
         # Gun's rarity. Common, Uncommon, Rare, Legendary, Unique, Exotic. Dictates number of perks when gun is rolled on.
         self.db.rarity = 1
 
+    # region helper properties
     @property
     def magcheck(self):
         """Gives you an adjective string determined by the magazine fill percentage."""
@@ -312,8 +313,6 @@ class Weapon(Object):
             _str = "concerningly empty"
 
         return _str
-
-    # region properties
 
     @property
     def randomized_damage(self):

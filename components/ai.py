@@ -184,7 +184,7 @@ class BaseBrain:
         Searches nearby rooms for specified target.
 
         Args:
-            target: (optional) The target to search for. If none, returns destination of first target found
+            target: (optional) The target to search for. If no target, returns destination of first target found
         """
         dest = None
         exits = self.find_exits()

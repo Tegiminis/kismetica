@@ -84,7 +84,7 @@ WORLD_DROP = {
 }
 
 HIVE_BOOMER = {
-    "name": "Hive Boomer",
+    "weapon": "Hive Boomer",
     "accuracy": 1.0,
     "damage": 10,
     "crit": 2.0,
@@ -93,11 +93,10 @@ HIVE_BOOMER = {
     "cooldown": 5,
     "element": "arc",
     "messaging": {
-        "attack": "{attacker} lobs a bomb of electrifying energy at {defender}!",
-        "hit": "{defender} is shocked by electric current!",
-        "crit": "{defender} is knocked back by explosive force!",
+        "attack": "{attacker} lobs a bomb of electrifying energy at {target}!",
+        "hit": "{target} is shocked by electric current!",
+        "crit": "{target} is knocked back by explosive force!",
     },
-    "is_object": False,
 }
 
 HIVE_KNIGHT = {
