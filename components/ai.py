@@ -207,7 +207,7 @@ class BaseBrain:
                 destination = random.choice(exits).destination
         else:
             # no exits! teleport to home to get away.
-            destination = self.home
+            destination = self.owner.home
 
         return destination
 
@@ -367,7 +367,7 @@ class PatrolBrain(BaseBrain):
                 destination = random.choice(exits).destination
         else:
             # no exits! teleport to home to get away.
-            destination = self.home
+            destination = self.owner.home
 
         return destination
 
