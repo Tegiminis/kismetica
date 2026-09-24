@@ -223,7 +223,7 @@ class BaseBrain:
                 destination = random.choice(exits).destination
         else:
             # no exits! teleport to home to get away.
-            destination = self.home
+            destination = self.owner.home
 
         return destination
 
@@ -307,7 +307,88 @@ class PatrolBrain(BaseBrain):
         # send ye message
         mapping = {"owner": self.owner, "target": self.target}
         formatted = capitalize(message.format(**mapping))
+<<<<<<< HEAD
         self.place.msg_contents(formatted)
+=======
+        place.msg_contents(formatted)
+
+    def scan(self, target=None, location=None):
+        """
+        Find all potential targets.
+
+        Args:
+            target:     (optional) The target you wish to search for; all potential targets by default
+            location:   (optional) The location you wish to search; current location by default
+
+        Returns a list containing one of three sets:
+            target:     If the target is specified and in location
+            targets:    If target is unspecified but potential targets are in location
+            empty:      If target is specified and unfound, or no targets are found
+        """
+        to_return = {}
+        place = location if location else self.owner.location
+
+        # get list of targets and target to find
+        targets = {
+            obj
+            for obj in place.contents_get(exclude=self.owner)
+            if obj.has_account
+            if not obj.is_superuser
+            if not obj.tags.has("dead", category="combat")
+        }
+        target = set([target]) if target else set([])
+
+        # find target via set intersection
+        to_return = targets.intersection(target)
+        if not to_return and targets:
+            to_return = targets
+
+        return list(to_return)
+
+    def find_exits(self):
+        """
+        Find all valid exits to the current location.
+        """
+        here = self.owner.location
+        exits = [exi for exi in here.exits if exi.access(self, "traverse")]
+        return exits
+
+    def search(self, target=None):
+        """
+        Searches nearby rooms for specified target.
+
+        Args:
+            target: (optional) The target to search for. If none, returns destination of first target found
+        """
+        dest = None
+        exits = self.find_exits()
+
+        for exi in exits:
+            targets = self.scan(target, exi.destination)
+            if targets:
+                self.target = targets[0]
+                dest = exi.destination
+                break
+        return dest
+
+    def patrol(self):
+        """
+        Scan the current room for exits, and randomly pick one.
+        """
+        # target found, look for an exit.
+        exits = self.find_exits()
+        destination = None
+        if exits:
+            if len(exits) == 1:
+                destination = exits[0].destination
+            else:
+                destination = random.choice(exits).destination
+        else:
+            # no exits! teleport to home to get away.
+            destination = self.owner.home
+
+        return destination
+>>>>>>> f45ed9d7754ab3312bee85e9126218de35a7d6d2
 
 
 class AIHandler:
