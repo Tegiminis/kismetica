@@ -114,6 +114,16 @@ class BaseBrain:
         """The object this brain is attached to (helper method to handler.owner)"""
         return self.handler.owner
 
+    @property
+    def place(self) -> Object:
+        """The location of this brain's owner"""
+        return self.handler.owner.location
+
+    @property
+    def is_dead(self) -> bool:
+        """Returns if this brain's owner is dead or not"""
+        return self.handler.owner.tags.has("dead", "combat")
+
     def queue(self, behavior: BaseBehavior, **kwargs):
         """
         Helper method to add a behavior to the handler's queue. Passes kwargs to queue hook on behavior
@@ -151,16 +161,18 @@ class BaseBrain:
         Returns a list containing one of three sets:
             target:     If the target is specified and in location
             targets:    If target is unspecified but potential targets are in location
-            empty:      If target is specified and unfound, or no targets are found
+            empty:      If target is specified and unfound, and no other targets are found
         """
-        to_return = {}
+        to_return = []
         place = location if location else self.owner.location
 
         # get list of targets and target to find
         targets = {
             obj
             for obj in place.contents_get(exclude=self.owner)
-            if obj.has_account and not obj.is_superuser
+            if obj.has_account
+            if not obj.is_superuser
+            if not obj.tags.has("dead", category="combat")
         }
         target = set([target]) if target else set([])
 
@@ -184,13 +196,17 @@ class BaseBrain:
         Searches nearby rooms for specified target.
 
         Args:
-            target: (optional) The target to search for. If no target, returns destination of first target found
+            target: (optional) The target to search for. If none, returns destination of first target found
         """
         dest = None
         exits = self.find_exits()
 
-        if exits:
-            dest = next((exi for exi in exits if self.scan(target, exi)), None)
+        for exi in exits:
+            targets = self.scan(target, exi.destination)
+            if targets:
+                self.target = targets[0]
+                dest = exi.destination
+                break
         return dest
 
     def patrol(self):
@@ -256,26 +272,25 @@ class PatrolBrain(BaseBrain):
     target = None
 
     def at_think(self, *args, **kwargs):
-        owner = self.owner
-        place = self.owner.location
         messaging: dict = self.owner.attributes.get("messaging", {})
 
-        if not self.owner.tags.has("dead", "combat"):
+        if not self.is_dead:
             message = messaging.get("think", DEFAULT_THINK_MESSAGE)
             destination = None
 
+            # check current room for my target
             found = self.scan(self.target)
 
             # did not find any targets in current room
             if not found:
                 destination = self.search(self.target)
-                # found either existing or new targets in nearby room, stalk
+                # found either existing or new targets in nearby room, stalks them
                 if destination:
                     self.target = self.scan(self.target, destination)[0]
                     message = messaging.get("stalk", DEFAULT_STALK_MESSAGE)
                     self.target.msg("You feel eyes on your back...")
                     self.queue(BehaviorMove, **{"destination": destination})
-                # no target found, patrol
+                # no target found, patrols to random room
                 else:
                     self.target = None
                     destination = self.patrol()
@@ -292,87 +307,10 @@ class PatrolBrain(BaseBrain):
         # send ye message
         mapping = {"owner": self.owner, "target": self.target}
         formatted = capitalize(message.format(**mapping))
-        place.msg_contents(formatted)
-
-    def scan(self, target=None, location=None):
-        """
-        Find all potential targets.
-
-        Args:
-            target:     (optional) The target you wish to search for; all potential targets by default
-            location:   (optional) The location you wish to search; current location by default
-
-        Returns a list containing one of three sets:
-            target:     If the target is specified and in location
-            targets:    If target is unspecified but potential targets are in location
-            empty:      If target is specified and unfound, or no targets are found
-        """
-        to_return = {}
-        place = location if location else self.owner.location
-
-        # get list of targets and target to find
-        targets = {
-            obj
-            for obj in place.contents_get(exclude=self.owner)
-            if obj.has_account
-            if not obj.is_superuser
-            if not obj.tags.has("dead", category="combat")
-        }
-        target = set([target]) if target else set([])
-
-        # find target via set intersection
-        to_return = targets.intersection(target)
-        if not to_return and targets:
-            to_return = targets
-
-        return list(to_return)
-
-    def find_exits(self):
-        """
-        Find all valid exits to the current location.
-        """
-        here = self.owner.location
-        exits = [exi for exi in here.exits if exi.access(self, "traverse")]
-        return exits
-
-    def search(self, target=None):
-        """
-        Searches nearby rooms for specified target.
-
-        Args:
-            target: (optional) The target to search for. If none, returns destination of first target found
-        """
-        dest = None
-        exits = self.find_exits()
-
-        for exi in exits:
-            targets = self.scan(target, exi.destination)
-            if targets:
-                self.target = targets[0]
-                dest = exi.destination
-                break
-        return dest
-
-    def patrol(self):
-        """
-        Scan the current room for exits, and randomly pick one.
-        """
-        # target found, look for an exit.
-        exits = self.find_exits()
-        destination = None
-        if exits:
-            if len(exits) == 1:
-                destination = exits[0].destination
-            else:
-                destination = random.choice(exits).destination
-        else:
-            # no exits! teleport to home to get away.
-            destination = self.home
-
-        return destination
+        self.place.msg_contents(formatted)
 
 
-class BrainHandler:
+class AIHandler:
     """
     The handler for "brains", AI modules that can be swapped out by builders which grant
     particular behaviors and custom
@@ -460,11 +398,17 @@ class BrainHandler:
         delay(_delay, act_thread, self.owner)
 
     def think(self, *args, **kwargs):
-        """No act, only think"""
+        """Performs the "at_think" for the assigned brain. Passes `kwargs` forward."""
         self.brain.at_think(**kwargs)
 
-    def enqueue(self, behavior: BaseBehavior, **kwargs):
-        """Queues an behavior at the end"""
+    def enqueue(self, behavior: BaseBehavior, interrupt: bool = False, **kwargs):
+        """
+        Adds a behavior to the queue. Defaults to the end.
+
+        Args:
+            behavior:   The specified behavior to adds
+            kwargs:     The kwargs associated with the behavior. Passes these forward to the `at_act` hook on the behavior.
+        """
         if not self.queue:
             self.queue = deque([])
 
@@ -474,20 +418,14 @@ class BrainHandler:
             else behavior(self.owner, self)
         )
         instance.at_queue(**kwargs)
-        self.queue.append(behavior)
+        if not interrupt:
+            self.queue.append(behavior)
+        else:
+            self.queue.appendleft(behavior)
 
     def interrupt(self, behavior: BaseBehavior, **kwargs):
-        """Adds a behavior to the front of the queue (next in line)"""
-        if not self.queue:
-            self.queue = deque([])
-
-        instance = (
-            behavior
-            if isinstance(behavior, BaseBehavior)
-            else behavior(self.owner, self)
-        )
-        instance.at_queue(**kwargs)
-        self.queue.appendleft(behavior)
+        """Adds a behavior to the front of the queue (next in line). Helper for enqueue."""
+        self.enqueue(behavior, interrupt=True, **kwargs)
 
     def react(self, trigger, context=None):
         """Triggers the reaction behaviors with the specified trigger."""
@@ -507,9 +445,6 @@ class BrainHandler:
         """
         if clear:
             self._clear()
-
-    def reset(self):
-        """Resets the AI. This erases all behaviors from its pool, as well as"""
 
     def change_state(self, state: str):
         pass

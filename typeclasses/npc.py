@@ -1,16 +1,10 @@
 from components.context import congen
 from evennia.utils.utils import lazy_property
 from typeclasses.characters import Character
-from components.ai import BrainHandler, PatrolBrain, TestBrain
+from components.ai import AIHandler, PatrolBrain, TestBrain
 from dataclasses import dataclass, replace
 import random
 from components.combat import WeaponStats
-
-DEFAULT_NPC_MESSAGING = {
-    "think": "{owner} looks lost in thought.",
-    "hunt": "",
-    "target": "",
-}
 
 
 @dataclass
@@ -20,8 +14,8 @@ class NPCWeapon(WeaponStats):
 
 class NPC(Character):
     @lazy_property
-    def ai(self) -> BrainHandler:
-        return BrainHandler(self)
+    def ai(self) -> AIHandler:
+        return AIHandler(self)
 
     @property
     def weapon(self) -> NPCWeapon:
